@@ -29,6 +29,10 @@ fn no_floating_promises(slice: Slice, ctx: Context, repo_at_base: Repo) -> Invar
 
 See the Harn Flow design docs for the full predicate language spec.
 
+## Packs
+
+- [Harn](./harn/) — v0 draft predicates for `.harn` scripts, Flow workflows, and agent-facing Harn modules.
+
 ## Status
 
 🚧 **Early — design-first.** The predicate language, `InvariantResult` type, and runtime harness are still being specified in `burin-labs/harn`. This repo exists now to:

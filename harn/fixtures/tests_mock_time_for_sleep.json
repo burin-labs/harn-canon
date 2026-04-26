@@ -1,0 +1,25 @@
+{
+  "predicate": "tests_mock_time_for_sleep",
+  "cases": [
+    {
+      "name": "warns_sleeping_test_without_mock_time",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "tests/retry.harn",
+          "text": "@test\npipeline retry_waits() {\n  sleep_ms(1000)\n  return Ok(nil)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_mocked_time_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/retry.harn",
+          "text": "@test\npipeline retry_waits() {\n  mock_time(0)\n  sleep_ms(1000)\n  return Ok(nil)\n}\n"
+        }
+      ]
+    }
+  ]
+}

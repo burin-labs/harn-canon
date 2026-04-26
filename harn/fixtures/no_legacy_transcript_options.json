@@ -1,0 +1,25 @@
+{
+  "predicate": "no_legacy_transcript_options",
+  "cases": [
+    {
+      "name": "blocks_legacy_transcript_key",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "agent/session.harn",
+          "text": "fn ask(prompt, transcript_id) {\n  return llm_call(prompt, nil, {provider: \"mock\", transcript: transcript_id})\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_session_id",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/session.harn",
+          "text": "fn ask(prompt, session_id) {\n  return llm_call(prompt, nil, {provider: \"mock\", session_id: session_id})\n}\n"
+        }
+      ]
+    }
+  ]
+}

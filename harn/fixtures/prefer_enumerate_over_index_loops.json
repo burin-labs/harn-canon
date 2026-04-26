@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_enumerate_over_index_loops",
+  "cases": [
+    {
+      "name": "warns_range_len_loop",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "agent/files.harn",
+          "text": "fn print_files(files) {\n  for i in range(len(files)) {\n    println(files[i])\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_enumerate_loop",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/files.harn",
+          "text": "fn print_files(files) {\n  for {index, value} in files.enumerate() {\n    println(\"${index}: ${value}\")\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

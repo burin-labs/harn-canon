@@ -1,0 +1,288 @@
+let _EVIDENCE_SCHEMA_RETRIES = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#json-querying",
+  "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#v0735",
+  "https://platform.openai.com/docs/guides/structured-outputs",
+]
+
+let _EVIDENCE_PARALLEL_IO = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#concurrency",
+  "https://harnlang.com/concurrency.html",
+  "https://help.openai.com/en/articles/6891753-rate-limit-advice",
+  "https://docs.anthropic.com/en/api/rate-limits",
+]
+
+let _EVIDENCE_SOURCE_STRINGS = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#files-and-execution",
+  "https://harnlang.com/docs/llm/harn-quickref.html#strings",
+]
+
+let _EVIDENCE_TRANSCRIPTS = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#module-scope",
+  "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#v070",
+]
+
+let _EVIDENCE_SCHEMA_OBJECTS = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#json-querying",
+  "https://json-schema.org/understanding-json-schema/reference/object",
+  "https://platform.openai.com/docs/guides/structured-outputs",
+]
+
+let _EVIDENCE_DYNAMIC_BOUNDARIES = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#typing-any-vs-unknown-vs-no-annotation",
+  "https://harnlang.com/builtins.html#json",
+]
+
+let _EVIDENCE_MOCK_TIME = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#time-sleep-monotonic-clock",
+  "https://harnlang.com/concurrency.html#retry",
+]
+
+let _EVIDENCE_ITERATION = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#iteration",
+  "https://harnlang.com/builtins.html#list-methods",
+]
+
+let _EVIDENCE_PROMPT_SECRETS = [
+  "https://genai.owasp.org/llmrisk/llm07-insecure-plugin-design/",
+  "https://openai.com/index/prompt-injections/",
+  "https://learn.microsoft.com/en-us/security/zero-trust/sfi/defend-indirect-prompt-injection",
+]
+
+let _EVIDENCE_ACP_SIDE_EFFECTS = [
+  "https://harnlang.com/docs/llm/harn-quickref.html#attributes--name",
+  "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
+  "https://platform.openai.com/docs/guides/agent-builder-safety",
+]
+
+fn harn_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".harn") })
+}
+
+fn scan(slice, pattern) {
+  var findings = []
+  for file in harn_files(slice) {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings
+        .push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_if(slice, predicate) {
+  var findings = []
+  for file in harn_files(slice) {
+    if predicate(file.text) {
+      findings = findings
+        .push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn scan_without(slice, include_pattern, exclude_pattern) {
+  return scan_if(
+    slice,
+    { text -> regex_match(include_pattern, text, "s") != nil && regex_match(exclude_pattern, text, "s") == nil },
+  )
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_match(slice, rule, pattern, remediation) {
+  let findings = scan(slice, pattern)
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_match(slice, rule, pattern, remediation) {
+  let findings = scan(slice, pattern)
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SCHEMA_RETRIES, confidence: 0.86, source_date: "2026-04-26")
+/** Blocks schema-mode llm_call calls that omit a schema retry budget. */
+pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
+  let findings = scan_if(
+    slice,
+    { text -> regex_match(r"llm_call\s*\(", text, "s") != nil
+    && (contains(text, "output_schema:") || contains(text, "response_schema:")
+    || contains(text, "schema:"))
+    && !contains(text, "schema_retries:") },
+  )
+  return block_on_findings(
+    "llm_call_schema_sets_schema_retries",
+    "Use llm_call_structured or set schema_retries for schema-mode llm_call.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PARALLEL_IO, confidence: 0.82, source_date: "2026-04-26")
+/** Warns when external IO is fanned out without max_concurrent. */
+pub fn parallel_io_sets_max_concurrent(slice, _ctx, _repo_at_base) {
+  let findings = scan_without(
+    slice,
+    r"parallel\s+(each|settle)\s+[^{]*\{[^}]*\b(llm_call|http_get|http_post|host_tool_call|mcp_tool_call)\s*\(",
+    r"parallel\s+(each|settle)\s+[^{]*with\s*\{[^}]*max_concurrent\s*:",
+  )
+  return warn_on_findings(
+    "parallel_io_sets_max_concurrent",
+    "Add with { max_concurrent: N } around parallel IO or document why unlimited fan-out is safe.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SOURCE_STRINGS, confidence: 0.93, source_date: "2026-04-26")
+/** Blocks heredoc syntax in Harn source files. */
+pub fn no_source_heredocs(slice, _ctx, _repo_at_base) {
+  return block_on_match(
+    slice,
+    "no_source_heredocs",
+    r"<<[A-Z][A-Z0-9_]*",
+    "Use triple-quoted strings in Harn source; heredocs are only valid in tool-call JSON.",
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TRANSCRIPTS, confidence: 0.88, source_date: "2026-04-26")
+/** Blocks removed transcript option keys on LLM and agent calls. */
+pub fn no_legacy_transcript_options(slice, _ctx, _repo_at_base) {
+  return block_on_match(
+    slice,
+    "no_legacy_transcript_options",
+    r"\b(llm_call|agent_loop)\s*\([^)]*\{[^}]*\b(transcript|transcript_id|transcript_metadata)\s*:",
+    "Replace legacy transcript options with explicit agent_session_* lifecycle or session_id.",
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SCHEMA_OBJECTS, confidence: 0.78, source_date: "2026-04-26")
+/** Warns when closed-looking object schemas allow unknown fields. */
+pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
+  let findings = scan_if(
+    slice,
+    { text -> (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
+    && contains(text, "properties:")
+    && contains(text, "required:")
+    && !contains(text, "additional_properties:") },
+  )
+  return warn_on_findings(
+    "schema_objects_reject_unknown_properties",
+    "Set additional_properties: false on closed LLM/output schemas unless extension fields are intended.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DYNAMIC_BOUNDARIES, confidence: 0.74, source_date: "2026-04-26")
+/** Warns when dynamic boundaries accept any instead of unknown. */
+pub fn dynamic_boundaries_use_unknown(slice, _ctx, _repo_at_base) {
+  return warn_on_match(
+    slice,
+    "dynamic_boundaries_use_unknown",
+    r"fn\s+\w+\s*\([^)]*:\s*any[^)]*\)[^{]*\{[^}]*\b(json_parse|yaml_parse|toml_parse|llm_call|host_tool_call|mcp_tool_call)\s*\(",
+    "Use unknown plus schema_is/schema_expect at dynamic boundaries instead of any.",
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MOCK_TIME, confidence: 0.8, source_date: "2026-04-26")
+/** Warns when tests use time-sensitive operations without mock_time. */
+pub fn tests_mock_time_for_sleep(slice, _ctx, _repo_at_base) {
+  let findings = scan_without(
+    slice,
+    r"@test\s+pipeline\s+\w+\s*\([^)]*\)\s*\{[^}]*\b(sleep_ms|sleep|deadline)\b",
+    r"@test\s+pipeline\s+\w+\s*\([^)]*\)\s*\{[^}]*\bmock_time\s*\(",
+  )
+  return warn_on_findings(
+    "tests_mock_time_for_sleep",
+    "Call mock_time in tests that exercise sleep, deadlines, retry, or timeout logic.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ITERATION, confidence: 0.7, source_date: "2026-04-26")
+/** Warns on range(len(xs)) loops where direct iteration is clearer. */
+pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
+  return warn_on_match(
+    slice,
+    "prefer_enumerate_over_index_loops",
+    r"for\s+\w+\s+in\s+range\s*\(\s*len\s*\(\s*\w+\s*\)\s*\)",
+    "Iterate values directly, or use .enumerate() when the index is needed.",
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
+/** Blocks prompts that embed secrets or sensitive customer data. */
+pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "llm_prompts_do_not_embed_secrets",
+      "Move secrets and sensitive data out of prompts; fetch scoped values at runtime.",
+      judgement.findings,
+    )
+  }
+  return allow("llm_prompts_do_not_embed_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_ACP_SIDE_EFFECTS, confidence: 0.64, source_date: "2026-04-26")
+/** Blocks ACP tool metadata that understates real side effects. */
+pub fn acp_tool_side_effects_are_honest(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "acp_tool_side_effects_are_honest",
+      "Align @acp_tool kind and side_effect_level with the strongest operation it can perform.",
+      judgement.findings,
+    )
+  }
+  return allow("acp_tool_side_effects_are_honest")
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "acp_tool_side_effects_are_honest",
+  "cases": [
+    {
+      "name": "blocks_read_only_annotation_on_mutation",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "tools/deploy.harn",
+          "text": "@acp_tool(name: \"deploy\", kind: \"read\", side_effect_level: \"none\")\nfn deploy(env) {\n  return host_tool_call(\"deploy_service\", {env: env})\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_mutation_annotation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tools/deploy.harn",
+          "text": "@acp_tool(name: \"deploy\", kind: \"edit\", side_effect_level: \"mutation\")\nfn deploy(env) {\n  return host_tool_call(\"deploy_service\", {env: env})\n}\n"
+        }
+      ]
+    }
+  ]
+}

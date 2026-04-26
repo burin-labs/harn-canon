@@ -1,0 +1,25 @@
+{
+  "predicate": "llm_call_schema_sets_schema_retries",
+  "cases": [
+    {
+      "name": "blocks_schema_call_without_retry_budget",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "agent/grade.harn",
+          "text": "fn grade(prompt) {\n  return llm_call(prompt, nil, {provider: \"mock\", output_schema: Grade})\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_structured_helper",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/grade.harn",
+          "text": "fn grade(prompt) {\n  return llm_call_structured(prompt, Grade, {provider: \"mock\"})\n}\n"
+        }
+      ]
+    }
+  ]
+}
