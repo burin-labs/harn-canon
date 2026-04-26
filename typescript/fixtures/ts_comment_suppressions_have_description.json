@@ -1,0 +1,25 @@
+{
+  "predicate": "ts_comment_suppressions_have_description",
+  "cases": [
+    {
+      "name": "blocks_bare_ts_ignore",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/interop.ts",
+          "text": "// @ts-ignore\nlegacyCall(42);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_described_expect_error",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/interop.ts",
+          "text": "// @ts-expect-error: upstream package omits the overload until v3 ships\nlegacyCall(42);\n"
+        }
+      ]
+    }
+  ]
+}

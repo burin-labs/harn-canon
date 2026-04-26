@@ -1,0 +1,25 @@
+{
+  "predicate": "exhaustive_switch",
+  "cases": [
+    {
+      "name": "warns_switch_without_exhaustiveness_guard",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/state.ts",
+          "text": "type State = { kind: 'ready' } | { kind: 'failed' };\nexport function label(state: State) {\n  switch (state.kind) {\n    case 'ready':\n      return 'Ready';\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_never_guard",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/state.ts",
+          "text": "type State = { kind: 'ready' } | { kind: 'failed' };\nexport function label(state: State) {\n  switch (state.kind) {\n    case 'ready':\n      return 'Ready';\n    case 'failed':\n      return 'Failed';\n    default: {\n      const _exhaustive: never = state;\n      return _exhaustive;\n    }\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_console_in_prod_path",
+  "cases": [
+    {
+      "name": "blocks_console_log_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/server/account.ts",
+          "text": "export function loadAccount(id: string) {\n  console.log('loading account', id);\n  return id;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_console_in_cli_path",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/cli/report.ts",
+          "text": "export function printReport(text: string) {\n  console.log(text);\n}\n"
+        }
+      ]
+    }
+  ]
+}

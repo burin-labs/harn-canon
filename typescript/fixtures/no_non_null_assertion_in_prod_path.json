@@ -1,0 +1,25 @@
+{
+  "predicate": "no_non_null_assertion_in_prod_path",
+  "cases": [
+    {
+      "name": "warns_non_null_assertion_in_src",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/profile.ts",
+          "text": "export function displayName(user?: { name?: string }) {\n  return user!.name!;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_optional_chaining",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/profile.ts",
+          "text": "export function displayName(user?: { name?: string }) {\n  return user?.name ?? 'Anonymous';\n}\n"
+        }
+      ]
+    }
+  ]
+}
