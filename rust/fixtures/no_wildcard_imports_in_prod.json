@@ -1,0 +1,25 @@
+{
+  "predicate": "no_wildcard_imports_in_prod",
+  "cases": [
+    {
+      "name": "warns_module_glob_import",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "use crate::prelude::*;\n\npub fn run() {\n    execute();\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_import",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "use crate::prelude::execute;\n\npub fn run() {\n    execute();\n}\n"
+        }
+      ]
+    }
+  ]
+}

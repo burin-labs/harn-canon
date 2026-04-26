@@ -1,0 +1,25 @@
+{
+  "predicate": "unsafe_requires_safety_comment",
+  "cases": [
+    {
+      "name": "blocks_unsafe_without_comment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/raw.rs",
+          "text": "pub fn read(ptr: *const u8) -> u8 {\n    unsafe { *ptr }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_safety_comment",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/raw.rs",
+          "text": "pub fn read(ptr: *const u8) -> u8 {\n    // SAFETY: caller validated that ptr is non-null and readable for one byte.\n    unsafe { *ptr }\n}\n"
+        }
+      ]
+    }
+  ]
+}

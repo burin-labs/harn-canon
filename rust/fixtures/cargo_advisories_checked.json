@@ -1,0 +1,29 @@
+{
+  "predicate": "cargo_advisories_checked",
+  "cases": [
+    {
+      "name": "blocks_dependency_change_without_advisory_check",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"service\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\ntime = \"0.1\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_dependency_change_with_cargo_deny_ci",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"service\"\nversion = \"0.1.0\"\nedition = \"2024\"\n\n[dependencies]\ntime = \"0.3\"\n"
+        },
+        {
+          "path": ".github/workflows/security.yml",
+          "text": "name: security\non: [pull_request]\njobs:\n  cargo-deny:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - uses: EmbarkStudios/cargo-deny-action@v2\n"
+        }
+      ]
+    }
+  ]
+}

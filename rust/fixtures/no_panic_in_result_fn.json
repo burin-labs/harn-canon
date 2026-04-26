@@ -1,0 +1,25 @@
+{
+  "predicate": "no_panic_in_result_fn",
+  "cases": [
+    {
+      "name": "warns_panic_in_result_fn",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "pub fn parse(raw: &str) -> Result<u16, String> {\n    if raw.is_empty() {\n        panic!(\"empty port\")\n    }\n    raw.parse().map_err(|err| err.to_string())\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_err_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "pub fn parse(raw: &str) -> Result<u16, String> {\n    if raw.is_empty() {\n        return Err(\"empty port\".to_string());\n    }\n    raw.parse().map_err(|err| err.to_string())\n}\n"
+        }
+      ]
+    }
+  ]
+}

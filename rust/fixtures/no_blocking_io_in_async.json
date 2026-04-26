@@ -1,0 +1,25 @@
+{
+  "predicate": "no_blocking_io_in_async",
+  "cases": [
+    {
+      "name": "blocks_std_fs_in_async_fn",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/server.rs",
+          "text": "pub async fn load_config() -> std::io::Result<String> {\n    std::fs::read_to_string(\"config.toml\")\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_tokio_fs_in_async_fn",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/server.rs",
+          "text": "pub async fn load_config() -> std::io::Result<String> {\n    tokio::fs::read_to_string(\"config.toml\").await\n}\n"
+        }
+      ]
+    }
+  ]
+}

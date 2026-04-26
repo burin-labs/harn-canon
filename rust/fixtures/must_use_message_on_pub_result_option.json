@@ -1,0 +1,25 @@
+{
+  "predicate": "must_use_message_on_pub_result_option",
+  "cases": [
+    {
+      "name": "warns_public_result_without_custom_must_use_message",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "pub fn parse_port(raw: &str) -> Result<u16, std::num::ParseIntError> {\n    raw.parse()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_custom_must_use_message",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "#[must_use = \"callers must handle whether a configured port exists\"]\npub fn maybe_port(raw: &str) -> Option<u16> {\n    raw.parse().ok()\n}\n"
+        }
+      ]
+    }
+  ]
+}

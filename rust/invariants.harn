@@ -1,0 +1,292 @@
+let _EVIDENCE_UNWRAP = [
+  "https://rust-lang.github.io/rust-clippy/beta/#unwrap_used",
+  "https://doc.rust-lang.org/rust-by-example/error/option_unwrap.html",
+]
+
+let _EVIDENCE_MUST_USE = [
+  "https://doc.rust-lang.org/reference/attributes/diagnostics.html#the-must_use-attribute",
+  "https://rust-lang.github.io/rust-clippy/beta/#must_use_candidate",
+  "https://rust-lang.github.io/rust-clippy/beta/#double_must_use",
+]
+
+let _EVIDENCE_UNSAFE_COMMENT = [
+  "https://rust-lang.github.io/rust-clippy/beta/#undocumented_unsafe_blocks",
+  "https://doc.rust-lang.org/stable/reference/unsafe-keyword.html",
+]
+
+let _EVIDENCE_ASYNC_BLOCKING = [
+  "https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html",
+  "https://docs.rs/tokio/latest/tokio/time/fn.sleep.html",
+  "https://rust-lang.github.io/async-book/part-guide/async-await.html",
+]
+
+let _EVIDENCE_DBG = [
+  "https://rust-lang.github.io/rust-clippy/beta/#dbg_macro",
+  "https://doc.rust-lang.org/std/macro.dbg.html",
+]
+
+let _EVIDENCE_TODO = [
+  "https://rust-lang.github.io/rust-clippy/beta/#todo",
+  "https://rust-lang.github.io/rust-clippy/beta/#unimplemented",
+  "https://doc.rust-lang.org/std/macro.todo.html",
+]
+
+let _EVIDENCE_WILDCARD_IMPORTS = [
+  "https://rust-lang.github.io/rust-clippy/beta/#wildcard_imports",
+  "https://doc.rust-lang.org/reference/items/use-declarations.html#glob-imports",
+]
+
+let _EVIDENCE_PANIC_RESULT = [
+  "https://rust-lang.github.io/rust-clippy/beta/#panic_in_result_fn",
+  "https://rust-lang.github.io/rust-clippy/beta/#missing_panics_doc",
+]
+
+let _EVIDENCE_CARGO_ADVISORIES = [
+  "https://rustsec.org/",
+  "https://embarkstudios.github.io/cargo-deny/checks/",
+  "https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control",
+]
+
+let _EVIDENCE_FFI_SAFETY = [
+  "https://doc.rust-lang.org/edition-guide/rust-2024/unsafe-extern.html",
+  "https://doc.rust-lang.org/reference/items/external-blocks.html",
+  "https://rust-lang.github.io/rust-clippy/beta/#missing_safety_doc",
+]
+
+fn is_rust_path(path) {
+  return path.ends_with(".rs")
+}
+
+fn is_prod_rust_path(path) {
+  return is_rust_path(path)
+    && !path.contains("tests/")
+    && !path.contains("/tests/")
+    && !path.contains("benches/")
+    && !path.contains("/benches/")
+    && !path.contains("examples/")
+    && !path.contains("/examples/")
+}
+
+fn is_rust_project_path(path) {
+  return is_rust_path(path)
+    || path.ends_with("Cargo.toml")
+    || path.ends_with("Cargo.lock")
+    || path.ends_with("deny.toml")
+    || path.contains(".github/workflows/")
+}
+
+fn rust_files(slice) {
+  return slice.files.filter({ file -> is_rust_path(file.path) })
+}
+
+fn prod_rust_files(slice) {
+  return slice.files.filter({ file -> is_prod_rust_path(file.path) })
+}
+
+fn rust_project_files(slice) {
+  return slice.files.filter({ file -> is_rust_project_path(file.path) })
+}
+
+fn scan_files(files, pattern) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings
+        .push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_prod(slice, pattern) {
+  return scan_files(prod_rust_files(slice), pattern)
+}
+
+fn scan_without_prod(slice, include_pattern, exclude_pattern) {
+  var findings = []
+  for file in prod_rust_files(slice) {
+    if regex_match(include_pattern, file.text, "s") != nil && regex_match(exclude_pattern, file.text, "s") == nil {
+      findings = findings
+        .push({path: file.path, pattern: include_pattern})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNWRAP, confidence: 0.82, source_date: "2026-04-26")
+/** Blocks bare unwrap calls in production Rust paths. */
+pub fn no_unwrap_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(slice, r"\.(unwrap|unwrap_err)\s*\(")
+  return block_on_findings(
+    "no_unwrap_in_prod",
+    "Handle Result/Option explicitly, propagate with ?, or use expect with a specific invariant.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MUST_USE, confidence: 0.7, source_date: "2026-04-26")
+/** Warns on public Result/Option-returning functions without a custom must_use message. */
+pub fn must_use_message_on_pub_result_option(slice, _ctx, _repo_at_base) {
+  let findings = scan_without_prod(
+    slice,
+    r"pub\s+(async\s+)?fn\s+\w+[^{;]*->\s*(Result|Option)\s*[<\(]",
+    r"#\s*\[\s*must_use\s*=",
+  )
+  return warn_on_findings(
+    "must_use_message_on_pub_result_option",
+    "Use #[must_use = \"...\"] when Result/Option's default unused warning needs domain context.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNSAFE_COMMENT, confidence: 0.78, source_date: "2026-04-26")
+/** Blocks unsafe blocks or impls without a preceding SAFETY comment. */
+pub fn unsafe_requires_safety_comment(slice, _ctx, _repo_at_base) {
+  let findings = scan_without_prod(
+    slice,
+    r"\bunsafe\s*(\{|impl\b)",
+    r"//\s*SAFETY:[^\n]*\n\s*unsafe\s*(\{|impl\b)",
+  )
+  return block_on_findings(
+    "unsafe_requires_safety_comment",
+    "Precede each unsafe block or unsafe impl with a // SAFETY: comment explaining the invariant.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ASYNC_BLOCKING, confidence: 0.74, source_date: "2026-04-26")
+/** Blocks common blocking std calls inside async functions. */
+pub fn no_blocking_io_in_async(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(
+    slice,
+    r"async\s+fn\s+\w+[^{]*\{[^}]*\b(std::fs::|std::thread::sleep|std::process::Command|std::net::Tcp(Stream|Listener))",
+  )
+  return block_on_findings(
+    "no_blocking_io_in_async",
+    "Use async APIs or move blocking work to spawn_blocking/block_in_place with a bounded plan.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DBG, confidence: 0.9, source_date: "2026-04-26")
+/** Warns when dbg! is committed to production Rust paths. */
+pub fn no_dbg_macro_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(slice, r"\bdbg!\s*\(")
+  return warn_on_findings(
+    "no_dbg_macro_in_prod",
+    "Remove dbg! or replace it with structured tracing/logging before shipping.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TODO, confidence: 0.88, source_date: "2026-04-26")
+/** Blocks unfinished-code macros in production Rust paths. */
+pub fn no_todo_or_unimplemented_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(slice, r"\b(todo|unimplemented)!\s*\(")
+  return block_on_findings(
+    "no_todo_or_unimplemented_in_prod",
+    "Finish the implementation or isolate the stub to tests/examples before shipping.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_WILDCARD_IMPORTS, confidence: 0.68, source_date: "2026-04-26")
+/** Warns on module-level wildcard imports outside tests and examples. */
+pub fn no_wildcard_imports_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(slice, r"(?m)^\s*use\s+[^;]*::\*\s*;")
+  return warn_on_findings(
+    "no_wildcard_imports_in_prod",
+    "Import the names you use explicitly, or keep wildcard imports local to tests/match-heavy code.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PANIC_RESULT, confidence: 0.66, source_date: "2026-04-26")
+/** Warns when Result-returning functions contain direct panics. */
+pub fn no_panic_in_result_fn(slice, _ctx, _repo_at_base) {
+  let findings = scan_prod(
+    slice,
+    r"fn\s+\w+[^{;]*->\s*Result\s*[<\(][^{]*\{[^}]*\b(panic!|assert!|assert_eq!|assert_ne!)\s*\(",
+  )
+  return warn_on_findings(
+    "no_panic_in_result_fn",
+    "Return an Err or document the panic contract with a # Panics section.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_CARGO_ADVISORIES, confidence: 0.64, source_date: "2026-04-26")
+/** Blocks dependency changes that lack advisory or cargo-deny/audit evidence. */
+pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when Rust dependency metadata changed, such as Cargo.toml, Cargo.lock, deny.toml, or Rust CI, and the slice provides no evidence that cargo-deny, cargo-audit, RustSec, OSV, Dependabot, or equivalent advisory checks were considered. Allow pure source changes and dependency changes that add or preserve a clear advisory-check path."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: rust_project_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "cargo_advisories_checked",
+      "Run or configure cargo-deny/cargo-audit/RustSec advisory checks for dependency changes.",
+      judgement.findings,
+    )
+  }
+  return allow("cargo_advisories_checked")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_FFI_SAFETY, confidence: 0.6, source_date: "2026-04-26")
+/** Blocks unsafe public FFI boundaries that omit safety contracts. */
+pub fn ffi_boundary_safety_contract(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when a changed Rust file adds or modifies a public FFI boundary, extern block, no_mangle/export_name symbol, or public unsafe wrapper and the nearby docs/comments do not state caller safety obligations, ownership/nullability/lifetime requirements, or why the foreign signature is sound."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: rust_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "ffi_boundary_safety_contract",
+      "Document the FFI or unsafe public contract: safety, ownership, nullability, and lifetime assumptions.",
+      judgement.findings,
+    )
+  }
+  return allow("ffi_boundary_safety_contract")
+}
