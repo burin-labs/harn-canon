@@ -1,0 +1,25 @@
+{
+  "predicate": "no_top_level_mutable_state",
+  "cases": [
+    {
+      "name": "warns_top_level_var",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Sources/App/Environment.swift",
+          "text": "var currentEnvironment = Environment.production\n\nstruct Environment {\n  static let production = Environment()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_let_constant",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/Environment.swift",
+          "text": "let currentEnvironment = Environment.production\n\nstruct Environment {\n  static let production = Environment()\n}\n"
+        }
+      ]
+    }
+  ]
+}

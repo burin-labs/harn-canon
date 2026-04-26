@@ -1,0 +1,25 @@
+{
+  "predicate": "no_print_in_production",
+  "cases": [
+    {
+      "name": "warns_print",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Sources/App/SyncService.swift",
+          "text": "func sync() {\n  print(\"starting sync\")\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_logger",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/SyncService.swift",
+          "text": "import OSLog\n\nprivate let logger = Logger(subsystem: \"com.example.app\", category: \"sync\")\n\nfunc sync() {\n  logger.info(\"starting sync\")\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_structured_concurrency",
+  "cases": [
+    {
+      "name": "warns_on_new_dispatch_queue",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Sources/App/SearchService.swift",
+          "text": "func refresh() {\n  DispatchQueue.global().async {\n    self.fetch()\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_task",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/SearchService.swift",
+          "text": "func refresh() {\n  Task {\n    await fetch()\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

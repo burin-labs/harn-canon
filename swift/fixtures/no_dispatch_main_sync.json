@@ -1,0 +1,25 @@
+{
+  "predicate": "no_dispatch_main_sync",
+  "cases": [
+    {
+      "name": "blocks_main_sync",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/ImageCache.swift",
+          "text": "func refreshBadge() {\n  DispatchQueue.main.sync {\n    badgeView.setNeedsDisplay()\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_main_actor_run",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/ImageCache.swift",
+          "text": "func refreshBadge() async {\n  await MainActor.run {\n    badgeView.setNeedsDisplay()\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

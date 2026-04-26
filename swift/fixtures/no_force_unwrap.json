@@ -1,0 +1,25 @@
+{
+  "predicate": "no_force_unwrap",
+  "cases": [
+    {
+      "name": "blocks_production_force_unwrap",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "final class ProfileViewModel {\n  func title(for user: User?) -> String {\n    return user!.name\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_optional_binding",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "final class ProfileViewModel {\n  func title(for user: User?) -> String {\n    guard let user else { return \"Unknown\" }\n    return user.name\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

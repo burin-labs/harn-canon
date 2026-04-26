@@ -1,0 +1,25 @@
+{
+  "predicate": "ui_state_mutations_stay_main_actor",
+  "cases": [
+    {
+      "name": "blocks_background_ui_mutation",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "import SwiftUI\n\nfinal class ProfileViewModel: ObservableObject {\n  @Published var name = \"\"\n\n  func load() {\n    Task.detached {\n      self.name = await fetchName()\n    }\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_main_actor_hop",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "import SwiftUI\n\n@MainActor\nfinal class ProfileViewModel: ObservableObject {\n  @Published var name = \"\"\n\n  func load() {\n    Task {\n      let value = await fetchName()\n      self.name = value\n    }\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

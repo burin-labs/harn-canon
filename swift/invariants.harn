@@ -1,0 +1,290 @@
+let _EVIDENCE_OPTIONAL_SAFETY = [
+  "https://github.com/swiftlang/swift-book/blob/main/TSPL.docc/LanguageGuide/OptionalChaining.md",
+  "https://realm.github.io/SwiftLint/force_unwrapping.html",
+  "https://realm.github.io/SwiftLint/implicitly_unwrapped_optional.html",
+]
+
+let _EVIDENCE_FORCE_ERROR_HANDLING = [
+  "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/errorhandling/",
+  "https://realm.github.io/SwiftLint/force_try.html",
+]
+
+let _EVIDENCE_FORCE_CASTING = [
+  "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/typecasting/",
+  "https://realm.github.io/SwiftLint/force_cast.html",
+]
+
+let _EVIDENCE_UI_MAIN_ACTOR = [
+  "https://developer.apple.com/documentation/xcode/improving-app-responsiveness",
+  "https://docs.swift.org/swift-book/documentation/the-swift-programming-language/concurrency/",
+]
+
+let _EVIDENCE_STRUCTURED_CONCURRENCY = [
+  "https://www.swift.org/blog/announcing-swift-6/",
+  "https://developer.apple.com/documentation/dispatch/dispatchqueue",
+  "https://developer.apple.com/documentation/xcode/improving-app-responsiveness",
+]
+
+let _EVIDENCE_SENDABLE = [
+  "https://developer.apple.com/documentation/Swift/Sendable",
+  "https://github.com/swiftlang/swift-book/blob/main/TSPL.docc/LanguageGuide/Concurrency.md",
+  "https://www.swift.org/blog/ready-for-swift-6/",
+]
+
+let _EVIDENCE_MUTABILITY = [
+  "https://github.com/swiftlang/swift-book/blob/main/TSPL.docc/LanguageGuide/TheBasics.md",
+  "https://developer.apple.com/documentation/Swift/Sendable",
+  "https://www.swift.org/blog/ready-for-swift-6/",
+]
+
+let _EVIDENCE_LOGGING = [
+  "https://developer.apple.com/documentation/os/logging",
+  "https://developer.apple.com/documentation/os/generating-log-messages-from-your-code",
+]
+
+let _EVIDENCE_ARC_CLOSURES = [
+  "https://github.com/swiftlang/swift-book/blob/main/TSPL.docc/LanguageGuide/AutomaticReferenceCounting.md",
+  "https://forums.swift.org/t/long-term-solution-for-accidental-retain-cycles-from-strong-references-in-closures/77201",
+]
+
+fn swift_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".swift") })
+}
+
+fn production_swift_files(slice) {
+  return swift_files(slice)
+    .filter(
+    { file -> !contains(file.path, "/Tests/")
+    && !contains(file.path, "/TestSupport/")
+    && !file.path.ends_with("Tests.swift")
+    && !file.path.ends_with("Preview.swift")
+    && !file.path.ends_with("Previews.swift") },
+  )
+}
+
+fn scan_swift(slice, pattern) {
+  var findings = []
+  for file in production_swift_files(slice) {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_swift_if(slice, predicate) {
+  var findings = []
+  for file in production_swift_files(slice) {
+    if predicate(file.text) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OPTIONAL_SAFETY, confidence: 0.78, source_date: "2026-04-26")
+/** Blocks force-unwrapping optionals in production Swift sources. */
+pub fn no_force_unwrap(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"([A-Za-z_][A-Za-z0-9_]*\.)?[A-Za-z_][A-Za-z0-9_]*\s*![\.\[\)\]\}\,;]")
+  return block_on_findings(
+    "no_force_unwrap",
+    "Use optional binding, guard let, nil coalescing, or optional chaining instead of force unwrap.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FORCE_ERROR_HANDLING, confidence: 0.9, source_date: "2026-04-26")
+/** Blocks force-try in production Swift sources. */
+pub fn no_force_try(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"\btry\s*!")
+  return block_on_findings(
+    "no_force_try",
+    "Handle thrown errors with do/catch, try?, or by propagating throws.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FORCE_CASTING, confidence: 0.88, source_date: "2026-04-26")
+/** Blocks force-casting in production Swift sources. */
+pub fn no_force_cast(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"\bas\s*!")
+  return block_on_findings(
+    "no_force_cast",
+    "Use as?, pattern matching, or a typed API boundary instead of force cast.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UI_MAIN_ACTOR, confidence: 0.83, source_date: "2026-04-26")
+/** Blocks synchronous dispatch to the main queue. */
+pub fn no_dispatch_main_sync(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"DispatchQueue\s*\.\s*main\s*\.\s*sync\s*(\(|\{)")
+  return block_on_findings(
+    "no_dispatch_main_sync",
+    "Never call DispatchQueue.main.sync; use @MainActor, MainActor.run, or async dispatch.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_STRUCTURED_CONCURRENCY, confidence: 0.72, source_date: "2026-04-26")
+/** Warns on new low-level concurrency primitives in production Swift sources. */
+pub fn prefer_structured_concurrency(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"\b(DispatchQueue|DispatchWorkItem|OperationQueue|Thread|pthread_)\b")
+  return warn_on_findings(
+    "prefer_structured_concurrency",
+    "Prefer async/await, Task, actors, or AsyncSequence unless low-level scheduling is required.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UI_MAIN_ACTOR, confidence: 0.69, source_date: "2026-04-26")
+/** Warns when UI-facing observable state is not explicitly main-actor isolated. */
+pub fn main_actor_on_ui_observable_state(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift_if(
+    slice,
+    { text -> (contains(text, "import SwiftUI") || contains(text, "import UIKit")
+    || contains(text, "import AppKit"))
+    && (contains(text, "ObservableObject") || contains(text, "@Observable")
+    || regex_match(r"class\s+\w*(ViewModel|Controller)\b", text, "s") != nil)
+    && !contains(text, "@MainActor") },
+  )
+  return warn_on_findings(
+    "main_actor_on_ui_observable_state",
+    "Mark UI-bound observable state @MainActor or document the non-main actor isolation.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SENDABLE, confidence: 0.76, source_date: "2026-04-26")
+/** Warns when unchecked Sendable lacks a local safety rationale. */
+pub fn unchecked_sendable_requires_rationale(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift_if(
+    slice,
+    { text -> contains(text, "@unchecked Sendable") && !contains(text, "SAFETY:") },
+  )
+  return warn_on_findings(
+    "unchecked_sendable_requires_rationale",
+    "Add a SAFETY comment explaining synchronization before using @unchecked Sendable.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MUTABILITY, confidence: 0.67, source_date: "2026-04-26")
+/** Warns on top-level mutable state in production Swift sources. */
+pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(
+    slice,
+    r"(?m)^(public\s+|internal\s+|private\s+|fileprivate\s+|open\s+)?(static\s+)?var\s+\w+\s*[:=]",
+  )
+  return warn_on_findings(
+    "no_top_level_mutable_state",
+    "Prefer let constants, actor-isolated state, or scoped mutable storage over top-level var.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_LOGGING, confidence: 0.71, source_date: "2026-04-26")
+/** Warns on ad hoc console output in production Swift sources. */
+pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
+  let findings = scan_swift(slice, r"\b(print|debugPrint|dump)\s*\(")
+  return warn_on_findings(
+    "no_print_in_production",
+    "Use os.Logger or the project logger instead of print/debugPrint/dump in production code.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_ARC_CLOSURES, confidence: 0.66, source_date: "2026-04-26")
+/** Blocks likely retain cycles from escaping closures that capture self strongly. */
+pub fn no_retain_cycle_in_escaping_closure(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when production Swift adds a stored, escaping, notification, Combine, delegate, timer, task, or completion closure that captures self strongly and can outlive the caller, and the closure lacks an intentional weak/unowned capture or lifecycle invalidation."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_retain_cycle_in_escaping_closure",
+      "Use [weak self] or [unowned self], or prove the closure cannot outlive self.",
+      judgement.findings,
+    )
+  }
+  return allow("no_retain_cycle_in_escaping_closure")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_UI_MAIN_ACTOR, confidence: 0.64, source_date: "2026-04-26")
+/** Blocks UI state mutation from non-main actor callbacks or tasks. */
+pub fn ui_state_mutations_stay_main_actor(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Swift code mutates UIKit, AppKit, SwiftUI, @Published, @Observable, or view-model state from a background callback, detached task, completion handler, or nonisolated async context without @MainActor, MainActor.run, or another explicit main-actor hop."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "ui_state_mutations_stay_main_actor",
+      "Move UI-bound mutation behind @MainActor or an explicit MainActor.run hop.",
+      judgement.findings,
+    )
+  }
+  return allow("ui_state_mutations_stay_main_actor")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SENDABLE, confidence: 0.62, source_date: "2026-04-26")
+/** Blocks unsafe cross-concurrency sharing that Swift 6 sendability should protect. */
+pub fn sendable_cross_actor_boundaries_are_safe(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Swift code sends mutable non-Sendable reference state across actor, Task, detached task, async let, or task-group boundaries without actor isolation, locking, value copying, or a justified Sendable conformance."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "sendable_cross_actor_boundaries_are_safe",
+      "Isolate mutable state to an actor, copy values, synchronize access, or add justified Sendable conformance.",
+      judgement.findings,
+    )
+  }
+  return allow("sendable_cross_actor_boundaries_are_safe")
+}

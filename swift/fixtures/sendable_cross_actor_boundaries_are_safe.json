@@ -1,0 +1,25 @@
+{
+  "predicate": "sendable_cross_actor_boundaries_are_safe",
+  "cases": [
+    {
+      "name": "blocks_mutable_class_shared_into_detached_task",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/Accumulator.swift",
+          "text": "final class Accumulator {\n  var values: [Int] = []\n}\n\nfunc start(_ accumulator: Accumulator) {\n  Task.detached {\n    accumulator.values.append(1)\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_actor_isolated_state",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/Accumulator.swift",
+          "text": "actor Accumulator {\n  private var values: [Int] = []\n\n  func append(_ value: Int) {\n    values.append(value)\n  }\n}\n\nfunc start(_ accumulator: Accumulator) {\n  Task {\n    await accumulator.append(1)\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_force_try",
+  "cases": [
+    {
+      "name": "blocks_force_try",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/Decoder.swift",
+          "text": "func loadProfile(_ data: Data) -> Profile {\n  return try! JSONDecoder().decode(Profile.self, from: data)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_propagating_throws",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/Decoder.swift",
+          "text": "func loadProfile(_ data: Data) throws -> Profile {\n  return try JSONDecoder().decode(Profile.self, from: data)\n}\n"
+        }
+      ]
+    }
+  ]
+}
