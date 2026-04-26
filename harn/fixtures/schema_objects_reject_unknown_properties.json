@@ -1,0 +1,25 @@
+{
+  "predicate": "schema_objects_reject_unknown_properties",
+  "cases": [
+    {
+      "name": "warns_open_object_schema",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "agent/schema.harn",
+          "text": "let Grade = {\n  type: \"dict\",\n  required: [\"score\"],\n  properties: {score: {type: \"int\"}}\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_closed_object_schema",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/schema.harn",
+          "text": "let Grade = {\n  type: \"dict\",\n  required: [\"score\"],\n  properties: {score: {type: \"int\"}},\n  additional_properties: false\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "parallel_io_sets_max_concurrent",
+  "cases": [
+    {
+      "name": "warns_uncapped_llm_fanout",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "agent/summarize.harn",
+          "text": "fn summarize(paths) {\n  return parallel each paths { path ->\n    llm_call(read_file(path), nil, {provider: \"mock\"})\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_capped_llm_fanout",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/summarize.harn",
+          "text": "fn summarize(paths) {\n  return parallel each paths with {max_concurrent: 4} { path ->\n    llm_call(read_file(path), nil, {provider: \"mock\"})\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

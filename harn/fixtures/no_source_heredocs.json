@@ -1,0 +1,25 @@
+{
+  "predicate": "no_source_heredocs",
+  "cases": [
+    {
+      "name": "blocks_source_heredoc",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "agent/prompt.harn",
+          "text": "let system = <<SYS\nYou are precise.\nSYS\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_triple_quoted_prompt",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/prompt.harn",
+          "text": "let system = \"\"\"\nYou are precise.\n\"\"\"\n"
+        }
+      ]
+    }
+  ]
+}

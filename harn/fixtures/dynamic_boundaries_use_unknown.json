@@ -1,0 +1,25 @@
+{
+  "predicate": "dynamic_boundaries_use_unknown",
+  "cases": [
+    {
+      "name": "warns_any_at_json_boundary",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "agent/config.harn",
+          "text": "fn load(raw: any) {\n  let parsed = json_parse(raw)\n  return parsed.name\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unknown_with_schema_expect",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/config.harn",
+          "text": "fn load(raw: unknown) {\n  let parsed = schema_expect(json_parse(raw), Config)\n  return parsed.name\n}\n"
+        }
+      ]
+    }
+  ]
+}
