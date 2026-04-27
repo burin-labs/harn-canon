@@ -1,0 +1,25 @@
+{
+  "predicate": "no_force_cast",
+  "cases": [
+    {
+      "name": "blocks_force_cast",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/Router.swift",
+          "text": "func route(_ value: Any) {\n  let screen = value as! ProfileScreen\n  screen.open()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_conditional_cast",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/Router.swift",
+          "text": "func route(_ value: Any) {\n  guard let screen = value as? ProfileScreen else { return }\n  screen.open()\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "unchecked_sendable_requires_rationale",
+  "cases": [
+    {
+      "name": "warns_unchecked_sendable_without_safety_comment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Sources/App/SharedCache.swift",
+          "text": "final class SharedCache: @unchecked Sendable {\n  private var values: [String: Data] = [:]\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_safety_rationale",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/SharedCache.swift",
+          "text": "final class SharedCache: @unchecked Sendable {\n  // SAFETY: all access to values is guarded by lock.\n  private let lock = NSLock()\n  private var values: [String: Data] = [:]\n}\n"
+        }
+      ]
+    }
+  ]
+}

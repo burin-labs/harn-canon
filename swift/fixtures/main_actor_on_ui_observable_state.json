@@ -1,0 +1,25 @@
+{
+  "predicate": "main_actor_on_ui_observable_state",
+  "cases": [
+    {
+      "name": "warns_observable_view_model_without_main_actor",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "import SwiftUI\n\nfinal class ProfileViewModel: ObservableObject {\n  @Published var name = \"\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_main_actor_view_model",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/ProfileViewModel.swift",
+          "text": "import SwiftUI\n\n@MainActor\nfinal class ProfileViewModel: ObservableObject {\n  @Published var name = \"\"\n}\n"
+        }
+      ]
+    }
+  ]
+}

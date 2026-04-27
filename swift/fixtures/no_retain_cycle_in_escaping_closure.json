@@ -1,0 +1,25 @@
+{
+  "predicate": "no_retain_cycle_in_escaping_closure",
+  "cases": [
+    {
+      "name": "blocks_timer_closure_capturing_self",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Sources/App/Poller.swift",
+          "text": "final class Poller {\n  private var timer: Timer?\n\n  func start() {\n    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { _ in\n      self.refresh()\n    }\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_weak_self_capture",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Sources/App/Poller.swift",
+          "text": "final class Poller {\n  private var timer: Timer?\n\n  func start() {\n    timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in\n      self?.refresh()\n    }\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}
