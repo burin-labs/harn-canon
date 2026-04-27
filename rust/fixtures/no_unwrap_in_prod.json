@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unwrap_in_prod",
+  "cases": [
+    {
+      "name": "blocks_unwrap_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/config.rs",
+          "text": "pub fn port(raw: &str) -> u16 {\n    raw.parse::<u16>().unwrap()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_error_propagation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/config.rs",
+          "text": "pub fn port(raw: &str) -> Result<u16, std::num::ParseIntError> {\n    raw.parse::<u16>()\n}\n"
+        }
+      ]
+    }
+  ]
+}

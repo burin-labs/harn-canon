@@ -1,0 +1,25 @@
+{
+  "predicate": "no_dbg_macro_in_prod",
+  "cases": [
+    {
+      "name": "warns_dbg_in_src",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "pub fn normalize(value: u32) -> u32 {\n    dbg!(value) + 1\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_tracing",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib.rs",
+          "text": "pub fn normalize(value: u32) -> u32 {\n    tracing::debug!(value, \"normalizing\");\n    value + 1\n}\n"
+        }
+      ]
+    }
+  ]
+}
