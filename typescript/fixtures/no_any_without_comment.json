@@ -1,0 +1,25 @@
+{
+  "predicate": "no_any_without_comment",
+  "cases": [
+    {
+      "name": "blocks_unexplained_any",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/parser.ts",
+          "text": "export function parse(raw: string): any {\n  return JSON.parse(raw);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_targeted_disable_with_reason",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/vendor.ts",
+          "text": "// eslint-disable-next-line @typescript-eslint/no-explicit-any: legacy vendor callback type is not published\nexport type VendorCallback = (...args: any[]) => void;\n"
+        }
+      ]
+    }
+  ]
+}

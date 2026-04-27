@@ -1,0 +1,25 @@
+{
+  "predicate": "strict_null_checks_required",
+  "cases": [
+    {
+      "name": "blocks_strict_null_checks_disabled",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "tsconfig.json",
+          "text": "{\n  \"compilerOptions\": {\n    \"strictNullChecks\": false\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_strict_enabled",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tsconfig.json",
+          "text": "{\n  \"compilerOptions\": {\n    \"strict\": true\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_sensitive_data_in_logs",
+  "cases": [
+    {
+      "name": "blocks_logging_authorization_header",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/server/auth.ts",
+          "text": "export function audit(req: Request, logger: Logger) {\n  logger.info({ authorization: req.headers.get('authorization') }, 'request auth header');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_redacted_logging",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/server/auth.ts",
+          "text": "export function audit(req: Request, logger: Logger) {\n  logger.info({ hasAuthorization: req.headers.has('authorization') }, 'request auth header present');\n}\n"
+        }
+      ]
+    }
+  ]
+}

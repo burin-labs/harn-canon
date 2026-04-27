@@ -1,0 +1,25 @@
+{
+  "predicate": "no_inline_type_only_imports",
+  "cases": [
+    {
+      "name": "warns_inline_only_type_import",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/types.ts",
+          "text": "import { type Account } from './models';\nexport type View = Account;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_top_level_type_import",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/types.ts",
+          "text": "import type { Account } from './models';\nexport type View = Account;\n"
+        }
+      ]
+    }
+  ]
+}

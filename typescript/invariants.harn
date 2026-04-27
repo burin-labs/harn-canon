@@ -1,0 +1,315 @@
+let _EVIDENCE_FLOATING_PROMISES = [
+  "https://typescript-eslint.io/rules/no-floating-promises/",
+  "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch",
+]
+
+let _EVIDENCE_NO_ANY = [
+  "https://typescript-eslint.io/rules/no-explicit-any/",
+  "https://www.typescriptlang.org/docs/handbook/2/functions.html#unknown",
+]
+
+let _EVIDENCE_STRICT_NULL = [
+  "https://www.typescriptlang.org/tsconfig/strict.html",
+  "https://www.typescriptlang.org/tsconfig/strictNullChecks.html",
+]
+
+let _EVIDENCE_NO_CONSOLE = [
+  "https://eslint.org/docs/latest/rules/no-console",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_EXHAUSTIVE_SWITCH = [
+  "https://typescript-eslint.io/rules/switch-exhaustiveness-check/",
+  "https://www.typescriptlang.org/docs/handbook/2/narrowing.html#exhaustiveness-checking",
+]
+
+let _EVIDENCE_TS_COMMENTS = [
+  "https://typescript-eslint.io/rules/ban-ts-comment/",
+  "https://www.typescriptlang.org/docs/handbook/release-notes/typescript-3-9.html#ts-expect-error-comments",
+]
+
+let _EVIDENCE_NON_NULL = [
+  "https://typescript-eslint.io/rules/no-non-null-assertion/",
+  "https://www.typescriptlang.org/tsconfig/strictNullChecks.html",
+]
+
+let _EVIDENCE_TYPE_IMPORTS = [
+  "https://typescript-eslint.io/rules/no-import-type-side-effects/",
+  "https://www.typescriptlang.org/tsconfig/verbatimModuleSyntax.html",
+]
+
+let _EVIDENCE_RUNTIME_VALIDATION = [
+  "https://typescript-eslint.io/rules/no-unsafe-assignment/",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+let _EVIDENCE_SENSITIVE_LOGS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+]
+
+fn typescript_files(slice) {
+  return slice.files
+    .filter(
+    { file -> file.path.ends_with(".ts")
+    || file.path.ends_with(".tsx")
+    || file.path.ends_with(".mts")
+    || file.path.ends_with(".cts") },
+  )
+}
+
+fn tsconfig_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with("tsconfig.json") })
+}
+
+fn is_test_path(path) {
+  return contains(path, ".test.")
+    || contains(path, ".spec.")
+    || contains(path, "/test/")
+    || contains(path, "/tests/")
+    || contains(path, "__tests__")
+}
+
+fn is_cli_path(path) {
+  return contains(path, "/cli/")
+    || contains(path, "/bin/")
+    || path.ends_with(".cli.ts")
+    || path.ends_with(".cli.tsx")
+}
+
+fn production_ts_files(slice) {
+  return typescript_files(slice).filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
+}
+
+fn scan_files(files, pattern) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file.text) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn scan_files_without(files, include_pattern, exclude_pattern) {
+  return scan_files_if(
+    files,
+    { text -> regex_match(include_pattern, text, "s") != nil && regex_match(exclude_pattern, text, "s") == nil },
+  )
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FLOATING_PROMISES, confidence: 0.82, source_date: "2026-04-26")
+/**
+ * Blocks Promise-returning calls that are started as bare statements without await, return, void, or catch.
+ */
+pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    typescript_files(slice),
+    r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
+    r"\b(await|return|void)\s+[A-Za-z_$]|\.\s*catch\s*\(",
+  )
+  return block_on_findings(
+    "no_floating_promises",
+    "Await, return, void-mark, or attach .catch() to obvious Promise-returning calls.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NO_ANY, confidence: 0.8, source_date: "2026-04-26")
+/** Blocks explicit any unless an adjacent eslint disable comment explains why it is needed. */
+pub fn no_any_without_comment(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    typescript_files(slice),
+    r"(:\s*any\b|<\s*any\s*>|\bas\s+any\b|Array\s*<\s*any\s*>)",
+    r"@typescript-eslint/no-explicit-any:\s*.{10,}",
+  )
+  return block_on_findings(
+    "no_any_without_comment",
+    "Replace any with unknown or add a targeted no-explicit-any disable comment with a reason.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_STRICT_NULL, confidence: 0.86, source_date: "2026-04-26")
+/** Blocks tsconfig edits that disable strict mode or strict null checking. */
+pub fn strict_null_checks_required(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(tsconfig_files(slice), "\"(strict|strictNullChecks)\"\\s*:\\s*false")
+  return block_on_findings(
+    "strict_null_checks_required",
+    "Keep strict and strictNullChecks enabled for TypeScript code.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NO_CONSOLE, confidence: 0.78, source_date: "2026-04-26")
+/** Blocks console debugging calls in production TypeScript paths. */
+pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_ts_files(slice), r"\bconsole\.(log|debug|trace|info)\s*\(")
+  return block_on_findings(
+    "no_console_in_prod_path",
+    "Use the project logger or remove console debugging from production code.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXHAUSTIVE_SWITCH, confidence: 0.72, source_date: "2026-04-26")
+/**
+ * Warns when switch statements lack a default, assertNever, or satisfies-never exhaustiveness guard.
+ */
+pub fn exhaustive_switch(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    typescript_files(slice),
+    r"switch\s*\([^)]+\)\s*\{",
+    r"(default\s*:|assertNever\s*\(|satisfies\s+never|:\s*never\s*=)",
+  )
+  return warn_on_findings(
+    "exhaustive_switch",
+    "Handle every union member explicitly or add an assertNever/satisfies never exhaustiveness guard.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TS_COMMENTS, confidence: 0.84, source_date: "2026-04-26")
+/** Blocks TypeScript suppression comments that omit a meaningful description. */
+pub fn ts_comment_suppressions_have_description(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    typescript_files(slice),
+    r"@ts-(ignore|expect-error|nocheck)",
+    r"@ts-(ignore|expect-error):\s*.{10,}",
+  )
+  return block_on_findings(
+    "ts_comment_suppressions_have_description",
+    "Prefer fixing the type; if suppression is required, use @ts-expect-error with a clear reason.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NON_NULL, confidence: 0.76, source_date: "2026-04-26")
+/** Warns on non-null assertions in production TypeScript paths. */
+pub fn no_non_null_assertion_in_prod_path(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_ts_files(slice), r"[A-Za-z_$][A-Za-z0-9_$]*!\.")
+  return warn_on_findings(
+    "no_non_null_assertion_in_prod_path",
+    "Narrow nullable values with guards, optional chaining, or explicit error handling instead of !.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TYPE_IMPORTS, confidence: 0.74, source_date: "2026-04-26")
+/** Warns on inline-only type imports that may leave runtime side-effect imports. */
+pub fn no_inline_type_only_imports(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(typescript_files(slice), r"import\s*\{\s*type\s+[A-Za-z_$][^}]*\}\s*from")
+  return warn_on_findings(
+    "no_inline_type_only_imports",
+    "Use top-level import type for imports that only bring in types.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.66, source_date: "2026-04-26")
+/** Blocks external data being trusted as domain types without runtime validation. */
+pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed TypeScript treats untrusted external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, or message events as a specific domain type without runtime validation, schema parsing, or explicit narrowing."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "runtime_validate_external_data",
+      "Validate external data at runtime before trusting it as a TypeScript domain type.",
+      judgement.findings,
+    )
+  }
+  return allow("runtime_validate_external_data")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-04-26")
+/** Blocks hardcoded credentials, tokens, and private keys in TypeScript source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed TypeScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-04-26")
+/** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
+pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed TypeScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_sensitive_data_in_logs",
+      "Remove sensitive values from logs and use redaction or stable identifiers.",
+      judgement.findings,
+    )
+  }
+  return allow("no_sensitive_data_in_logs")
+}

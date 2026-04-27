@@ -1,0 +1,25 @@
+{
+  "predicate": "no_floating_promises",
+  "cases": [
+    {
+      "name": "blocks_unhandled_promise_statement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/save.ts",
+          "text": "async function saveUserAsync() {\n  return writeUser();\n}\n\nsaveUserAsync();\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_awaited_promise",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/save.ts",
+          "text": "async function run() {\n  await saveUserAsync();\n}\n"
+        }
+      ]
+    }
+  ]
+}
