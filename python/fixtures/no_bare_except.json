@@ -1,0 +1,25 @@
+{
+  "predicate": "no_bare_except",
+  "cases": [
+    {
+      "name": "blocks_bare_except",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/service.py",
+          "text": "def load_user(repo, user_id):\n    try:\n        return repo.get(user_id)\n    except:\n        return None\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_specific_exception",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/service.py",
+          "text": "def load_user(repo, user_id):\n    try:\n        return repo.get(user_id)\n    except LookupError:\n        return None\n"
+        }
+      ]
+    }
+  ]
+}

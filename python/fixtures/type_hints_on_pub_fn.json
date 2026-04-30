@@ -1,0 +1,25 @@
+{
+  "predicate": "type_hints_on_pub_fn",
+  "cases": [
+    {
+      "name": "warns_unannotated_public_function",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/mathlib.py",
+          "text": "def add(a, b):\n    return a + b\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_return_annotated_function",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/mathlib.py",
+          "text": "def add(a: int, b: int) -> int:\n    return a + b\n"
+        }
+      ]
+    }
+  ]
+}

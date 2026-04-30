@@ -1,0 +1,274 @@
+let _EVIDENCE_BARE_EXCEPT = [
+  "https://docs.python.org/3.14/reference/compound_stmts.html#except-clause",
+  "https://docs.astral.sh/ruff/rules/bare-except/",
+]
+
+let _EVIDENCE_TYPE_HINTS = [
+  "https://docs.python.org/3.14/library/typing.html",
+  "https://docs.astral.sh/ruff/rules/missing-return-type-undocumented-public-function/",
+]
+
+let _EVIDENCE_PRINT_LOGGING = ["https://docs.python.org/3/howto/logging.html", "https://docs.astral.sh/ruff/rules/print/"]
+
+let _EVIDENCE_MUTABLE_DEFAULTS = [
+  "https://docs.python.org/3.14/tutorial/controlflow.html#default-argument-values",
+  "https://docs.astral.sh/ruff/rules/mutable-argument-default/",
+]
+
+let _EVIDENCE_FILE_HANDLES = [
+  "https://docs.python.org/3.14/reference/compound_stmts.html#the-with-statement",
+  "https://docs.python.org/3.14/library/functions.html#open",
+]
+
+let _EVIDENCE_EVAL_EXEC = [
+  "https://docs.python.org/3.14/library/functions.html#eval",
+  "https://docs.python.org/3.14/library/functions.html#exec",
+  "https://docs.astral.sh/ruff/rules/suspicious-eval-usage/",
+  "https://docs.astral.sh/ruff/rules/exec-builtin/",
+]
+
+let _EVIDENCE_SUBPROCESS_SHELL = [
+  "https://docs.python.org/3.14/library/subprocess.html#security-considerations",
+  "https://docs.astral.sh/ruff/rules/subprocess-popen-with-shell-equals-true/",
+  "https://cwe.mitre.org/data/definitions/78.html",
+]
+
+let _EVIDENCE_ASSERTS = [
+  "https://docs.python.org/3.14/reference/simple_stmts.html#the-assert-statement",
+  "https://docs.astral.sh/ruff/rules/assert/",
+]
+
+let _EVIDENCE_SQL_PARAMETERS = [
+  "https://docs.python.org/3.14/library/sqlite3.html#how-to-use-placeholders-to-bind-values-in-sql-queries",
+  "https://owasp.org/www-community/attacks/SQL_Injection",
+]
+
+let _EVIDENCE_SOURCE_SECRETS = [
+  "https://docs.astral.sh/ruff/rules/hardcoded-password-string/",
+  "https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-06-Insufficient-Credential-Hygiene",
+  "https://cwe.mitre.org/data/definitions/798.html",
+]
+
+fn python_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".py") })
+}
+
+fn is_test_path(path) {
+  return regex_match(r"(^|/)(tests?|test_[^/]*|[^/]*_test)\.py$", path, "") != nil
+    || regex_match(r"(^|/)tests?/", path, "") != nil
+}
+
+fn is_cli_path(path) {
+  return path.ends_with("__main__.py")
+    || regex_match(r"(^|/)(cli|scripts?)/", path, "") != nil
+    || regex_match(r"(^|/)(cli|main)\.py$", path, "") != nil
+}
+
+fn production_python_files(slice) {
+  return python_files(slice)
+    .filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings
+        .push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings
+        .push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_BARE_EXCEPT, confidence: 0.92, source_date: "2026-04-30")
+/** Blocks bare except clauses that catch BaseException. */
+pub fn no_bare_except(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(python_files(slice), r"(?m)^\s*except\s*:\s*(#.*)?$", "m")
+  return block_on_findings(
+    "no_bare_except",
+    "Catch a specific exception class, or Exception if system-exiting exceptions must propagate.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TYPE_HINTS, confidence: 0.7, source_date: "2026-04-30")
+/** Warns on public top-level functions without parameter or return annotations. */
+pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
+  let missing_return = r"(?m)^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\([^)]*\)\s*:"
+  let missing_params = r"(?m)^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\((?![^)]*:)[^)]*[A-Za-z_][^)]*\)\s*->"
+  let findings = scan_files_if(
+    python_files(slice),
+    { file -> regex_match(missing_return, file.text, "m") != nil
+      || regex_match(missing_params, file.text, "m") != nil },
+  )
+  return warn_on_findings(
+    "type_hints_on_pub_fn",
+    "Add parameter and return annotations to public top-level functions.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PRINT_LOGGING, confidence: 0.74, source_date: "2026-04-30")
+/** Warns on print calls in non-test, non-CLI Python paths. */
+pub fn no_print_in_prod_path(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_python_files(slice), r"(^|[^._A-Za-z0-9])print\s*\(", "s")
+  return warn_on_findings(
+    "no_print_in_prod_path",
+    "Use logging in production paths; keep print for tests, CLIs, or explicit user output.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MUTABLE_DEFAULTS, confidence: 0.86, source_date: "2026-04-30")
+/** Blocks mutable literal or constructor defaults in function signatures. */
+pub fn no_mutable_default_arg(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    python_files(slice),
+    r"(?s)\b(async\s+)?def\s+\w+\s*\([^)]*=\s*(\[\]|\{\}|set\s*\(|dict\s*\(|list\s*\()[^)]*\)\s*:",
+    "s",
+  )
+  return block_on_findings(
+    "no_mutable_default_arg",
+    "Use None or an immutable sentinel default, then create a new mutable value inside the function.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FILE_HANDLES, confidence: 0.72, source_date: "2026-04-30")
+/** Warns when builtin open() appears outside a with statement. */
+pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    python_files(slice),
+    r"(?m)^(?![^\n]*\bwith\s+open\s*\()[^\n]*[^._A-Za-z0-9]open\s*\(",
+    "m",
+  )
+  return warn_on_findings(
+    "context_mgr_for_files",
+    "Use with open(...) or Path.open(...) so file handles are closed promptly.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EVAL_EXEC, confidence: 0.82, source_date: "2026-04-30")
+/** Blocks direct eval() or exec() calls in Python source. */
+pub fn no_eval_exec(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(python_files(slice), r"(?m)(^|[^._A-Za-z0-9])(eval|exec)\s*\(", "m")
+  return block_on_findings(
+    "no_eval_exec",
+    "Replace eval/exec with a parser, dispatch table, or constrained interpreter.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SUBPROCESS_SHELL, confidence: 0.8, source_date: "2026-04-30")
+/** Blocks subprocess calls that opt into shell=True. */
+pub fn no_subprocess_shell_true(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    python_files(slice),
+    r"(?s)\bsubprocess\.(run|Popen|call|check_call|check_output)\s*\([^)]*shell\s*=\s*True",
+    "s",
+  )
+  return block_on_findings(
+    "no_subprocess_shell_true",
+    "Pass argv as a sequence with shell=False; document and sanitize rare shell=True cases.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ASSERTS, confidence: 0.68, source_date: "2026-04-30")
+/** Warns on assert statements in non-test Python paths. */
+pub fn no_assert_in_prod_path(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_python_files(slice), r"(?m)^\s*assert\s+", "m")
+  return warn_on_findings(
+    "no_assert_in_prod_path",
+    "Raise explicit exceptions for runtime validation; asserts can be removed by optimized runs.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.66, source_date: "2026-04-30")
+/** Blocks SQL assembled with user-controlled string interpolation. */
+pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when Python code builds a SQL query by interpolating, formatting, concatenating, or f-stringing user-controlled values into the SQL text instead of binding parameters/placeholders."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "sql_queries_use_parameters",
+      "Use DB-API placeholders and bound parameters instead of string-built SQL.",
+      judgement.findings,
+    )
+  }
+  return allow("sql_queries_use_parameters")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SOURCE_SECRETS, confidence: 0.64, source_date: "2026-04-30")
+/** Blocks hardcoded credentials and high-risk secrets in Python source. */
+pub fn secrets_not_hardcoded_in_source(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when Python source hardcodes credentials, API tokens, private keys, database passwords, signing secrets, or production service credentials instead of loading them from a secret manager or environment."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "secrets_not_hardcoded_in_source",
+      "Load secrets from a secret manager or scoped environment variable instead of source literals.",
+      judgement.findings,
+    )
+  }
+  return allow("secrets_not_hardcoded_in_source")
+}

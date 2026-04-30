@@ -1,0 +1,25 @@
+{
+  "predicate": "no_eval_exec",
+  "cases": [
+    {
+      "name": "blocks_eval",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/rules.py",
+          "text": "def calculate(expr):\n    return eval(expr)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_dispatch_table",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/rules.py",
+          "text": "OPS = {\"double\": lambda value: value * 2}\n\ndef calculate(op, value):\n    return OPS[op](value)\n"
+        }
+      ]
+    }
+  ]
+}

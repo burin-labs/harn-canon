@@ -1,0 +1,25 @@
+{
+  "predicate": "sql_queries_use_parameters",
+  "cases": [
+    {
+      "name": "blocks_f_string_sql",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/users.py",
+          "text": "def find_user(conn, email):\n    return conn.execute(f\"SELECT * FROM users WHERE email = '{email}'\").fetchone()\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_bound_parameter",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/users.py",
+          "text": "def find_user(conn, email):\n    return conn.execute(\"SELECT * FROM users WHERE email = ?\", (email,)).fetchone()\n"
+        }
+      ]
+    }
+  ]
+}

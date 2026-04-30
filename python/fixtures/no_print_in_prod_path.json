@@ -1,0 +1,25 @@
+{
+  "predicate": "no_print_in_prod_path",
+  "cases": [
+    {
+      "name": "warns_print_in_service_code",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/payments/service.py",
+          "text": "def charge(invoice):\n    print(f\"charging {invoice.id}\")\n    return gateway.charge(invoice)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_print_in_cli",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/payments/cli.py",
+          "text": "def main() -> None:\n    print(\"payments synced\")\n"
+        }
+      ]
+    }
+  ]
+}
