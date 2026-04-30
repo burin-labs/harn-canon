@@ -1,0 +1,11 @@
+no_select_star:
+  description: Avoid using SELECT * for better performance and clarity.
+
+explicit_join_type:
+  description: Use explicit JOIN syntax instead of comma joins.
+
+parameterized_queries_only:
+  description: Prevent SQL injection by using parameterized queries.
+
+index_on_fk:
+  description: Foreign key columns should be indexed.
