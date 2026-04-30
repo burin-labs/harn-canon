@@ -1,0 +1,25 @@
+{
+  "predicate": "no_assert_in_prod_path",
+  "cases": [
+    {
+      "name": "warns_assert_in_service_code",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/api/validation.py",
+          "text": "def parse_limit(raw):\n    limit = int(raw)\n    assert limit > 0\n    return limit\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_assert_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/test_validation.py",
+          "text": "def test_parse_limit():\n    assert parse_limit(\"2\") == 2\n"
+        }
+      ]
+    }
+  ]
+}

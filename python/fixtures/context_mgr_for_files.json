@@ -1,0 +1,25 @@
+{
+  "predicate": "context_mgr_for_files",
+  "cases": [
+    {
+      "name": "warns_unmanaged_open",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/io.py",
+          "text": "def read_config(path):\n    handle = open(path, encoding=\"utf-8\")\n    return handle.read()\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_with_open",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/io.py",
+          "text": "def read_config(path):\n    with open(path, encoding=\"utf-8\") as handle:\n        return handle.read()\n"
+        }
+      ]
+    }
+  ]
+}

@@ -32,6 +32,7 @@ See the Harn Flow design docs for the full predicate language spec.
 ## Packs
 
 - [Harn](./harn/) — v0 draft predicates for `.harn` scripts, Flow workflows, and agent-facing Harn modules.
+- [Python](./python/) — v0 draft predicates for Python application and library code.
 
 ## Status
 

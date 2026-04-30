@@ -1,0 +1,25 @@
+{
+  "predicate": "no_subprocess_shell_true",
+  "cases": [
+    {
+      "name": "blocks_shell_true",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/build.py",
+          "text": "import subprocess\n\ndef list_files(pattern):\n    return subprocess.run(f\"ls {pattern}\", shell=True, check=True)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_argv_sequence",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/build.py",
+          "text": "import subprocess\n\ndef list_files(path):\n    return subprocess.run([\"ls\", path], check=True)\n"
+        }
+      ]
+    }
+  ]
+}

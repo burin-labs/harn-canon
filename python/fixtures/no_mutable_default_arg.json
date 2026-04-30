@@ -1,0 +1,25 @@
+{
+  "predicate": "no_mutable_default_arg",
+  "cases": [
+    {
+      "name": "blocks_list_default",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/cache.py",
+          "text": "def append_seen(item, seen=[]):\n    seen.append(item)\n    return seen\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_none_sentinel",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/cache.py",
+          "text": "def append_seen(item, seen=None):\n    if seen is None:\n        seen = []\n    seen.append(item)\n    return seen\n"
+        }
+      ]
+    }
+  ]
+}
