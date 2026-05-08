@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unused_privates",
+  "cases": [
+    {
+      "name": "blocks_disabling_unused_private_analyzer",
+      "expect": "Block",
+      "files": [
+        {
+          "path": ".editorconfig",
+          "text": "root = true\n\n[*.cs]\ndotnet_diagnostic.IDE0051.severity = none\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_enabled_unused_private_analyzer",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": ".editorconfig",
+          "text": "root = true\n\n[*.cs]\ndotnet_diagnostic.IDE0051.severity = warning\n"
+        }
+      ]
+    }
+  ]
+}

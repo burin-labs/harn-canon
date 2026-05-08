@@ -1,0 +1,25 @@
+{
+  "predicate": "no_sensitive_data_in_logs",
+  "cases": [
+    {
+      "name": "blocks_logging_authorization_header",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/App/AuthHandler.cs",
+          "text": "using Microsoft.Extensions.Logging;\n\npublic sealed class AuthHandler(ILogger<AuthHandler> logger)\n{\n    public void Reject(string authorizationHeader)\n    {\n        logger.LogWarning(\"Rejected authorization header {AuthorizationHeader}\", authorizationHeader);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_stable_identifier_logging",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/AuthHandler.cs",
+          "text": "using Microsoft.Extensions.Logging;\n\npublic sealed class AuthHandler(ILogger<AuthHandler> logger)\n{\n    public void Reject(string userId)\n    {\n        logger.LogWarning(\"Rejected authentication for user {UserId}\", userId);\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

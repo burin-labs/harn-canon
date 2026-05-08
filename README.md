@@ -31,6 +31,7 @@ See the Harn Flow design docs for the full predicate language spec.
 
 ## Packs
 
+- [C#](./csharp/) — v0 draft predicates for plain C# and .NET library or application code.
 - [Harn](./harn/) — v0 draft predicates for `.harn` scripts, Flow workflows, and agent-facing Harn modules.
 - [Python](./python/) — v0 draft predicates for Python application and library code.
 

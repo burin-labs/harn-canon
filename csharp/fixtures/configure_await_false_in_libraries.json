@@ -1,0 +1,25 @@
+{
+  "predicate": "configure_await_false_in_libraries",
+  "cases": [
+    {
+      "name": "warns_library_await_without_configure_await",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Library/Client.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Client\n{\n    public async Task ReadAsync(Task task)\n    {\n        await task;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_configure_await",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Library/Client.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Client\n{\n    public async Task ReadAsync(Task task)\n    {\n        await task.ConfigureAwait(false);\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}
