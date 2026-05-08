@@ -1,0 +1,25 @@
+{
+  "predicate": "no_sensitive_data_in_logs",
+  "cases": [
+    {
+      "name": "blocks_token_logging",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "app/controllers/sessions_controller.rb",
+          "text": "# frozen_string_literal: true\n\nclass SessionsController\n  def create(user, token)\n    Rails.logger.info(\"login token=#{token} user=#{user.email}\")\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_redacted_logging",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/controllers/sessions_controller.rb",
+          "text": "# frozen_string_literal: true\n\nclass SessionsController\n  def create(user, _token)\n    Rails.logger.info(\"login user_id=#{user.id} token=[REDACTED]\")\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_dynamic_eval",
+  "cases": [
+    {
+      "name": "blocks_variable_eval",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "app/services/rule_runner.rb",
+          "text": "# frozen_string_literal: true\n\nclass RuleRunner\n  def run(source)\n    eval(source)\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_dispatch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/services/rule_runner.rb",
+          "text": "# frozen_string_literal: true\n\nclass RuleRunner\n  HANDLERS = { notify: :notify }.freeze\n\n  def run(name)\n    public_send(HANDLERS.fetch(name))\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

@@ -36,6 +36,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [JavaScript](./javascript/) — v0 draft predicates for plain JavaScript source, async handling, dynamic-code hazards, and untrusted data boundaries.
 - [Kotlin](./kotlin/) — v0 draft predicates for Kotlin JVM, Android, and Multiplatform source.
 - [Python](./python/) — v0 draft predicates for Python application and library code.
+- [Ruby](./ruby/) — v0 draft predicates for Ruby application and library code.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.
 - [Swift](./swift/) — v0 draft predicates for Swift application and UI code.

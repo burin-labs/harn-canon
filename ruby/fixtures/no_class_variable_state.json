@@ -1,0 +1,25 @@
+{
+  "predicate": "no_class_variable_state",
+  "cases": [
+    {
+      "name": "blocks_class_variable_assignment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "app/models/account.rb",
+          "text": "# frozen_string_literal: true\n\nclass Account\n  @@cache = {}\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_class_instance_variable",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/models/account.rb",
+          "text": "# frozen_string_literal: true\n\nclass Account\n  @cache = {}\nend\n"
+        }
+      ]
+    }
+  ]
+}

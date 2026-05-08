@@ -1,0 +1,327 @@
+let _EVIDENCE_FROZEN_STRING_LITERAL = [
+  "https://docs.ruby-lang.org/en/3.4/syntax/comments_rdoc.html",
+  "https://docs.rubocop.org/rubocop/latest/cops_style.html#stylefrozenstringliteralcomment",
+]
+
+let _EVIDENCE_MONKEY_PATCH = [
+  "https://docs.ruby-lang.org/en/3.4/syntax/refinements_rdoc.html",
+  "https://docs.ruby-lang.org/en/3.4/syntax/modules_and_classes_rdoc.html",
+  "https://rubyguides.dev/guides/ruby-open-classes/",
+]
+
+let _EVIDENCE_GLOBAL_VARIABLES = [
+  "https://docs.ruby-lang.org/en/3.4/syntax/assignment_rdoc.html#label-Global+Variables",
+  "https://docs.rubocop.org/rubocop/latest/cops_style.html#styleglobalvars",
+]
+
+let _EVIDENCE_CLASS_VARIABLES = [
+  "https://docs.ruby-lang.org/en/3.4/syntax/assignment_rdoc.html#label-Class+Variables",
+  "https://docs.rubocop.org/rubocop/latest/cops_style.html#styleclassvars",
+]
+
+let _EVIDENCE_KEYWORD_ARGS = [
+  "https://docs.ruby-lang.org/en/3.4/syntax/methods_rdoc.html#label-Keyword+Arguments",
+  "https://docs.rubocop.org/rubocop/latest/cops_style.html#styleoptionhash",
+]
+
+let _EVIDENCE_DYNAMIC_EVAL = [
+  "https://docs.ruby-lang.org/en/3.4/Kernel.html#method-i-eval",
+  "https://docs.rubocop.org/rubocop/latest/cops_security.html#securityeval",
+]
+
+let _EVIDENCE_UNSAFE_DESERIALIZATION = [
+  "https://docs.ruby-lang.org/en/3.4/Psych.html#method-c-safe_load",
+  "https://docs.rubocop.org/rubocop/latest/cops_security.html#securityyamlload",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_MISSING_SUPER = [
+  "https://docs.rubocop.org/rubocop/latest/cops_lint.html#lintmissingsuper",
+  "https://docs.ruby-lang.org/en/3.4/syntax/modules_and_classes_rdoc.html#label-Inheritance",
+]
+
+let _EVIDENCE_RUBOCOP = [
+  "https://docs.rubocop.org/rubocop/latest/index.html",
+  "https://docs.rubocop.org/rubocop/latest/configuration.html",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+let _EVIDENCE_SENSITIVE_LOGS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+]
+
+fn ruby_files(slice) {
+  return slice.files
+    .filter(
+    { file -> file.path.ends_with(".rb")
+    || file.path.ends_with(".rake")
+    || file.path.ends_with(".gemspec")
+    || file.path.ends_with("Gemfile")
+    || file.path.ends_with("Rakefile") },
+  )
+}
+
+fn is_test_path(path) {
+  return contains(path, "_spec.rb")
+    || contains(path, "_test.rb")
+    || contains(path, "/spec/")
+    || contains(path, "/test/")
+    || contains(path, "/tests/")
+}
+
+fn is_script_path(path) {
+  return contains(path, "/bin/")
+    || contains(path, "/script/")
+    || contains(path, "/scripts/")
+    || path.ends_with("Rakefile")
+    || path.ends_with(".rake")
+}
+
+fn production_ruby_files(slice) {
+  return ruby_files(slice)
+    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings
+        .push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings
+        .push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn scan_files_without(files, include_pattern, exclude_pattern) {
+  return scan_files_if(
+    files,
+    { file -> regex_match(include_pattern, file.text, "s") != nil
+      && regex_match(exclude_pattern, file.text, "s") == nil },
+  )
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FROZEN_STRING_LITERAL, confidence: 0.74, source_date: "2026-05-08")
+/** Warns on Ruby source files without an explicit frozen string literal magic comment. */
+pub fn frozen_string_literal_magic_comment(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    production_ruby_files(slice),
+    r"(?s)\A(?:#![^\n]*\n)?(?:#\s*encoding:[^\n]*\n)?",
+    r"(?m)\A(?:#![^\n]*\n)?(?:#\s*encoding:[^\n]*\n)?#\s*frozen_string_literal:\s*true\b",
+  )
+  return warn_on_findings(
+    "frozen_string_literal_magic_comment",
+    "Add # frozen_string_literal: true near the top of production Ruby files.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MONKEY_PATCH, confidence: 0.7, source_date: "2026-05-08")
+/** Blocks reopening high-risk Ruby core classes in production application code. */
+pub fn no_monkey_patch_stdlib(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_ruby_files(slice),
+    r"(?m)^\s*class\s+(String|Array|Hash|Integer|Float|Numeric|Symbol|Object|Kernel|Module|Class|Regexp|Time|Date)\b",
+    "m",
+  )
+  return block_on_findings(
+    "no_monkey_patch_stdlib",
+    "Use a wrapper, explicit module, or scoped refinement instead of reopening Ruby core classes.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_GLOBAL_VARIABLES, confidence: 0.78, source_date: "2026-05-08")
+/** Blocks assignment to application-defined global variables. */
+pub fn no_global_variables(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    ruby_files(slice),
+    r"(?m)(^|[^$])\$[a-z_][A-Za-z0-9_]*\s*=",
+    "m",
+  )
+  return block_on_findings(
+    "no_global_variables",
+    "Replace application globals with injected dependencies, constants, or object state.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CLASS_VARIABLES, confidence: 0.82, source_date: "2026-05-08")
+/** Blocks writes to class variables because they are shared through inheritance. */
+pub fn no_class_variable_state(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(ruby_files(slice), r"(?m)@@[A-Za-z_][A-Za-z0-9_]*\s*=", "m")
+  return block_on_findings(
+    "no_class_variable_state",
+    "Use class instance variables or explicit shared state instead of class variables.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_KEYWORD_ARGS, confidence: 0.72, source_date: "2026-05-08")
+/** Warns on options-hash parameters where modern keyword arguments are clearer. */
+pub fn prefer_keyword_args(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    ruby_files(slice),
+    r"(?m)^\s*def\s+[A-Za-z_][A-Za-z0-9_!?=]*\s*\([^)]*\b(options|opts|params)\s*=\s*\{\s*\}",
+    "m",
+  )
+  return warn_on_findings(
+    "prefer_keyword_args",
+    "Prefer explicit keyword arguments over open-ended options hashes.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DYNAMIC_EVAL, confidence: 0.8, source_date: "2026-05-08")
+/** Blocks dynamic eval-style execution from changed Ruby source. */
+pub fn no_dynamic_eval(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    ruby_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_])(eval|instance_eval|class_eval|module_eval)\s*\(",
+    r"(eval|instance_eval|class_eval|module_eval)\s*\(\s*['\"]",
+  )
+  return block_on_findings(
+    "no_dynamic_eval",
+    "Use explicit dispatch or public_send; avoid evaluating dynamic Ruby strings.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNSAFE_DESERIALIZATION, confidence: 0.78, source_date: "2026-05-08")
+/** Blocks unsafe object deserialization APIs in Ruby source. */
+pub fn no_unsafe_deserialization(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    ruby_files(slice),
+    r"(?m)\b(YAML|Psych)\.(load_file|unsafe_load|unsafe_load_file|load)\s*\(|\bMarshal\.load\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_unsafe_deserialization",
+    "Use Psych.safe_load/safe_load_file with explicit permitted classes for untrusted data.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MISSING_SUPER, confidence: 0.68, source_date: "2026-05-08")
+/** Warns when subclass constructors override initialize without calling super. */
+pub fn initialize_calls_super(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    ruby_files(slice),
+    r"(?s)class\s+[A-Za-z_:][A-Za-z0-9_:]*\s*<\s*[A-Za-z_:][A-Za-z0-9_:]*.*?def\s+initialize\b",
+    r"(?s)def\s+initialize\b.*?\bsuper\b",
+  )
+  return warn_on_findings(
+    "initialize_calls_super",
+    "Call super from subclass initialize methods, or document why parent initialization is intentionally skipped.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_RUBOCOP, confidence: 0.66, source_date: "2026-05-08")
+/** Blocks changes that bypass or weaken the repo's RuboCop policy without justification. */
+pub fn rubocop_style_compliance(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Ruby code or .rubocop.yml clearly violates an enabled RuboCop rule, disables broad departments or cops without a narrow reason, or adds style drift that RuboCop would report under the repository configuration."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
+  if judgement.verdict == "Block" {
+    return block(
+      "rubocop_style_compliance",
+      "Keep Ruby style aligned with the repository RuboCop configuration or justify a narrow disable.",
+      judgement.findings,
+    )
+  }
+  return allow("rubocop_style_compliance")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
+/** Blocks hardcoded credentials and high-risk secrets in Ruby source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Ruby source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.63, source_date: "2026-05-08")
+/** Blocks logs and errors that expose secrets or sensitive user data. */
+pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Ruby source logs, reports, or raises messages containing secrets, credentials, authorization headers, session identifiers, tokens, passwords, or sensitive personal data without redaction."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_sensitive_data_in_logs",
+      "Redact sensitive values from logs and errors; use stable identifiers instead.",
+      judgement.findings,
+    )
+  }
+  return allow("no_sensitive_data_in_logs")
+}

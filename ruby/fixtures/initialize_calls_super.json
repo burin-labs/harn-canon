@@ -1,0 +1,25 @@
+{
+  "predicate": "initialize_calls_super",
+  "cases": [
+    {
+      "name": "warns_when_subclass_initialize_skips_super",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "app/jobs/send_email_job.rb",
+          "text": "# frozen_string_literal: true\n\nclass SendEmailJob < ApplicationJob\n  def initialize(mailbox)\n    @mailbox = mailbox\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_super_call",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/jobs/send_email_job.rb",
+          "text": "# frozen_string_literal: true\n\nclass SendEmailJob < ApplicationJob\n  def initialize(mailbox)\n    super()\n    @mailbox = mailbox\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}
