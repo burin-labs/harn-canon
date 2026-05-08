@@ -1,0 +1,307 @@
+let _EVIDENCE_IGNORED_ERRORS = [
+  "https://go.dev/doc/effective_go#blank",
+  "https://go.dev/doc/tutorial/handle-errors",
+  "https://staticcheck.dev/docs/checks/",
+]
+
+let _EVIDENCE_CONTEXT_FIRST = ["https://go.dev/wiki/CodeReviewComments#contexts", "https://pkg.go.dev/context"]
+
+let _EVIDENCE_PANIC_LIBRARY = ["https://go.dev/doc/effective_go#panic", "https://go.dev/wiki/CodeReviewComments#dont-panic"]
+
+let _EVIDENCE_CONTEXT_STRUCT = ["https://go.dev/wiki/CodeReviewComments#contexts", "https://pkg.go.dev/context"]
+
+let _EVIDENCE_EMPTY_INTERFACE = [
+  "https://go.dev/wiki/CodeReviewComments#interfaces",
+  "https://go.dev/doc/effective_go#interfaces_and_types",
+]
+
+let _EVIDENCE_ERROR_WRAP = ["https://go.dev/blog/go1.13-errors", "https://pkg.go.dev/errors", "https://pkg.go.dev/fmt"]
+
+let _EVIDENCE_ERROR_STRINGS = ["https://go.dev/wiki/CodeReviewComments#error-strings", "https://go.dev/wiki/Errors"]
+
+let _EVIDENCE_HTTP_BODY_CLOSE = ["https://pkg.go.dev/net/http", "https://pkg.go.dev/io"]
+
+let _EVIDENCE_MATH_RAND_KEYS = [
+  "https://go.dev/wiki/CodeReviewComments#crypto-rand",
+  "https://pkg.go.dev/crypto/rand",
+  "https://pkg.go.dev/math/rand",
+]
+
+let _EVIDENCE_GOROUTINE_LEAKS = [
+  "https://pkg.go.dev/context",
+  "https://go.dev/blog/pipelines",
+  "https://pkg.go.dev/golang.org/x/sync/errgroup",
+]
+
+let _EVIDENCE_DEP_SECURITY = [
+  "https://go.dev/doc/modules/managing-dependencies",
+  "https://pkg.go.dev/golang.org/x/vuln/cmd/govulncheck",
+  "https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuring-dependabot-version-updates",
+]
+
+fn is_go_path(path) {
+  return path.ends_with(".go")
+}
+
+fn is_test_path(path) {
+  return path.ends_with("_test.go")
+    || path.contains("/test/")
+    || path.contains("/tests/")
+    || path.contains("/testdata/")
+}
+
+fn is_generated_go(file) {
+  return regex_match(r"(?m)^// Code generated .* DO NOT EDIT\.$", file.text, "m") != nil
+}
+
+fn go_files(slice) {
+  return slice.files
+    .filter({ file -> is_go_path(file.path) && !is_generated_go(file) })
+}
+
+fn production_go_files(slice) {
+  return go_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn library_go_files(slice) {
+  return production_go_files(slice)
+    .filter(
+    { file -> regex_match(r"(?m)^\s*package\s+main\s*$", file.text, "m") == nil },
+  )
+}
+
+fn go_project_files(slice) {
+  return slice.files
+    .filter(
+    { file -> is_go_path(file.path)
+      || file.path.ends_with("go.mod")
+      || file.path.ends_with("go.sum")
+      || file.path.ends_with("dependabot.yml")
+      || file.path.ends_with("dependabot.yaml")
+      || file.path.contains(".github/workflows/") },
+  )
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings
+        .push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings
+        .push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_IGNORED_ERRORS, confidence: 0.7, source_date: "2026-05-08")
+/** Blocks obvious discarded error results in production Go files. */
+pub fn no_ignored_errors(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_go_files(slice),
+    r"(?m)(^\s*_\s*=\s*[A-Za-z_][A-Za-z0-9_\.]*\s*\([^;\n]*\)\s*$|^[^/\n]*,\s*_\s*(:=|=)\s*[A-Za-z_][A-Za-z0-9_\.]*\s*\([^;\n]*\))",
+    "m",
+  )
+  return block_on_findings(
+    "no_ignored_errors",
+    "Check the returned error or document a safe, intentional discard in a narrow local helper.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CONTEXT_FIRST, confidence: 0.72, source_date: "2026-05-08")
+/** Warns when exported functions accept context.Context after another argument. */
+pub fn context_first_arg(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_go_files(slice),
+    r"(?m)^func\s+(?:\([^)]+\)\s*)?[A-Z][A-Za-z0-9_]*\s*\(\s*[^)\n]+,\s*([A-Za-z_][A-Za-z0-9_]*\s+)?context\.Context\b",
+    "m",
+  )
+  return warn_on_findings(
+    "context_first_arg",
+    "Put context.Context first in exported APIs unless an interface requires another signature.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PANIC_LIBRARY, confidence: 0.78, source_date: "2026-05-08")
+/** Blocks direct panic calls in non-main, non-test Go files. */
+pub fn no_panic_in_library(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(library_go_files(slice), r"\bpanic\s*\(", "s")
+  return block_on_findings(
+    "no_panic_in_library",
+    "Return an error from library code; reserve panic for unrecoverable programmer bugs with clear contracts.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CONTEXT_STRUCT, confidence: 0.74, source_date: "2026-05-08")
+/** Warns when structs store context.Context instead of taking it per call. */
+pub fn no_context_in_struct(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_go_files(slice), r"type\s+\w+\s+struct\s*\{[^}]*\bcontext\.Context\b", "s")
+  return warn_on_findings(
+    "no_context_in_struct",
+    "Pass context.Context to methods that need it instead of storing it in structs.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EMPTY_INTERFACE, confidence: 0.66, source_date: "2026-05-08")
+/** Warns on interface{} or any in exported function and method signatures. */
+pub fn no_empty_interface_in_api(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_go_files(slice),
+    r"(?m)^func\s+(?:\([^)]+\)\s*)?[A-Z][A-Za-z0-9_]*\s*\([^)]*\b(interface\s*\{\s*\}|any)\b",
+    "m",
+  )
+  return warn_on_findings(
+    "no_empty_interface_in_api",
+    "Prefer a concrete type, type parameter, or small consumer-owned interface in exported APIs.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ERROR_WRAP, confidence: 0.7, source_date: "2026-05-08")
+/** Warns when fmt.Errorf formats err with %v instead of wrapping with %w. */
+pub fn wrap_errors_with_percent_w(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_go_files(slice), r"fmt\.Errorf\s*\([^)]*%v[^)]*,\s*err\s*\)", "s")
+  return warn_on_findings(
+    "wrap_errors_with_percent_w",
+    "Use %w when adding context to an error that callers may inspect with errors.Is or errors.As.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ERROR_STRINGS, confidence: 0.68, source_date: "2026-05-08")
+/** Warns on capitalized error strings in errors.New or fmt.Errorf. */
+pub fn error_strings_not_capitalized(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_go_files(slice),
+    "(errors\\.New|fmt\\.Errorf)\\s*\\(\\s*\\\"[A-Z][A-Za-z]",
+    "s",
+  )
+  return warn_on_findings(
+    "error_strings_not_capitalized",
+    "Start error strings with lowercase text unless the first token is a proper noun or acronym.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_HTTP_BODY_CLOSE, confidence: 0.64, source_date: "2026-05-08")
+/** Blocks obvious http response reads without a nearby Body.Close. */
+pub fn http_response_body_closed(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_go_files(slice),
+    { file -> regex_match(r"http\.(Get|Post|Do)\s*\(", file.text, "s") != nil
+      && regex_match(r"\.Body\b", file.text, "s") != nil
+      && regex_match(r"\bdefer\s+\w+\.Body\.Close\s*\(", file.text, "s") == nil },
+  )
+  return block_on_findings(
+    "http_response_body_closed",
+    "Close successful HTTP response bodies, usually with defer resp.Body.Close() after nil error checks.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MATH_RAND_KEYS, confidence: 0.76, source_date: "2026-05-08")
+/** Blocks math/rand use in files that appear to generate keys, tokens, or secrets. */
+pub fn no_math_rand_for_keys(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_go_files(slice),
+    { file -> regex_match(r"math/rand", file.text, "s") != nil
+      && regex_match(r"(?i)(key|token|secret|password|nonce|session)", file.text, "s") != nil },
+  )
+  return block_on_findings(
+    "no_math_rand_for_keys",
+    "Use crypto/rand for keys, tokens, nonces, passwords, and other security-sensitive randomness.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_GOROUTINE_LEAKS, confidence: 0.62, source_date: "2026-05-08")
+/** Blocks long-lived goroutines that lack cancellation or shutdown evidence. */
+pub fn goroutine_leak_guard(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed production Go code starts a goroutine that can wait, loop, receive from a channel, tick, sleep, or perform repeated work, and the changed code lacks a credible shutdown path such as ctx.Done(), a closed channel, errgroup context, WaitGroup ownership with cancellation, or documented bounded lifetime. Allow short fire-and-forget goroutines whose work is clearly bounded."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_go_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "goroutine_leak_guard",
+      "Give long-lived goroutines a cancellation or shutdown path such as ctx.Done(), close, or errgroup.",
+      judgement.findings,
+    )
+  }
+  return allow("goroutine_leak_guard")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_DEP_SECURITY, confidence: 0.64, source_date: "2026-05-08")
+/** Blocks Go dependency changes that omit vulnerability-check evidence. */
+pub fn go_dependency_vulns_checked(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when Go dependency metadata changed, such as go.mod, go.sum, dependency update automation, or Go CI, and the slice provides no evidence that govulncheck, Dependabot, OSV, a module proxy vulnerability check, or equivalent dependency vulnerability review was considered. Allow pure source changes and dependency changes that add or preserve a clear vulnerability-check path."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: go_project_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "go_dependency_vulns_checked",
+      "Run or configure govulncheck, Dependabot, OSV, or equivalent vulnerability checks for Go dependency changes.",
+      judgement.findings,
+    )
+  }
+  return allow("go_dependency_vulns_checked")
+}

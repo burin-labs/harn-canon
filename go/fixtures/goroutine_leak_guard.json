@@ -1,0 +1,25 @@
+{
+  "predicate": "goroutine_leak_guard",
+  "cases": [
+    {
+      "name": "blocks_unbounded_worker_without_shutdown",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "worker/pump.go",
+          "text": "package worker\n\nfunc Start(jobs <-chan Job) {\n\tgo func() {\n\t\tfor job := range jobs {\n\t\t\tprocess(job)\n\t\t}\n\t}()\n}\n\ntype Job struct{}\nfunc process(Job) {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_ctx_done_shutdown",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "worker/pump.go",
+          "text": "package worker\n\nimport \"context\"\n\nfunc Start(ctx context.Context, jobs <-chan Job) {\n\tgo func() {\n\t\tfor {\n\t\t\tselect {\n\t\t\tcase <-ctx.Done():\n\t\t\t\treturn\n\t\t\tcase job := <-jobs:\n\t\t\t\tprocess(job)\n\t\t\t}\n\t\t}\n\t}()\n}\n\ntype Job struct{}\nfunc process(Job) {}\n"
+        }
+      ]
+    }
+  ]
+}

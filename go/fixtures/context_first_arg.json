@@ -1,0 +1,25 @@
+{
+  "predicate": "context_first_arg",
+  "cases": [
+    {
+      "name": "warns_context_after_business_arg",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "api/users.go",
+          "text": "package api\n\nimport \"context\"\n\nfunc LoadUser(id string, ctx context.Context) error {\n\treturn nil\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_context_first",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/users.go",
+          "text": "package api\n\nimport \"context\"\n\nfunc LoadUser(ctx context.Context, id string) error {\n\treturn nil\n}\n"
+        }
+      ]
+    }
+  ]
+}

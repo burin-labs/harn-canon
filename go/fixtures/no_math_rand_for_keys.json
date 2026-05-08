@@ -1,0 +1,25 @@
+{
+  "predicate": "no_math_rand_for_keys",
+  "cases": [
+    {
+      "name": "blocks_math_rand_token",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "auth/token.go",
+          "text": "package auth\n\nimport \"math/rand\"\n\nfunc SessionToken() int64 {\n\treturn rand.Int63()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_crypto_rand_token",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "auth/token.go",
+          "text": "package auth\n\nimport \"crypto/rand\"\n\nfunc SessionToken() ([32]byte, error) {\n\tvar token [32]byte\n\t_, err := rand.Read(token[:])\n\treturn token, err\n}\n"
+        }
+      ]
+    }
+  ]
+}

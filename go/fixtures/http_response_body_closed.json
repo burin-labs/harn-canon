@@ -1,0 +1,25 @@
+{
+  "predicate": "http_response_body_closed",
+  "cases": [
+    {
+      "name": "blocks_missing_body_close",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "client/fetch.go",
+          "text": "package client\n\nimport (\n\t\"io\"\n\t\"net/http\"\n)\n\nfunc Fetch(url string) ([]byte, error) {\n\tresp, err := http.Get(url)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\treturn io.ReadAll(resp.Body)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_deferred_body_close",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "client/fetch.go",
+          "text": "package client\n\nimport (\n\t\"io\"\n\t\"net/http\"\n)\n\nfunc Fetch(url string) ([]byte, error) {\n\tresp, err := http.Get(url)\n\tif err != nil {\n\t\treturn nil, err\n\t}\n\tdefer resp.Body.Close()\n\treturn io.ReadAll(resp.Body)\n}\n"
+        }
+      ]
+    }
+  ]
+}

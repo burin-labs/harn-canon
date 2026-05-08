@@ -1,0 +1,29 @@
+{
+  "predicate": "go_dependency_vulns_checked",
+  "cases": [
+    {
+      "name": "blocks_dependency_change_without_vuln_check",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "go.mod",
+          "text": "module example.com/service\n\ngo 1.24\n\nrequire github.com/example/legacy v0.1.0\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_dependency_change_with_govulncheck_ci",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "go.mod",
+          "text": "module example.com/service\n\ngo 1.24\n\nrequire github.com/example/current v1.2.3\n"
+        },
+        {
+          "path": ".github/workflows/security.yml",
+          "text": "name: security\non: [pull_request]\njobs:\n  govulncheck:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - uses: golang/govulncheck-action@v1\n"
+        }
+      ]
+    }
+  ]
+}

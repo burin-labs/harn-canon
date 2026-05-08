@@ -1,0 +1,25 @@
+{
+  "predicate": "no_context_in_struct",
+  "cases": [
+    {
+      "name": "warns_context_field",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "worker/worker.go",
+          "text": "package worker\n\nimport \"context\"\n\ntype Worker struct {\n\tctx context.Context\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_context_parameter",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "worker/worker.go",
+          "text": "package worker\n\nimport \"context\"\n\ntype Worker struct{}\n\nfunc (w *Worker) Run(ctx context.Context) error {\n\treturn ctx.Err()\n}\n"
+        }
+      ]
+    }
+  ]
+}

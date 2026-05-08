@@ -1,0 +1,25 @@
+{
+  "predicate": "wrap_errors_with_percent_w",
+  "cases": [
+    {
+      "name": "warns_percent_v_error_context",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "store/load.go",
+          "text": "package store\n\nimport \"fmt\"\n\nfunc Load() error {\n\tif err := read(); err != nil {\n\t\treturn fmt.Errorf(\"read config: %v\", err)\n\t}\n\treturn nil\n}\n\nfunc read() error { return nil }\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_percent_w_error_context",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "store/load.go",
+          "text": "package store\n\nimport \"fmt\"\n\nfunc Load() error {\n\tif err := read(); err != nil {\n\t\treturn fmt.Errorf(\"read config: %w\", err)\n\t}\n\treturn nil\n}\n\nfunc read() error { return nil }\n"
+        }
+      ]
+    }
+  ]
+}
