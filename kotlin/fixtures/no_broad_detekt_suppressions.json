@@ -1,0 +1,25 @@
+{
+  "predicate": "no_broad_detekt_suppressions",
+  "cases": [
+    {
+      "name": "warns_broad_detekt_suppression",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/Parser.kt",
+          "text": "@Suppress(\"style\")\nclass Parser\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_narrow_rule_suppression",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Parser.kt",
+          "text": "@Suppress(\"detekt:MagicNumber\")\nclass Parser\n"
+        }
+      ]
+    }
+  ]
+}

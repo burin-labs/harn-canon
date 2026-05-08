@@ -1,0 +1,25 @@
+{
+  "predicate": "no_main_thread_blocking_work",
+  "cases": [
+    {
+      "name": "blocks_blocking_disk_read_in_view_model",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/ProfileViewModel.kt",
+          "text": "class ProfileViewModel : ViewModel() {\n    fun loadAvatar() {\n        viewModelScope.launch {\n            val bytes = FileInputStream(\"avatar.bin\").readBytes()\n            render(bytes)\n        }\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_io_dispatcher_for_disk_read",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/ProfileViewModel.kt",
+          "text": "class ProfileViewModel : ViewModel() {\n    fun loadAvatar() {\n        viewModelScope.launch {\n            val bytes = withContext(Dispatchers.IO) { FileInputStream(\"avatar.bin\").readBytes() }\n            render(bytes)\n        }\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "data_class_for_value",
+  "cases": [
+    {
+      "name": "warns_value_class_with_manual_equality",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/Money.kt",
+          "text": "class Money(val cents: Int, val currency: String) {\n    override fun equals(other: Any?): Boolean = other is Money && cents == other.cents\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_data_class",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Money.kt",
+          "text": "data class Money(val cents: Int, val currency: String)\n"
+        }
+      ]
+    }
+  ]
+}

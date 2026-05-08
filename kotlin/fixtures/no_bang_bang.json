@@ -1,0 +1,25 @@
+{
+  "predicate": "no_bang_bang",
+  "cases": [
+    {
+      "name": "blocks_non_null_assertion",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/Profile.kt",
+          "text": "fun displayName(user: User?): String {\n    return user!!.name\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_safe_call",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Profile.kt",
+          "text": "fun displayName(user: User?): String {\n    return user?.name ?: \"Anonymous\"\n}\n"
+        }
+      ]
+    }
+  ]
+}

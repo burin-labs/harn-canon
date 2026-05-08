@@ -1,0 +1,25 @@
+{
+  "predicate": "immutable_by_default",
+  "cases": [
+    {
+      "name": "warns_var_declaration",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/Cart.kt",
+          "text": "class Cart {\n    var totalCents: Int = 0\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_val_declaration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Cart.kt",
+          "text": "class Cart(private val items: List<Item>) {\n    val totalCents: Int = items.sumOf { it.priceCents }\n}\n"
+        }
+      ]
+    }
+  ]
+}

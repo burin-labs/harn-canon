@@ -1,0 +1,25 @@
+{
+  "predicate": "blocking_io_uses_io_dispatcher",
+  "cases": [
+    {
+      "name": "warns_blocking_io_without_io_dispatcher",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/AvatarStore.kt",
+          "text": "class AvatarStore(private val scope: CoroutineScope) {\n    fun save(bytes: ByteArray) = scope.launch {\n        FileOutputStream(\"avatar.bin\").use { it.write(bytes) }\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_io_dispatcher",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/AvatarStore.kt",
+          "text": "class AvatarStore(private val scope: CoroutineScope) {\n    fun save(bytes: ByteArray) = scope.launch {\n        withContext(Dispatchers.IO) {\n            FileOutputStream(\"avatar.bin\").use { it.write(bytes) }\n        }\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_platform_types_in_public_api",
+  "cases": [
+    {
+      "name": "blocks_java_platform_type_at_public_boundary",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/UserGateway.kt",
+          "text": "import java.sql.ResultSet\n\npublic class UserGateway {\n    public fun displayName(row: ResultSet) = row.getString(\"display_name\")\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_normalized_nullability",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/UserGateway.kt",
+          "text": "import java.sql.ResultSet\n\npublic class UserGateway {\n    public fun displayName(row: ResultSet): String? = row.getString(\"display_name\")\n}\n"
+        }
+      ]
+    }
+  ]
+}

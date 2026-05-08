@@ -1,0 +1,25 @@
+{
+  "predicate": "no_global_scope_launch",
+  "cases": [
+    {
+      "name": "blocks_global_scope_launch",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/SyncService.kt",
+          "text": "class SyncService {\n    fun refresh() {\n        GlobalScope.launch { syncNow() }\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_injected_scope",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/SyncService.kt",
+          "text": "class SyncService(private val scope: CoroutineScope) {\n    fun refresh() {\n        scope.launch { syncNow() }\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "explicit_visibility_for_top_level_api",
+  "cases": [
+    {
+      "name": "warns_implicit_public_top_level_class",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/Gateway.kt",
+          "text": "class Gateway(private val client: Client)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_internal_top_level_class",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Gateway.kt",
+          "text": "internal class Gateway(private val client: Client)\n"
+        }
+      ]
+    }
+  ]
+}

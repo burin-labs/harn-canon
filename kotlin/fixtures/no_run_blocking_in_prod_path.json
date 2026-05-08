@@ -1,0 +1,25 @@
+{
+  "predicate": "no_run_blocking_in_prod_path",
+  "cases": [
+    {
+      "name": "blocks_run_blocking_in_library_code",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/UserRepository.kt",
+          "text": "class UserRepository(private val api: Api) {\n    fun loadUser(id: String): User = runBlocking { api.loadUser(id) }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_suspend_api",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/UserRepository.kt",
+          "text": "class UserRepository(private val api: Api) {\n    suspend fun loadUser(id: String): User = api.loadUser(id)\n}\n"
+        }
+      ]
+    }
+  ]
+}
