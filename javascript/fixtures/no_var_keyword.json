@@ -1,0 +1,25 @@
+{
+  "predicate": "no_var_keyword",
+  "cases": [
+    {
+      "name": "blocks_var_declaration",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/count.js",
+          "text": "export function count(items) {\n  var total = items.length;\n  return total;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_const_declaration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/count.js",
+          "text": "export function count(items) {\n  const total = items.length;\n  return total;\n}\n"
+        }
+      ]
+    }
+  ]
+}

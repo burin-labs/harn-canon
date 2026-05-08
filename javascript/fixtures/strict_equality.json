@@ -1,0 +1,25 @@
+{
+  "predicate": "strict_equality",
+  "cases": [
+    {
+      "name": "blocks_loose_equality",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/compare.js",
+          "text": "export function isActive(value) {\n  return value == true;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_strict_equality",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/compare.js",
+          "text": "export function isActive(value) {\n  return value === true;\n}\n"
+        }
+      ]
+    }
+  ]
+}

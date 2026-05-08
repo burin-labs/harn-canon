@@ -1,0 +1,25 @@
+{
+  "predicate": "no_implicit_globals",
+  "cases": [
+    {
+      "name": "warns_top_level_function",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "public/analytics.js",
+          "text": "function trackPageView() {\n  sendBeacon('/analytics');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_module_export",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/analytics.mjs",
+          "text": "export function trackPageView(sendBeacon) {\n  sendBeacon('/analytics');\n}\n"
+        }
+      ]
+    }
+  ]
+}

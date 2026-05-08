@@ -1,0 +1,25 @@
+{
+  "predicate": "no_implied_eval",
+  "cases": [
+    {
+      "name": "blocks_timer_string",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/timer.js",
+          "text": "export function schedule() {\n  setTimeout(\"refreshSession()\", 1000);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_timer_callback",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/timer.js",
+          "text": "export function schedule(refreshSession) {\n  setTimeout(() => refreshSession(), 1000);\n}\n"
+        }
+      ]
+    }
+  ]
+}

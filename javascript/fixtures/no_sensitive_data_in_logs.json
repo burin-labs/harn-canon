@@ -1,0 +1,25 @@
+{
+  "predicate": "no_sensitive_data_in_logs",
+  "cases": [
+    {
+      "name": "blocks_token_logging",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/auth.js",
+          "text": "export function auditLogin(user, token) {\n  logger.info({ userId: user.id, token }, 'login succeeded');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_redacted_logging",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/auth.js",
+          "text": "export function auditLogin(user) {\n  logger.info({ userId: user.id }, 'login succeeded');\n}\n"
+        }
+      ]
+    }
+  ]
+}

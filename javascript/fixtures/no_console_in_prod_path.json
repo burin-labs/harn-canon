@@ -1,0 +1,25 @@
+{
+  "predicate": "no_console_in_prod_path",
+  "cases": [
+    {
+      "name": "blocks_console_log_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/payment.js",
+          "text": "export function charge(id) {\n  console.log('charging', id);\n  return id;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_console_log_in_cli",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "bin/status.js",
+          "text": "export function printStatus(status) {\n  console.log(status);\n}\n"
+        }
+      ]
+    }
+  ]
+}

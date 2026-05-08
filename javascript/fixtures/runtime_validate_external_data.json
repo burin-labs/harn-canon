@@ -1,0 +1,25 @@
+{
+  "predicate": "runtime_validate_external_data",
+  "cases": [
+    {
+      "name": "blocks_unvalidated_json",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/profile.js",
+          "text": "export function parseProfile(raw) {\n  const profile = JSON.parse(raw);\n  return profile.email.toLowerCase();\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_schema_validation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/profile.js",
+          "text": "import { ProfileSchema } from './schema.js';\nexport function parseProfile(raw) {\n  const profile = ProfileSchema.parse(JSON.parse(raw));\n  return profile.email.toLowerCase();\n}\n"
+        }
+      ]
+    }
+  ]
+}

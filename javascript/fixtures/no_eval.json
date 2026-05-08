@@ -1,0 +1,25 @@
+{
+  "predicate": "no_eval",
+  "cases": [
+    {
+      "name": "blocks_direct_eval",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/rules.js",
+          "text": "export function runRule(source) {\n  return eval(source);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_lookup_table",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/rules.js",
+          "text": "const rules = { double: (value) => value * 2 };\nexport function runRule(name, value) {\n  return rules[name](value);\n}\n"
+        }
+      ]
+    }
+  ]
+}
