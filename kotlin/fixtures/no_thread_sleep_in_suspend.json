@@ -1,0 +1,25 @@
+{
+  "predicate": "no_thread_sleep_in_suspend",
+  "cases": [
+    {
+      "name": "warns_thread_sleep_in_suspend_function",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/kotlin/Retry.kt",
+          "text": "suspend fun retryLater() {\n    Thread.sleep(1000)\n    fetchAgain()\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_delay_in_suspend_function",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/Retry.kt",
+          "text": "suspend fun retryLater() {\n    delay(1000)\n    fetchAgain()\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "suspend_for_async",
+  "cases": [
+    {
+      "name": "blocks_new_callback_async_api",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/kotlin/ProfileClient.kt",
+          "text": "class ProfileClient {\n    fun loadProfile(id: String, callback: (Profile) -> Unit) {\n        executor.execute { callback(fetchProfile(id)) }\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_suspend_api",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/kotlin/ProfileClient.kt",
+          "text": "class ProfileClient {\n    suspend fun loadProfile(id: String): Profile = fetchProfile(id)\n}\n"
+        }
+      ]
+    }
+  ]
+}
