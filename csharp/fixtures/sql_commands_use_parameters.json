@@ -1,0 +1,25 @@
+{
+  "predicate": "sql_commands_use_parameters",
+  "cases": [
+    {
+      "name": "blocks_interpolated_user_sql",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/App/UserRepository.cs",
+          "text": "using Microsoft.Data.SqlClient;\n\npublic sealed class UserRepository\n{\n    public SqlCommand Find(string email) => new($\"SELECT * FROM Users WHERE Email = '{email}'\");\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_parameterized_sql",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/UserRepository.cs",
+          "text": "using Microsoft.Data.SqlClient;\n\npublic sealed class UserRepository\n{\n    public SqlCommand Find(string email)\n    {\n        var command = new SqlCommand(\"SELECT * FROM Users WHERE Email = @email\");\n        command.Parameters.AddWithValue(\"@email\", email);\n        return command;\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

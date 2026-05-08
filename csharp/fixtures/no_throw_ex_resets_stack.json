@@ -1,0 +1,25 @@
+{
+  "predicate": "no_throw_ex_resets_stack",
+  "cases": [
+    {
+      "name": "blocks_throw_exception_variable",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/App/Handler.cs",
+          "text": "using System;\n\npublic sealed class Handler\n{\n    public void Run()\n    {\n        try { Work(); }\n        catch (Exception ex) { throw ex; }\n    }\n\n    private static void Work() { }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_bare_throw",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/Handler.cs",
+          "text": "using System;\n\npublic sealed class Handler\n{\n    public void Run()\n    {\n        try { Work(); }\n        catch (Exception) { throw; }\n    }\n\n    private static void Work() { }\n}\n"
+        }
+      ]
+    }
+  ]
+}

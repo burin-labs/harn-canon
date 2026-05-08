@@ -1,0 +1,25 @@
+{
+  "predicate": "no_task_wait",
+  "cases": [
+    {
+      "name": "blocks_task_result",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/App/Client.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Client\n{\n    public string Read(Task<string> task) => task.Result;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_await",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/Client.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Client\n{\n    public async Task<string> ReadAsync(Task<string> task) => await task;\n}\n"
+        }
+      ]
+    }
+  ]
+}

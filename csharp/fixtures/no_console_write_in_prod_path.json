@@ -1,0 +1,25 @@
+{
+  "predicate": "no_console_write_in_prod_path",
+  "cases": [
+    {
+      "name": "warns_console_write_in_prod",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/App/Processor.cs",
+          "text": "using System;\n\npublic sealed class Processor\n{\n    public void Run() => Console.WriteLine(\"processing\");\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_logger",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/Processor.cs",
+          "text": "using Microsoft.Extensions.Logging;\n\npublic sealed class Processor(ILogger<Processor> logger)\n{\n    public void Run() => logger.LogInformation(\"Processing item\");\n}\n"
+        }
+      ]
+    }
+  ]
+}

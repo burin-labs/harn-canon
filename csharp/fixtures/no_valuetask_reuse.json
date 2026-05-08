@@ -1,0 +1,25 @@
+{
+  "predicate": "no_valuetask_reuse",
+  "cases": [
+    {
+      "name": "warns_reused_valuetask",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/App/Cache.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Cache\n{\n    public async ValueTask<int> LoadTwiceAsync()\n    {\n        ValueTask<int> value = ReadAsync();\n        int first = await value;\n        int second = await value;\n        return first + second;\n    }\n\n    private static ValueTask<int> ReadAsync() => ValueTask.FromResult(1);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_direct_awaits",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/Cache.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Cache\n{\n    public async ValueTask<int> LoadTwiceAsync()\n    {\n        int first = await ReadAsync();\n        int second = await ReadAsync();\n        return first + second;\n    }\n\n    private static ValueTask<int> ReadAsync() => ValueTask.FromResult(1);\n}\n"
+        }
+      ]
+    }
+  ]
+}

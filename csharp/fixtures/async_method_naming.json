@@ -1,0 +1,25 @@
+{
+  "predicate": "async_method_naming",
+  "cases": [
+    {
+      "name": "warns_async_method_without_suffix",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/App/Worker.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Worker\n{\n    public async Task Load()\n    {\n        await Task.Delay(1);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_async_suffix",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/App/Worker.cs",
+          "text": "using System.Threading.Tasks;\n\npublic sealed class Worker\n{\n    public async Task LoadAsync()\n    {\n        await Task.Delay(1);\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}
