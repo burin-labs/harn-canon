@@ -1,0 +1,25 @@
+{
+  "predicate": "no_monkey_patch_stdlib",
+  "cases": [
+    {
+      "name": "blocks_reopening_core_class",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "app/core_ext/string.rb",
+          "text": "# frozen_string_literal: true\n\nclass String\n  def to_slug\n    downcase.tr(\" \", \"-\")\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_scoped_refinement",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/refinements/string_slug.rb",
+          "text": "# frozen_string_literal: true\n\nmodule StringSlug\n  refine String do\n    def to_slug\n      downcase.tr(\" \", \"-\")\n    end\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

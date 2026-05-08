@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_keyword_args",
+  "cases": [
+    {
+      "name": "warns_on_options_hash_parameter",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/report.rb",
+          "text": "# frozen_string_literal: true\n\ndef build_report(options = {})\n  limit = options.fetch(:limit, 100)\n  limit\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_keyword_arguments",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/report.rb",
+          "text": "# frozen_string_literal: true\n\ndef build_report(limit: 100)\n  limit\nend\n"
+        }
+      ]
+    }
+  ]
+}

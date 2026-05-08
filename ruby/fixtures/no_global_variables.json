@@ -1,0 +1,25 @@
+{
+  "predicate": "no_global_variables",
+  "cases": [
+    {
+      "name": "blocks_application_global_assignment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/current_tenant.rb",
+          "text": "# frozen_string_literal: true\n\n$current_tenant = nil\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_constant_state",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/current_tenant.rb",
+          "text": "# frozen_string_literal: true\n\nDEFAULT_TENANT = \"public\"\n"
+        }
+      ]
+    }
+  ]
+}

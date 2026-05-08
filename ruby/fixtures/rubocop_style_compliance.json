@@ -1,0 +1,25 @@
+{
+  "predicate": "rubocop_style_compliance",
+  "cases": [
+    {
+      "name": "blocks_broad_rubocop_disable",
+      "expect": "Block",
+      "files": [
+        {
+          "path": ".rubocop.yml",
+          "text": "Style/FrozenStringLiteralComment:\n  Enabled: false\nSecurity/Eval:\n  Enabled: false\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_narrow_documented_disable",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": ".rubocop.yml",
+          "text": "Style/Documentation:\n  Exclude:\n    - \"db/migrate/**/*\"\n"
+        }
+      ]
+    }
+  ]
+}

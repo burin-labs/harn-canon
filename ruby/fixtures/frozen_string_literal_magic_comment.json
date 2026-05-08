@@ -1,0 +1,25 @@
+{
+  "predicate": "frozen_string_literal_magic_comment",
+  "cases": [
+    {
+      "name": "warns_when_production_file_lacks_magic_comment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "app/models/invoice.rb",
+          "text": "class Invoice\n  CURRENCY = \"USD\"\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_magic_comment_after_shebang",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/models/invoice.rb",
+          "text": "#!/usr/bin/env ruby\n# frozen_string_literal: true\n\nclass Invoice\n  CURRENCY = \"USD\"\nend\n"
+        }
+      ]
+    }
+  ]
+}

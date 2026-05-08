@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unsafe_deserialization",
+  "cases": [
+    {
+      "name": "blocks_yaml_load",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "app/config_loader.rb",
+          "text": "# frozen_string_literal: true\n\nrequire \"yaml\"\n\nclass ConfigLoader\n  def load(text)\n    YAML.load(text)\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_safe_load",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "app/config_loader.rb",
+          "text": "# frozen_string_literal: true\n\nrequire \"psych\"\n\nclass ConfigLoader\n  def load(text)\n    Psych.safe_load(text, permitted_classes: [], aliases: false)\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}
