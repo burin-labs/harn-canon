@@ -1,0 +1,25 @@
+{
+  "predicate": "no_swallowed_exceptions",
+  "cases": [
+    {
+      "name": "blocks_empty_catch",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/java/example/Importer.java",
+          "text": "import java.io.IOException;\n\npublic class Importer {\n  void run() {\n    try {\n      load();\n    } catch (IOException ex) {\n    }\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_rethrowing_catch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/Importer.java",
+          "text": "import java.io.IOException;\n\npublic class Importer {\n  void run() {\n    try {\n      load();\n    } catch (IOException ex) {\n      throw new IllegalStateException(\"load failed\", ex);\n    }\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_stream_over_loop",
+  "cases": [
+    {
+      "name": "warns_index_loop_over_collection",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/java/example/Formatter.java",
+          "text": "import java.util.List;\n\npublic class Formatter {\n  String join(List<String> names) {\n    StringBuilder out = new StringBuilder();\n    for (int i = 0; i < names.size(); i++) {\n      out.append(names.get(i));\n    }\n    return out.toString();\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_stream_join",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/Formatter.java",
+          "text": "import java.util.List;\nimport java.util.stream.Collectors;\n\npublic class Formatter {\n  String join(List<String> names) {\n    return names.stream().collect(Collectors.joining());\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

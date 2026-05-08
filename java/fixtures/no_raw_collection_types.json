@@ -1,0 +1,25 @@
+{
+  "predicate": "no_raw_collection_types",
+  "cases": [
+    {
+      "name": "blocks_raw_list_field",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/java/example/Users.java",
+          "text": "import java.util.List;\n\npublic class Users {\n  private List names;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_parameterized_list_field",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/Users.java",
+          "text": "import java.util.List;\n\npublic class Users {\n  private List<String> names;\n}\n"
+        }
+      ]
+    }
+  ]
+}

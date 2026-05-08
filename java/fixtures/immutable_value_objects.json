@@ -1,0 +1,25 @@
+{
+  "predicate": "immutable_value_objects",
+  "cases": [
+    {
+      "name": "warns_final_field_data_carrier",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/java/example/Money.java",
+          "text": "public final class Money {\n  private final long cents;\n  private final String currency;\n\n  public Money(long cents, String currency) {\n    this.cents = cents;\n    this.currency = currency;\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_record_data_carrier",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/Money.java",
+          "text": "public record Money(long cents, String currency) {}\n"
+        }
+      ]
+    }
+  ]
+}

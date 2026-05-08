@@ -1,0 +1,277 @@
+let _EVIDENCE_RAW_TYPES = [
+  "https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.8",
+  "https://docs.oracle.com/javase/tutorial/java/generics/rawTypes.html",
+]
+
+let _EVIDENCE_NULLNESS = [
+  "https://jspecify.dev/docs/user-guide/",
+  "https://github.com/uber/NullAway/wiki/Supported-Annotations",
+]
+
+let _EVIDENCE_RECORDS = ["https://docs.oracle.com/en/java/javase/25/language/records.html", "https://openjdk.org/jeps/395"]
+
+let _EVIDENCE_EMPTY_CATCH = [
+  "https://errorprone.info/bugpattern/EmptyCatch",
+  "https://checkstyle.sourceforge.io/checks/blocks/emptycatchblock.html",
+]
+
+let _EVIDENCE_STREAMS = [
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/stream/Stream.html",
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Collection.html#stream()",
+]
+
+let _EVIDENCE_EXCEPTION_LOGGING = [
+  "https://errorprone.info/bugpattern/CatchAndPrintStackTrace",
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.logging/java/util/logging/Logger.html",
+]
+
+let _EVIDENCE_PRODUCTION_LOGGING = [
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.logging/java/util/logging/Logger.html",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_OPTIONAL = [
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.base/java/util/Optional.html",
+  "https://errorprone.info/bugpattern/NullOptional",
+]
+
+let _EVIDENCE_SQL = [
+  "https://docs.oracle.com/en/java/javase/25/docs/api/java.sql/java/sql/PreparedStatement.html",
+  "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+fn java_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".java") })
+}
+
+fn is_test_path(path) {
+  return contains(path, "/test/")
+    || contains(path, "/tests/")
+    || contains(path, "/src/test/")
+    || path.ends_with("Test.java")
+    || path.ends_with("Tests.java")
+    || path.ends_with("IT.java")
+}
+
+fn production_java_files(slice) {
+  return java_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn scan_files(files, pattern) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file.text) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RAW_TYPES, confidence: 0.78, source_date: "2026-05-08")
+/** Blocks raw common generic collection and Optional declarations in production Java. */
+pub fn no_raw_collection_types(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_java_files(slice),
+    r"\b(List|Map|Set|Collection|Iterator|Iterable|Optional)\s+[A-Za-z_][A-Za-z0-9_]*\b",
+  )
+  return block_on_findings(
+    "no_raw_collection_types",
+    "Parameterize Java collections and Optional with concrete type arguments or wildcards.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NULLNESS, confidence: 0.64, source_date: "2026-05-08")
+/** Warns when public reference-returning methods lack local or package nullness annotations. */
+pub fn null_safety_annotations(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_java_files(slice),
+    { text -> regex_match(
+      r"(?m)^\s*public\s+(static\s+|final\s+|synchronized\s+|abstract\s+)*[A-Z][A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*\(",
+      text,
+      "s",
+    )
+      != nil
+      && regex_match(
+      r"@(NullMarked|NonNullApi|ParametersAreNonnullByDefault|Nullable|NonNull|Nonnull|CheckForNull)\b",
+      text,
+      "s",
+    )
+      == nil },
+  )
+  return warn_on_findings(
+    "null_safety_annotations",
+    "Mark public reference APIs with package defaults or explicit nullable/non-null annotations.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RECORDS, confidence: 0.6, source_date: "2026-05-08")
+/** Warns when simple final-field value carriers are added as classes instead of records. */
+pub fn immutable_value_objects(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_java_files(slice),
+    { text -> regex_match(r"\b(class)\s+[A-Z][A-Za-z0-9_]*\b", text, "s") != nil
+      && regex_match(r"private\s+final\s+[A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*;", text, "s")
+      != nil
+      && regex_match(r"public\s+[A-Z][A-Za-z0-9_]*\s*\([^)]*\)\s*\{", text, "s") != nil
+      && regex_match(r"\brecord\s+[A-Z][A-Za-z0-9_]*\b", text, "s") == nil },
+  )
+  return warn_on_findings(
+    "immutable_value_objects",
+    "Use a record for plain immutable data carriers on Java 17+ unless class identity is required.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EMPTY_CATCH, confidence: 0.9, source_date: "2026-05-08")
+/** Blocks empty catch blocks in production Java. */
+pub fn no_swallowed_exceptions(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_java_files(slice), r"catch\s*\([^)]*\)\s*\{\s*\}")
+  return block_on_findings(
+    "no_swallowed_exceptions",
+    "Handle, log, rethrow, or comment intentionally ignored exceptions.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_STREAMS, confidence: 0.56, source_date: "2026-05-08")
+/** Warns on index-based loops over collection size/get pairs. */
+pub fn prefer_stream_over_loop(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_java_files(slice),
+    r"for\s*\(\s*int\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*0\s*;\s*[A-Za-z_][A-Za-z0-9_]*\s*<\s*[A-Za-z_][A-Za-z0-9_]*\.size\(\)\s*;\s*[A-Za-z_][A-Za-z0-9_]*\+\+\s*\)\s*\{[^}]*\.get\(\s*[A-Za-z_][A-Za-z0-9_]*\s*\)",
+  )
+  return warn_on_findings(
+    "prefer_stream_over_loop",
+    "Prefer enhanced for-loops or Stream operations over index loops on collections.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXCEPTION_LOGGING, confidence: 0.84, source_date: "2026-05-08")
+/** Blocks catch-and-printStackTrace exception handling in production Java. */
+pub fn no_print_stack_trace(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_java_files(slice), r"\.printStackTrace\s*\(")
+  return block_on_findings(
+    "no_print_stack_trace",
+    "Log exceptions with context or rethrow them instead of calling printStackTrace().",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PRODUCTION_LOGGING, confidence: 0.78, source_date: "2026-05-08")
+/** Warns on direct stdout/stderr writes in production Java. */
+pub fn no_system_out_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_java_files(slice), r"\bSystem\.(out|err)\.(print|println|printf)\s*\(")
+  return warn_on_findings(
+    "no_system_out_in_prod",
+    "Use the project logger instead of System.out or System.err in production code.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OPTIONAL, confidence: 0.82, source_date: "2026-05-08")
+/** Blocks returning null from Optional-returning methods. */
+pub fn optional_returns_are_not_null(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_java_files(slice),
+    r"Optional\s*<[^>]+>\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*\{[^}]*return\s+null\s*;",
+  )
+  return block_on_findings(
+    "optional_returns_are_not_null",
+    "Return Optional.empty() or Optional.ofNullable(...) instead of null.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SQL, confidence: 0.66, source_date: "2026-05-08")
+/** Blocks JDBC SQL built from untrusted string concatenation without bind parameters. */
+pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Java builds SQL for JDBC, JPA native queries, or Spring JDBC by concatenating or formatting user-controlled values into the query text instead of using PreparedStatement parameters, named parameters, or a query builder that binds values."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "jdbc_queries_use_parameters",
+      "Bind SQL values with PreparedStatement, named parameters, or a safe query builder.",
+      judgement.findings,
+    )
+  }
+  return allow("jdbc_queries_use_parameters")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
+/** Blocks hardcoded credentials, tokens, and private keys in Java source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Java embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
