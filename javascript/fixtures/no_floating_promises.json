@@ -1,0 +1,25 @@
+{
+  "predicate": "no_floating_promises",
+  "cases": [
+    {
+      "name": "blocks_unhandled_fetch_statement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/save.js",
+          "text": "export function save() {\n  fetch('/api/save', { method: 'POST' });\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_returned_fetch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/save.js",
+          "text": "export function save() {\n  return fetch('/api/save', { method: 'POST' });\n}\n"
+        }
+      ]
+    }
+  ]
+}

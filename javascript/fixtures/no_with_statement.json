@@ -1,0 +1,25 @@
+{
+  "predicate": "no_with_statement",
+  "cases": [
+    {
+      "name": "blocks_with_statement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/profile.js",
+          "text": "export function label(profile) {\n  with (profile) {\n    return name;\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_destructuring",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/profile.js",
+          "text": "export function label(profile) {\n  const { name } = profile;\n  return name;\n}\n"
+        }
+      ]
+    }
+  ]
+}
