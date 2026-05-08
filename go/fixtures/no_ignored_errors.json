@@ -1,0 +1,25 @@
+{
+  "predicate": "no_ignored_errors",
+  "cases": [
+    {
+      "name": "blocks_blank_identifier_error_discard",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "service/write.go",
+          "text": "package service\n\nimport \"os\"\n\nfunc Save(path string, data []byte) {\n\t_ = os.WriteFile(path, data, 0o600)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_checked_error",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "service/write.go",
+          "text": "package service\n\nimport \"os\"\n\nfunc Save(path string, data []byte) error {\n\tif err := os.WriteFile(path, data, 0o600); err != nil {\n\t\treturn err\n\t}\n\treturn nil\n}\n"
+        }
+      ]
+    }
+  ]
+}

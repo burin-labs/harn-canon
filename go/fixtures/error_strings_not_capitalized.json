@@ -1,0 +1,25 @@
+{
+  "predicate": "error_strings_not_capitalized",
+  "cases": [
+    {
+      "name": "warns_capitalized_error",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "store/load.go",
+          "text": "package store\n\nimport \"errors\"\n\nfunc Load(path string) error {\n\tif path == \"\" {\n\t\treturn errors.New(\"Missing path\")\n\t}\n\treturn nil\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_lowercase_error",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "store/load.go",
+          "text": "package store\n\nimport \"errors\"\n\nfunc Load(path string) error {\n\tif path == \"\" {\n\t\treturn errors.New(\"missing path\")\n\t}\n\treturn nil\n}\n"
+        }
+      ]
+    }
+  ]
+}

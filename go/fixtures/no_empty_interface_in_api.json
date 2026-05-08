@@ -1,0 +1,25 @@
+{
+  "predicate": "no_empty_interface_in_api",
+  "cases": [
+    {
+      "name": "warns_any_in_exported_signature",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "api/events.go",
+          "text": "package api\n\nfunc Publish(topic string, payload any) error {\n\treturn nil\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_concrete_payload",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/events.go",
+          "text": "package api\n\ntype Event struct {\n\tTopic string\n\tBody  []byte\n}\n\nfunc Publish(event Event) error {\n\treturn nil\n}\n"
+        }
+      ]
+    }
+  ]
+}

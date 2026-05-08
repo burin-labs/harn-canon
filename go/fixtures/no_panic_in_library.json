@@ -1,0 +1,25 @@
+{
+  "predicate": "no_panic_in_library",
+  "cases": [
+    {
+      "name": "blocks_panic_in_library_package",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "parser/config.go",
+          "text": "package parser\n\nfunc Parse(raw string) Config {\n\tif raw == \"\" {\n\t\tpanic(\"empty config\")\n\t}\n\treturn Config{}\n}\n\ntype Config struct{}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_error_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "parser/config.go",
+          "text": "package parser\n\nimport \"errors\"\n\nfunc Parse(raw string) (Config, error) {\n\tif raw == \"\" {\n\t\treturn Config{}, errors.New(\"empty config\")\n\t}\n\treturn Config{}, nil\n}\n\ntype Config struct{}\n"
+        }
+      ]
+    }
+  ]
+}
