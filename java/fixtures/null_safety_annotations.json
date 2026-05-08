@@ -1,0 +1,25 @@
+{
+  "predicate": "null_safety_annotations",
+  "cases": [
+    {
+      "name": "warns_public_reference_api_without_nullness",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/java/example/UserDirectory.java",
+          "text": "public class UserDirectory {\n  public String displayName(User user) {\n    return user.name();\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_null_marked_api",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/UserDirectory.java",
+          "text": "import org.jspecify.annotations.NullMarked;\n\n@NullMarked\npublic class UserDirectory {\n  public String displayName(User user) {\n    return user.name();\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

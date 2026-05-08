@@ -1,0 +1,25 @@
+{
+  "predicate": "no_system_out_in_prod",
+  "cases": [
+    {
+      "name": "warns_stdout_in_production",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/java/example/Server.java",
+          "text": "public class Server {\n  void start() {\n    System.out.println(\"started\");\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_stdout_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/test/java/example/ServerTest.java",
+          "text": "public class ServerTest {\n  void start() {\n    System.out.println(\"started\");\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

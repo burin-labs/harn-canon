@@ -1,0 +1,25 @@
+{
+  "predicate": "jdbc_queries_use_parameters",
+  "cases": [
+    {
+      "name": "blocks_concatenated_jdbc_sql",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/java/example/UserRepository.java",
+          "text": "import java.sql.Connection;\nimport java.sql.ResultSet;\nimport java.sql.Statement;\n\npublic class UserRepository {\n  ResultSet find(Connection connection, String email) throws Exception {\n    Statement statement = connection.createStatement();\n    return statement.executeQuery(\"select * from users where email = '\" + email + \"'\");\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_prepared_statement_parameters",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/UserRepository.java",
+          "text": "import java.sql.Connection;\nimport java.sql.PreparedStatement;\nimport java.sql.ResultSet;\n\npublic class UserRepository {\n  ResultSet find(Connection connection, String email) throws Exception {\n    PreparedStatement statement = connection.prepareStatement(\"select * from users where email = ?\");\n    statement.setString(1, email);\n    return statement.executeQuery();\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "optional_returns_are_not_null",
+  "cases": [
+    {
+      "name": "blocks_null_optional_return",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/java/example/Lookup.java",
+          "text": "import java.util.Optional;\n\npublic class Lookup {\n  Optional<String> find(String id) {\n    return null;\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_empty_optional_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/java/example/Lookup.java",
+          "text": "import java.util.Optional;\n\npublic class Lookup {\n  Optional<String> find(String id) {\n    return Optional.empty();\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}
