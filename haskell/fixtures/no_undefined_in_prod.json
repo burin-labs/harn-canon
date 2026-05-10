@@ -1,0 +1,35 @@
+{
+  "predicate": "no_undefined_in_prod",
+  "cases": [
+    {
+      "name": "blocks_undefined_stub",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Pricing.hs",
+          "text": "module Acme.Pricing (priceQuote) where\n\npriceQuote :: Order -> Money\npriceQuote = undefined\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_typed_either_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Pricing.hs",
+          "text": "module Acme.Pricing (priceQuote) where\n\npriceQuote :: Order -> Either PricingError Money\npriceQuote o\n  | null (orderLines o) = Left EmptyOrder\n  | otherwise           = Right (sumLines o)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_undefined_in_test_module",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "test/Acme/PricingSpec.hs",
+          "text": "module Acme.PricingSpec where\n\nplaceholder :: a\nplaceholder = undefined\n"
+        }
+      ]
+    }
+  ]
+}

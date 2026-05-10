@@ -1,0 +1,25 @@
+{
+  "predicate": "total_function_semantic_check",
+  "cases": [
+    {
+      "name": "blocks_non_exhaustive_pattern_match",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Shape.hs",
+          "text": "module Acme.Shape (area) where\n\ndata Shape = Circle Double | Square Double | Triangle Double Double\n\narea :: Shape -> Double\narea (Circle r)   = pi * r * r\narea (Square s)   = s * s\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_exhaustive_pattern_match",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Shape.hs",
+          "text": "module Acme.Shape (area) where\n\ndata Shape = Circle Double | Square Double | Triangle Double Double\n\narea :: Shape -> Double\narea (Circle r)       = pi * r * r\narea (Square s)       = s * s\narea (Triangle b h)   = 0.5 * b * h\n"
+        }
+      ]
+    }
+  ]
+}

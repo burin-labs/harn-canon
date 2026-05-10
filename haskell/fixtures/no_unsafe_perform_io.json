@@ -1,0 +1,35 @@
+{
+  "predicate": "no_unsafe_perform_io",
+  "cases": [
+    {
+      "name": "blocks_unsafe_perform_io",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Cache.hs",
+          "text": "module Acme.Cache (currentTime) where\n\nimport Data.Time (UTCTime, getCurrentTime)\nimport System.IO.Unsafe (unsafePerformIO)\n\ncurrentTime :: UTCTime\ncurrentTime = unsafePerformIO getCurrentTime\n{-# NOINLINE currentTime #-}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_unsafe_interleave_io",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Cache.hs",
+          "text": "module Acme.Cache (lazyLoad) where\n\nimport System.IO.Unsafe (unsafeInterleaveIO)\n\nlazyLoad :: IO a -> IO a\nlazyLoad = unsafeInterleaveIO\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_threaded_io",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Cache.hs",
+          "text": "module Acme.Cache (currentTime) where\n\nimport Data.Time (UTCTime, getCurrentTime)\n\ncurrentTime :: IO UTCTime\ncurrentTime = getCurrentTime\n"
+        }
+      ]
+    }
+  ]
+}

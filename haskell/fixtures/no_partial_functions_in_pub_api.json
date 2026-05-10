@@ -1,0 +1,55 @@
+{
+  "predicate": "no_partial_functions_in_pub_api",
+  "cases": [
+    {
+      "name": "blocks_head_in_public_module",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Users.hs",
+          "text": "module Acme.Users (firstUser) where\n\nimport Data.List (sort)\n\nfirstUser :: [User] -> User\nfirstUser = head . sort\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_bang_bang_indexing",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Users.hs",
+          "text": "module Acme.Users (pickUser) where\n\npickUser :: [User] -> Int -> User\npickUser xs i = xs !! i\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_from_just",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Users.hs",
+          "text": "module Acme.Users (lookupUser) where\n\nimport qualified Data.Map.Strict as Map\nimport Data.Maybe (fromJust)\n\nlookupUser :: Map.Map UserId User -> UserId -> User\nlookupUser m i = fromJust (Map.lookup i m)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_total_alternatives",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Users.hs",
+          "text": "module Acme.Users (firstUser, lookupUser) where\n\nimport qualified Data.Map.Strict as Map\nimport Data.List (sort, uncons)\n\nfirstUser :: [User] -> Maybe User\nfirstUser = fmap fst . uncons . sort\n\nlookupUser :: Map.Map UserId User -> UserId -> Maybe User\nlookupUser m i = Map.lookup i m\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_partial_helper_under_internal",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Users/Internal.hs",
+          "text": "module Acme.Users.Internal (unsafeHead) where\n\nunsafeHead :: [a] -> a\nunsafeHead = head\n"
+        }
+      ]
+    }
+  ]
+}
