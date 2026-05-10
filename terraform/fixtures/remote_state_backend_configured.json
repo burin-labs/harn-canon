@@ -1,0 +1,25 @@
+{
+  "predicate": "remote_state_backend_configured",
+  "cases": [
+    {
+      "name": "warns_when_root_module_lacks_backend",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "versions.tf",
+          "text": "terraform {\n  required_version = \">= 1.5\"\n\n  required_providers {\n    aws = {\n      source  = \"hashicorp/aws\"\n      version = \"~> 5.40\"\n    }\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_backend_is_configured",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "versions.tf",
+          "text": "terraform {\n  required_version = \">= 1.5\"\n\n  required_providers {\n    aws = {\n      source  = \"hashicorp/aws\"\n      version = \"~> 5.40\"\n    }\n  }\n\n  backend \"s3\" {\n    bucket         = \"acme-tfstate\"\n    key            = \"prod/terraform.tfstate\"\n    region         = \"us-east-1\"\n    dynamodb_table = \"acme-tfstate-locks\"\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

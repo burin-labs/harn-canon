@@ -1,0 +1,25 @@
+{
+  "predicate": "variable_type_constraints_explicit",
+  "cases": [
+    {
+      "name": "warns_when_variable_block_omits_type",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "variables.tf",
+          "text": "variable \"region\" {\n  description = \"AWS region for the deployment.\"\n  default     = \"us-east-1\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_variable_block_declares_type",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "variables.tf",
+          "text": "variable \"region\" {\n  description = \"AWS region for the deployment.\"\n  type        = string\n  default     = \"us-east-1\"\n}\n"
+        }
+      ]
+    }
+  ]
+}

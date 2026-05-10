@@ -1,0 +1,25 @@
+{
+  "predicate": "provider_versions_pinned",
+  "cases": [
+    {
+      "name": "blocks_required_providers_without_version",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "versions.tf",
+          "text": "terraform {\n  required_providers {\n    aws = {\n      source = \"hashicorp/aws\"\n    }\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_required_providers_with_version",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "versions.tf",
+          "text": "terraform {\n  required_providers {\n    aws = {\n      source  = \"hashicorp/aws\"\n      version = \"~> 5.40\"\n    }\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

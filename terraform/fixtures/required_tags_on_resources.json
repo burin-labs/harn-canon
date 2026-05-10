@@ -1,0 +1,25 @@
+{
+  "predicate": "required_tags_on_resources",
+  "cases": [
+    {
+      "name": "warns_when_resource_lacks_owner_env_costcenter",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "main.tf",
+          "text": "resource \"aws_s3_bucket\" \"logs\" {\n  bucket = \"acme-logs\"\n\n  tags = {\n    Service = \"billing\"\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_required_tag_keys_present",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "main.tf",
+          "text": "resource \"aws_s3_bucket\" \"logs\" {\n  bucket = \"acme-logs\"\n\n  tags = {\n    Owner      = \"platform\"\n    Env        = \"prod\"\n    CostCenter = \"1234\"\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

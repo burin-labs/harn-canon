@@ -1,0 +1,25 @@
+{
+  "predicate": "iam_policies_avoid_wildcard_grants",
+  "cases": [
+    {
+      "name": "blocks_unrestricted_wildcard_action_and_resource",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "iam.tf",
+          "text": "data \"aws_iam_policy_document\" \"admin\" {\n  statement {\n    effect    = \"Allow\"\n    actions   = [\"*\"]\n    resources = [\"*\"]\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_scoped_actions_and_resources",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "iam.tf",
+          "text": "data \"aws_iam_policy_document\" \"reader\" {\n  statement {\n    effect    = \"Allow\"\n    actions   = [\"s3:GetObject\", \"s3:ListBucket\"]\n    resources = [\n      aws_s3_bucket.logs.arn,\n      \"${aws_s3_bucket.logs.arn}/*\",\n    ]\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}
