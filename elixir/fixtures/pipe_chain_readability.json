@@ -1,0 +1,35 @@
+{
+  "predicate": "pipe_chain_readability",
+  "cases": [
+    {
+      "name": "warns_on_seven_stage_pipeline",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/my_app/reports.ex",
+          "text": "defmodule MyApp.Reports do\n  def daily(events) do\n    events\n    |> Enum.filter(&relevant?/1)\n    |> Enum.map(&normalize/1)\n    |> Enum.group_by(& &1.bucket)\n    |> Enum.map(fn {bucket, rows} -> {bucket, summarize(rows)} end)\n    |> Enum.sort_by(& elem(&1, 0))\n    |> Enum.map(&format_row/1)\n    |> Enum.join(\"\\n\")\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_short_pipeline",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/reports.ex",
+          "text": "defmodule MyApp.Reports do\n  def daily(events) do\n    events\n    |> Enum.filter(&relevant?/1)\n    |> Enum.map(&normalize/1)\n    |> summarize_buckets()\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pipeline_split_with_intermediate_binding",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/reports.ex",
+          "text": "defmodule MyApp.Reports do\n  def daily(events) do\n    grouped =\n      events\n      |> Enum.filter(&relevant?/1)\n      |> Enum.map(&normalize/1)\n      |> Enum.group_by(& &1.bucket)\n\n    grouped\n    |> Enum.map(fn {bucket, rows} -> {bucket, summarize(rows)} end)\n    |> Enum.sort_by(&elem(&1, 0))\n    |> Enum.map(&format_row/1)\n    |> Enum.join(\"\\n\")\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "genserver_callback_boundary",
+  "cases": [
+    {
+      "name": "blocks_callback_returning_internal_state_to_caller",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/cache.ex",
+          "text": "defmodule MyApp.Cache do\n  use GenServer\n\n  @typedoc \"Public cache value returned to callers.\"\n  @type value :: %{key: String.t(), value: term(), expires_at: DateTime.t()}\n\n  @typedoc \"Internal cache state. Not part of the public contract.\"\n  @type state :: %{table: :ets.tid(), metrics: map(), last_compaction: DateTime.t()}\n\n  def fetch(key), do: GenServer.call(__MODULE__, {:fetch, key})\n\n  @impl true\n  def init(_opts) do\n    {:ok, %{table: :ets.new(:cache, [:set]), metrics: %{}, last_compaction: DateTime.utc_now()}}\n  end\n\n  @impl true\n  def handle_call({:fetch, key}, _from, state) do\n    # Returning the entire internal state to the caller leaks implementation details.\n    {:reply, state, state}\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_callback_returning_documented_value",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/cache.ex",
+          "text": "defmodule MyApp.Cache do\n  use GenServer\n\n  @typedoc \"Public cache value returned to callers.\"\n  @type value :: %{key: String.t(), value: term(), expires_at: DateTime.t()}\n\n  @typedoc \"Internal cache state. Not part of the public contract.\"\n  @type state :: %{table: :ets.tid(), metrics: map(), last_compaction: DateTime.t()}\n\n  def fetch(key), do: GenServer.call(__MODULE__, {:fetch, key})\n\n  @impl true\n  def init(_opts) do\n    {:ok, %{table: :ets.new(:cache, [:set]), metrics: %{}, last_compaction: DateTime.utc_now()}}\n  end\n\n  @impl true\n  def handle_call({:fetch, key}, _from, state) do\n    reply =\n      case :ets.lookup(state.table, key) do\n        [{^key, value, expires_at}] -> {:ok, %{key: key, value: value, expires_at: expires_at}}\n        [] -> {:error, :not_found}\n      end\n\n    {:reply, reply, state}\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

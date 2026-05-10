@@ -1,0 +1,35 @@
+{
+  "predicate": "no_io_inspect",
+  "cases": [
+    {
+      "name": "blocks_io_inspect_in_pipeline",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/orders.ex",
+          "text": "defmodule MyApp.Orders do\n  def total(items) do\n    items\n    |> Enum.map(& &1.amount)\n    |> IO.inspect(label: \"amounts\")\n    |> Enum.sum()\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_logger_debug",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/orders.ex",
+          "text": "defmodule MyApp.Orders do\n  require Logger\n\n  def total(items) do\n    Logger.debug(fn -> [\"computing total for \", inspect(length(items)), \" items\"] end)\n    items |> Enum.map(& &1.amount) |> Enum.sum()\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_io_inspect_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "test/my_app/orders_test.exs",
+          "text": "defmodule MyApp.OrdersTest do\n  use ExUnit.Case\n\n  test \"prints intermediate state for diagnosis\" do\n    [1, 2, 3] |> IO.inspect(label: \"items\") |> Enum.sum()\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

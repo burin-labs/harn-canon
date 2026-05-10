@@ -1,0 +1,35 @@
+{
+  "predicate": "unless_with_else",
+  "cases": [
+    {
+      "name": "warns_on_unless_else_pair",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/my_app/access.ex",
+          "text": "defmodule MyApp.Access do\n  def check(user) do\n    unless allowed?(user) do\n      raise \"forbidden\"\n    else\n      proceed(user)\n    end\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_if_else_form",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/access.ex",
+          "text": "defmodule MyApp.Access do\n  def check(user) do\n    if allowed?(user) do\n      proceed(user)\n    else\n      raise \"forbidden\"\n    end\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unless_without_else",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/access.ex",
+          "text": "defmodule MyApp.Access do\n  def warn_if_locked(user) do\n    unless user.active? do\n      Logger.warning(\"locked user #{user.id}\")\n    end\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

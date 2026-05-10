@@ -1,0 +1,25 @@
+{
+  "predicate": "no_raise_inside_rescue",
+  "cases": [
+    {
+      "name": "blocks_raise_inside_rescue",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/external.ex",
+          "text": "defmodule MyApp.External do\n  def fetch(url) do\n    HTTP.get!(url)\n  rescue\n    error in [HTTP.Error] ->\n      Logger.error(\"upstream failure: #{inspect(error)}\")\n      raise MyApp.UpstreamError, \"failed to reach #{url}\"\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_reraise_to_preserve_stacktrace",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/external.ex",
+          "text": "defmodule MyApp.External do\n  def fetch(url) do\n    HTTP.get!(url)\n  rescue\n    error in [HTTP.Error] ->\n      Logger.error(\"upstream failure: #{inspect(error)}\")\n      reraise error, __STACKTRACE__\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

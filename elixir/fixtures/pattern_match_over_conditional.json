@@ -1,0 +1,35 @@
+{
+  "predicate": "pattern_match_over_conditional",
+  "cases": [
+    {
+      "name": "warns_on_case_over_function_argument",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/my_app/payments.ex",
+          "text": "defmodule MyApp.Payments do\n  def describe(status) do\n    case status do\n      :pending -> \"awaiting capture\"\n      :captured -> \"captured\"\n      :refunded -> \"refunded\"\n      :failed -> \"failed\"\n    end\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_function_head_pattern_matching",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/payments.ex",
+          "text": "defmodule MyApp.Payments do\n  def describe(:pending), do: \"awaiting capture\"\n  def describe(:captured), do: \"captured\"\n  def describe(:refunded), do: \"refunded\"\n  def describe(:failed), do: \"failed\"\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_case_over_intermediate_value",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/payments.ex",
+          "text": "defmodule MyApp.Payments do\n  def describe(charge) do\n    case classify(charge) do\n      {:terminal, label} -> label\n      {:transient, retry_after} -> \"retry in #{retry_after}s\"\n    end\n  end\n\n  defp classify(%{status: :captured}), do: {:terminal, \"captured\"}\n  defp classify(%{status: :failed, retry_after: retry}), do: {:transient, retry}\nend\n"
+        }
+      ]
+    }
+  ]
+}

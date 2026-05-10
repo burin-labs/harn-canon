@@ -1,0 +1,25 @@
+{
+  "predicate": "tagged_error_tuples",
+  "cases": [
+    {
+      "name": "blocks_bare_error_atom_return",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/billing.ex",
+          "text": "defmodule MyApp.Billing do\n  @doc \"Charge a customer for the given invoice.\"\n  def charge(%{customer_id: id, amount: amount}) when is_integer(amount) and amount > 0 do\n    case Stripe.charge(id, amount) do\n      {:ok, charge} -> {:ok, charge}\n      {:error, _reason} -> :error\n    end\n  end\n\n  @doc \"Refund a previously charged invoice.\"\n  def refund(charge_id) do\n    case Stripe.refund(charge_id) do\n      {:ok, refund} -> {:ok, refund}\n      {:error, _reason} -> :error\n    end\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_consistent_tagged_error_tuples",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/billing.ex",
+          "text": "defmodule MyApp.Billing do\n  @doc \"Charge a customer for the given invoice.\"\n  def charge(%{customer_id: id, amount: amount}) when is_integer(amount) and amount > 0 do\n    case Stripe.charge(id, amount) do\n      {:ok, charge} -> {:ok, charge}\n      {:error, reason} -> {:error, {:upstream, reason}}\n    end\n  end\n\n  @doc \"Refund a previously charged invoice.\"\n  def refund(charge_id) do\n    case Stripe.refund(charge_id) do\n      {:ok, refund} -> {:ok, refund}\n      {:error, reason} -> {:error, {:upstream, reason}}\n    end\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}
