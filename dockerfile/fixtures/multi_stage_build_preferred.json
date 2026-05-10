@@ -1,0 +1,25 @@
+{
+  "predicate": "multi_stage_build_preferred",
+  "cases": [
+    {
+      "name": "blocks_single_stage_with_build_toolchain",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM golang:1.23.2\nWORKDIR /src\nCOPY . .\nRUN go build -o /usr/local/bin/server ./cmd/server\nUSER 1001\nCMD [\"/usr/local/bin/server\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_multi_stage_build",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM golang:1.23.2 AS build\nWORKDIR /src\nCOPY . .\nRUN go build -o /out/server ./cmd/server\n\nFROM gcr.io/distroless/static-debian12:nonroot\nCOPY --from=build /out/server /usr/local/bin/server\nUSER nonroot\nCMD [\"/usr/local/bin/server\"]\n"
+        }
+      ]
+    }
+  ]
+}

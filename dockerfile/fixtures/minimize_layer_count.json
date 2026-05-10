@@ -1,0 +1,25 @@
+{
+  "predicate": "minimize_layer_count",
+  "cases": [
+    {
+      "name": "warns_when_install_and_cleanup_split_across_layers",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update\nRUN apt-get install -y --no-install-recommends curl ca-certificates\nRUN apt-get clean\nRUN rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_combined_install_and_cleanup",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update \\\n  && apt-get install -y --no-install-recommends curl ca-certificates \\\n  && apt-get clean \\\n  && rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
+        }
+      ]
+    }
+  ]
+}

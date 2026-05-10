@@ -1,0 +1,35 @@
+{
+  "predicate": "no_curl_pipe_shell",
+  "cases": [
+    {
+      "name": "blocks_curl_piped_to_bash",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*\nRUN curl -fsSL https://example.com/install.sh | bash\nUSER 1000\nCMD [\"/usr/local/bin/example\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_wget_piped_to_sh",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update && apt-get install -y --no-install-recommends wget ca-certificates && rm -rf /var/lib/apt/lists/*\nRUN wget -qO- https://example.com/install.sh | sh\nUSER 1000\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_download_then_verify_then_run",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates && rm -rf /var/lib/apt/lists/*\nRUN curl -fsSLo /tmp/install.sh https://example.com/install.sh \\\n  && echo \"a1b2c3 /tmp/install.sh\" | sha256sum -c - \\\n  && bash /tmp/install.sh \\\n  && rm /tmp/install.sh\nUSER 1000\n"
+        }
+      ]
+    }
+  ]
+}
