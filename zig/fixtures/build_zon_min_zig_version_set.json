@@ -1,0 +1,25 @@
+{
+  "predicate": "build_zon_min_zig_version_set",
+  "cases": [
+    {
+      "name": "warns_when_minimum_zig_version_is_missing",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "build.zig.zon",
+          "text": ".{\n    .name = \"example\",\n    .version = \"0.1.0\",\n    .paths = .{\n        \"\",\n    },\n    .dependencies = .{},\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_minimum_zig_version_is_pinned",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "build.zig.zon",
+          "text": ".{\n    .name = \"example\",\n    .version = \"0.1.0\",\n    .minimum_zig_version = \"0.13.0\",\n    .paths = .{\n        \"\",\n    },\n    .dependencies = .{},\n}\n"
+        }
+      ]
+    }
+  ]
+}

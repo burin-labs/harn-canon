@@ -1,0 +1,293 @@
+let _EVIDENCE_ERROR_SWALLOW = [
+  "https://ziglang.org/documentation/master/#Errors",
+  "https://ziglang.org/documentation/master/#errdefer",
+  "https://zig.guide/language-basics/errors",
+]
+
+let _EVIDENCE_CATCH_UNREACHABLE = [
+  "https://ziglang.org/documentation/master/#unreachable",
+  "https://ziglang.org/documentation/master/#Errors",
+  "https://zig.guide/language-basics/errors",
+]
+
+let _EVIDENCE_UNSAFE_CASTS = [
+  "https://ziglang.org/documentation/master/#truncate",
+  "https://ziglang.org/documentation/master/#ptrCast",
+  "https://ziglang.org/documentation/master/#bitCast",
+  "https://ziglang.org/documentation/master/#intCast",
+  "https://ziglang.org/documentation/master/#alignCast",
+]
+
+let _EVIDENCE_PANIC = [
+  "https://ziglang.org/documentation/master/#panic",
+  "https://ziglang.org/documentation/master/#Errors",
+]
+
+let _EVIDENCE_TESTING_ALLOC = [
+  "https://ziglang.org/documentation/master/#Choosing-an-Allocator",
+  "https://ziglang.org/documentation/master/std/#std.testing.allocator",
+  "https://zig.guide/standard-library/allocators",
+]
+
+let _EVIDENCE_BUILD_ZON = [
+  "https://github.com/ziglang/zig/blob/master/doc/build.zig.zon.md",
+  "https://ziglang.org/learn/build-system/",
+  "https://ziglang.org/documentation/master/#Zig-Build-System",
+]
+
+let _EVIDENCE_BUILD_ZON_HASH = [
+  "https://github.com/ziglang/zig/blob/master/doc/build.zig.zon.md",
+  "https://ziglang.org/learn/build-system/",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_ALLOCATOR_LIFETIME = [
+  "https://ziglang.org/documentation/master/#Choosing-an-Allocator",
+  "https://ziglang.org/documentation/master/#Memory",
+  "https://zig.guide/standard-library/allocators",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+let _EVIDENCE_ENDIANNESS = [
+  "https://ziglang.org/documentation/master/std/#std.mem.readInt",
+  "https://ziglang.org/documentation/master/std/#std.mem.writeInt",
+  "https://ziglang.org/documentation/master/#byteSwap",
+]
+
+fn is_zig_path(path) {
+  return path.ends_with(".zig")
+}
+
+fn is_test_zig_path(path) {
+  return path.ends_with("_test.zig")
+    || regex_match(r"(^|/)test_[^/]*\.zig$", path, "") != nil
+    || contains(path, "/tests/")
+    || contains(path, "/test/")
+    || contains(path, "/testdata/")
+    || contains(path, "/examples/")
+    || contains(path, "/example/")
+}
+
+fn zig_files(slice) {
+  return slice.files.filter({ file -> is_zig_path(file.path) })
+}
+
+fn production_zig_files(slice) {
+  return zig_files(slice).filter({ file -> !is_test_zig_path(file.path) })
+}
+
+fn build_zon_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with("build.zig.zon") })
+}
+
+fn scan_files(files, pattern) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, "s") != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ERROR_SWALLOW, confidence: 0.84, source_date: "2026-05-10")
+/** Blocks empty catch blocks that silently swallow error unions. */
+pub fn no_silent_error_swallow(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    zig_files(slice),
+    r"catch(\s*\{\s*\}|\s*\|[^|\n]*\|\s*\{\s*\})",
+  )
+  return block_on_findings(
+    "no_silent_error_swallow",
+    "Handle the error explicitly: log it, propagate with try, or capture and convert it before continuing.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CATCH_UNREACHABLE, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on `catch unreachable` in production source. */
+pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_zig_files(slice),
+    r"catch\b[^;{]*\bunreachable\b",
+  )
+  return warn_on_findings(
+    "no_catch_unreachable_in_prod",
+    "Replace `catch unreachable` with explicit error handling, or restructure so the call cannot fail and document the invariant at the call site.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNSAFE_CASTS, confidence: 0.6, source_date: "2026-05-10")
+/** Warns on unchecked or reinterpreting cast builtins that lack an inline justification comment. */
+pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    zig_files(slice),
+    r"(?m)^(?!.*//).*@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(",
+  )
+  return warn_on_findings(
+    "unsafe_cast_has_justification",
+    "Add an inline `//` comment on the cast line explaining why it is sound: bounds, alignment guarantee, representation invariant, or upstream check.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PANIC, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on `@panic` calls in production source. */
+pub fn no_panic_in_production(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_zig_files(slice), r"@panic\s*\(")
+  return warn_on_findings(
+    "no_panic_in_production",
+    "Return an error from the function instead of `@panic` so callers can recover; reserve panics for unrecoverable invariants documented at the call site.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TESTING_ALLOC, confidence: 0.66, source_date: "2026-05-10")
+/** Warns when test files use `page_allocator` or `c_allocator` instead of `std.testing.allocator`. */
+pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    zig_files(slice),
+    { file -> regex_match(r"(?m)^test\b", file.text, "m") != nil
+      && regex_match(r"\b(page_allocator|c_allocator)\b", file.text, "s") != nil
+      && regex_match(r"\btesting\.allocator\b", file.text, "s") == nil },
+  )
+  return warn_on_findings(
+    "tests_use_testing_allocator",
+    "Default tests to `std.testing.allocator` so leaks fail the test; reserve other allocators for tests that exercise the allocator under test.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_BUILD_ZON, confidence: 0.7, source_date: "2026-05-10")
+/** Warns when build.zig.zon omits the advisory `.minimum_zig_version` field. */
+pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    build_zon_files(slice),
+    { file -> regex_match(r"\.minimum_zig_version\s*=", file.text, "s") == nil },
+  )
+  return warn_on_findings(
+    "build_zon_min_zig_version_set",
+    "Declare `.minimum_zig_version = \"x.y.z\"` in build.zig.zon so toolchain assumptions stay machine-readable.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_BUILD_ZON_HASH, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks build.zig.zon dependency entries that declare `.url` without a `.hash`. */
+pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    build_zon_files(slice),
+    r'\.\{(?:(?!\.hash)[^{}])*\.url\s*=\s*"[^"]+"(?:(?!\.hash)[^{}])*\}',
+  )
+  return block_on_findings(
+    "build_zon_dependency_hash_pinned",
+    "Pin every URL-based dependency in build.zig.zon with `.hash = \"...\"` so the package manager can verify content integrity.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_ALLOCATOR_LIFETIME, confidence: 0.62, source_date: "2026-05-10")
+/** Blocks heap allocations whose result is not freed, transferred, or guarded by defer/errdefer. */
+pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "allocator_lifetime_hygiene",
+      "Pair each heap allocation with a matching `defer` or `errdefer` that frees or deinits, or document the ownership transfer to the caller.",
+      judgement.findings,
+    )
+  }
+  return allow("allocator_lifetime_hygiene")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
+/** Blocks hardcoded credentials, tokens, and private keys in Zig sources. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move secrets to a secret manager or scoped environment variable read at runtime, and rotate any value that was ever committed.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_ENDIANNESS, confidence: 0.6, source_date: "2026-05-10")
+/** Warns when multi-byte integer I/O across a serialization boundary does not name an endianness. */
+pub fn integer_endianness_explicit(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  if judgement.verdict == "Warn" {
+    return warn(
+      "integer_endianness_explicit",
+      "Pass `.little`, `.big`, or `.native` to std.mem.readInt/writeInt and document the wire byte order at every serialization boundary.",
+      judgement.findings,
+    )
+  }
+  return allow("integer_endianness_explicit")
+}

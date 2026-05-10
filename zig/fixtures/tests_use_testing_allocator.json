@@ -1,0 +1,45 @@
+{
+  "predicate": "tests_use_testing_allocator",
+  "cases": [
+    {
+      "name": "warns_on_test_with_page_allocator",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/parser_test.zig",
+          "text": "const std = @import(\"std\");\n\ntest \"allocates buffer\" {\n    const allocator = std.heap.page_allocator;\n    const buf = try allocator.alloc(u8, 16);\n    defer allocator.free(buf);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_test_with_c_allocator",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/parser_test.zig",
+          "text": "const std = @import(\"std\");\n\ntest \"allocates buffer\" {\n    const allocator = std.heap.c_allocator;\n    _ = try allocator.alloc(u8, 4);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_test_with_testing_allocator",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/parser_test.zig",
+          "text": "const std = @import(\"std\");\n\ntest \"allocates buffer\" {\n    const buf = try std.testing.allocator.alloc(u8, 16);\n    defer std.testing.allocator.free(buf);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_non_test_file_using_page_allocator",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main.zig",
+          "text": "const std = @import(\"std\");\n\npub fn main() !void {\n    const allocator = std.heap.page_allocator;\n    const buf = try allocator.alloc(u8, 16);\n    defer allocator.free(buf);\n}\n"
+        }
+      ]
+    }
+  ]
+}

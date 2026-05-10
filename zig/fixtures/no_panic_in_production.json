@@ -1,0 +1,35 @@
+{
+  "predicate": "no_panic_in_production",
+  "cases": [
+    {
+      "name": "warns_on_panic_in_lib",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.zig",
+          "text": "pub fn parse(input: []const u8) usize {\n    if (input.len == 0) @panic(\"empty input\");\n    return input.len;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_panic_in_test_path",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib_test.zig",
+          "text": "test \"sanity\" {\n    if (false) @panic(\"unreachable invariant\");\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_returning_error_instead",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/lib.zig",
+          "text": "pub fn parse(input: []const u8) error{Empty}!usize {\n    if (input.len == 0) return error.Empty;\n    return input.len;\n}\n"
+        }
+      ]
+    }
+  ]
+}
