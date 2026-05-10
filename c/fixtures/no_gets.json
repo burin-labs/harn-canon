@@ -1,0 +1,25 @@
+{
+  "predicate": "no_gets",
+  "cases": [
+    {
+      "name": "blocks_gets_call",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/input.c",
+          "text": "#include <stdio.h>\n\nvoid read_line(char *buf) {\n\tgets(buf);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_fgets_with_size",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/input.c",
+          "text": "#include <stdio.h>\n\nvoid read_line(char *buf, size_t cap) {\n\tif (fgets(buf, cap, stdin) == NULL) {\n\t\tbuf[0] = '\\0';\n\t}\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "predicate": "static_analyzer_clean",
+  "cases": [
+    {
+      "name": "blocks_unsafe_change_without_analyzer_path",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/parser.c",
+          "text": "#include <stdlib.h>\n#include <string.h>\n\nstruct token { char *lex; size_t len; };\n\nstruct token *parse(const char *input) {\n\tstruct token *t = malloc(sizeof *t);\n\tt->len = strlen(input);\n\tt->lex = malloc(t->len + 1);\n\tmemcpy(t->lex, input, t->len + 1);\n\treturn t;\n}\n"
+        },
+        {
+          "path": "Makefile",
+          "text": "CC = gcc\nCFLAGS = -O2 -Wall\n\nparser: src/parser.c\n\t$(CC) $(CFLAGS) -o $@ $<\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_change_with_analyzer_in_ci",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/parser.c",
+          "text": "#include <stdlib.h>\n#include <string.h>\n\nstruct token { char *lex; size_t len; };\n\nstruct token *parse(const char *input) {\n\tstruct token *t = malloc(sizeof *t);\n\tif (t == NULL) return NULL;\n\tt->len = strlen(input);\n\tt->lex = malloc(t->len + 1);\n\tif (t->lex == NULL) { free(t); return NULL; }\n\tmemcpy(t->lex, input, t->len + 1);\n\treturn t;\n}\n"
+        },
+        {
+          "path": ".github/workflows/static-analysis.yml",
+          "text": "name: static-analysis\non: [push, pull_request]\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - run: sudo apt-get install -y clang-tools cppcheck\n      - run: scan-build --status-bugs make\n      - run: cppcheck --error-exitcode=1 --enable=warning,style src\n      - run: make CFLAGS=\"-fsanitize=address,undefined -fno-omit-frame-pointer -O1 -g\"\n"
+        }
+      ]
+    }
+  ]
+}

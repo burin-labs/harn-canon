@@ -1,0 +1,25 @@
+{
+  "predicate": "no_alloca",
+  "cases": [
+    {
+      "name": "warns_on_alloca",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/buf.c",
+          "text": "#include <alloca.h>\n#include <string.h>\n\nchar *dup_local(const char *src, size_t n) {\n\tchar *buf = (char *)alloca(n + 1);\n\tmemcpy(buf, src, n);\n\tbuf[n] = '\\0';\n\treturn buf;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_fixed_buffer_with_size_cap",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/buf.c",
+          "text": "#include <stdlib.h>\n#include <string.h>\n\n#define MAX_LOCAL 4096\n\nchar *dup_local(const char *src, size_t n) {\n\tif (n + 1 > MAX_LOCAL) {\n\t\treturn NULL;\n\t}\n\tchar *buf = (char *)malloc(n + 1);\n\tif (buf == NULL) {\n\t\treturn NULL;\n\t}\n\tmemcpy(buf, src, n);\n\tbuf[n] = '\\0';\n\treturn buf;\n}\n"
+        }
+      ]
+    }
+  ]
+}

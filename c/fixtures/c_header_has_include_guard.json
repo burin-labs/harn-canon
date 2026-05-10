@@ -1,0 +1,35 @@
+{
+  "predicate": "c_header_has_include_guard",
+  "cases": [
+    {
+      "name": "warns_on_unguarded_header",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "include/widget.h",
+          "text": "struct widget {\n\tint id;\n};\n\nvoid widget_init(struct widget *w);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pragma_once",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget.h",
+          "text": "#pragma once\n\nstruct widget {\n\tint id;\n};\n\nvoid widget_init(struct widget *w);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_ifndef_define_endif",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget.h",
+          "text": "#ifndef WIDGET_H\n#define WIDGET_H\n\nstruct widget {\n\tint id;\n};\n\nvoid widget_init(struct widget *w);\n\n#endif /* WIDGET_H */\n"
+        }
+      ]
+    }
+  ]
+}
