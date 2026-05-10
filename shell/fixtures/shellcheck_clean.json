@@ -1,0 +1,25 @@
+{
+  "predicate": "shellcheck_clean",
+  "cases": [
+    {
+      "name": "blocks_unquoted_word_split",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/copy.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nfiles=$1\ncp $files /tmp/dest/\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_quoted_clean_script",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/copy.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nsrc=\"$1\"\ndest=\"$2\"\ncp -- \"$src\" \"$dest\"\n"
+        }
+      ]
+    }
+  ]
+}

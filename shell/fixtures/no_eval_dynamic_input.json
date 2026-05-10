@@ -1,0 +1,45 @@
+{
+  "predicate": "no_eval_dynamic_input",
+  "cases": [
+    {
+      "name": "blocks_eval_on_variable",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/run.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\ncmd=\"$1\"\neval \"$cmd\"\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_eval_on_command_substitution",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/configure.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\neval \"$(./generate-config)\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_static_command",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/run.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nrun_step \"$1\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_array_dispatch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/dispatch.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\ncase \"$1\" in\n  build) make build ;;\n  test) make test ;;\n  *) echo \"unknown\"; exit 1 ;;\nesac\n"
+        }
+      ]
+    }
+  ]
+}

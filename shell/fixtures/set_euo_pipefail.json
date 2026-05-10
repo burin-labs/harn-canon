@@ -1,0 +1,45 @@
+{
+  "predicate": "set_euo_pipefail",
+  "cases": [
+    {
+      "name": "blocks_script_missing_strict_flags",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/deploy.sh",
+          "text": "#!/usr/bin/env bash\n\necho \"deploying $1\"\ncp -r build/ /var/www/\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_script_with_only_errexit",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/release.sh",
+          "text": "#!/bin/bash\nset -e\n\nrun_release\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_script_with_strict_mode",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/deploy.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\n\necho \"deploying $1\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_long_form_strict_mode",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/release.sh",
+          "text": "#!/bin/bash\nset -o errexit\nset -o nounset\nset -o pipefail\n\nrun_release\n"
+        }
+      ]
+    }
+  ]
+}
