@@ -1,0 +1,25 @@
+{
+  "predicate": "no_dbg_macro",
+  "cases": [
+    {
+      "name": "blocks_dbg_in_pipeline",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/checkout.ex",
+          "text": "defmodule MyApp.Checkout do\n  def total(cart) do\n    cart\n    |> Map.fetch!(:items)\n    |> Enum.map(& &1.price)\n    |> Enum.sum()\n    |> dbg()\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_pipeline",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/checkout.ex",
+          "text": "defmodule MyApp.Checkout do\n  def total(cart) do\n    cart\n    |> Map.fetch!(:items)\n    |> Enum.map(& &1.price)\n    |> Enum.sum()\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

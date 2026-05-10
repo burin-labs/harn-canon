@@ -1,0 +1,25 @@
+{
+  "predicate": "no_iex_pry",
+  "cases": [
+    {
+      "name": "blocks_iex_pry_breakpoint",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/router.ex",
+          "text": "defmodule MyApp.Router do\n  require IEx\n\n  def dispatch(conn) do\n    IEx.pry()\n    handle(conn)\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_dispatch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/router.ex",
+          "text": "defmodule MyApp.Router do\n  def dispatch(conn) do\n    handle(conn)\n  end\nend\n"
+        }
+      ]
+    }
+  ]
+}

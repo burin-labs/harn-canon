@@ -1,0 +1,35 @@
+{
+  "predicate": "predicate_function_naming",
+  "cases": [
+    {
+      "name": "warns_on_is_prefix_with_question_mark",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/my_app/users.ex",
+          "text": "defmodule MyApp.Users do\n  def is_admin?(user) do\n    user.role == :admin\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_question_mark_only",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/users.ex",
+          "text": "defmodule MyApp.Users do\n  def admin?(user) do\n    user.role == :admin\n  end\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_guard_macro_is_prefix",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/guards.ex",
+          "text": "defmodule MyApp.Guards do\n  defguard is_admin(user) when is_map(user) and :erlang.map_get(:role, user) == :admin\nend\n"
+        }
+      ]
+    }
+  ]
+}

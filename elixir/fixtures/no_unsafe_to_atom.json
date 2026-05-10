@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unsafe_to_atom",
+  "cases": [
+    {
+      "name": "blocks_string_to_atom_on_user_input",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/my_app/feature_flags.ex",
+          "text": "defmodule MyApp.FeatureFlags do\n  def lookup(name) when is_binary(name) do\n    flags()[String.to_atom(name)]\n  end\n\n  defp flags, do: %{billing: true, search: false}\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_string_to_existing_atom",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/my_app/feature_flags.ex",
+          "text": "defmodule MyApp.FeatureFlags do\n  def lookup(name) when is_binary(name) do\n    case fetch_atom(name) do\n      {:ok, key} -> flags()[key]\n      :error -> nil\n    end\n  end\n\n  defp fetch_atom(name) do\n    {:ok, String.to_existing_atom(name)}\n  rescue\n    ArgumentError -> :error\n  end\n\n  defp flags, do: %{billing: true, search: false}\nend\n"
+        }
+      ]
+    }
+  ]
+}
