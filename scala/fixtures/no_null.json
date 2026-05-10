@@ -1,0 +1,45 @@
+{
+  "predicate": "no_null",
+  "cases": [
+    {
+      "name": "blocks_null_assignment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/User.scala",
+          "text": "package example\n\nfinal class User:\n  var name: String = null\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_null_argument",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Logger.scala",
+          "text": "package example\n\nobject Logger:\n  def log(message: String): Unit =\n    println(message)\n\n  def boot(): Unit = log(null)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_option_for_absent_value",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/User.scala",
+          "text": "package example\n\nfinal case class User(name: Option[String])\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_test_path_with_null_for_interop_fixture",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/test/scala/example/UserSpec.scala",
+          "text": "package example\n\nclass UserSpec extends munit.FunSuite:\n  test(\"interop allows null\") {\n    val raw: String = null\n    assert(raw == null)\n  }\n"
+        }
+      ]
+    }
+  ]
+}

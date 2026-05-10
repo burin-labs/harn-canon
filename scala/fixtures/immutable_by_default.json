@@ -1,0 +1,35 @@
+{
+  "predicate": "immutable_by_default",
+  "cases": [
+    {
+      "name": "warns_var_member",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Cart.scala",
+          "text": "package example\n\nfinal class Cart:\n  var totalCents: Int = 0\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_private_scoped_var",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Counter.scala",
+          "text": "package example\n\nfinal class Counter:\n  private[example] var ticks: Long = 0L\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_val_declaration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Cart.scala",
+          "text": "package example\n\nfinal case class Cart(items: List[Item]):\n  val totalCents: Int = items.map(_.priceCents).sum\n\nfinal case class Item(priceCents: Int)\n"
+        }
+      ]
+    }
+  ]
+}

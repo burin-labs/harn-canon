@@ -1,0 +1,45 @@
+{
+  "predicate": "no_any_in_public_api",
+  "cases": [
+    {
+      "name": "warns_any_return_type_on_public_def",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Lookup.scala",
+          "text": "package example\n\nfinal class Lookup(values: Map[String, Int]):\n  def find(key: String): Any = values.getOrElse(key, \"missing\")\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_anyref_return_type",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Box.scala",
+          "text": "package example\n\nclass Box[A](a: A):\n  def value: AnyRef = a.asInstanceOf[AnyRef]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_concrete_return_type",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Lookup.scala",
+          "text": "package example\n\nfinal class Lookup(values: Map[String, Int]):\n  def find(key: String): Option[Int] = values.get(key)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_private_any_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Lookup.scala",
+          "text": "package example\n\nfinal class Lookup:\n  private def raw(key: String): Any = key\n"
+        }
+      ]
+    }
+  ]
+}

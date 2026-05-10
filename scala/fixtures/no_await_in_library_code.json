@@ -1,0 +1,45 @@
+{
+  "predicate": "no_await_in_library_code",
+  "cases": [
+    {
+      "name": "blocks_await_result_in_service",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.{Await, Future, ExecutionContext}\nimport scala.concurrent.duration.*\n\nfinal class Service(using ExecutionContext):\n  def fetch(): Int = Await.result(Future(1), 5.seconds)\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_await_ready_in_service",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.{Await, Future, ExecutionContext}\nimport scala.concurrent.duration.*\n\nfinal class Service(using ExecutionContext):\n  def warm(): Future[Int] =\n    val f = Future(1)\n    Await.ready(f, 1.second)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_future_composition",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.{Future, ExecutionContext}\n\nfinal class Service(using ExecutionContext):\n  def fetch(): Future[Int] = Future(1).map(_ + 1)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_await_in_main_entry",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Main.scala",
+          "text": "package example\n\nimport scala.concurrent.{Await, ExecutionContext, Future}\nimport scala.concurrent.duration.*\n\nobject Main:\n  def main(args: Array[String]): Unit =\n    given ExecutionContext = ExecutionContext.global\n    val _ = Await.result(Future(1), 5.seconds)\n"
+        }
+      ]
+    }
+  ]
+}

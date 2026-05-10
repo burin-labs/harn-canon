@@ -1,0 +1,35 @@
+{
+  "predicate": "no_unchecked_type_casts",
+  "cases": [
+    {
+      "name": "warns_as_instance_of",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Decoder.scala",
+          "text": "package example\n\nobject Decoder:\n  def asLong(value: Any): Long = value.asInstanceOf[Long]\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_is_instance_of",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Routing.scala",
+          "text": "package example\n\nobject Routing:\n  def isString(value: Any): Boolean = value.isInstanceOf[String]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pattern_matching",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Decoder.scala",
+          "text": "package example\n\nobject Decoder:\n  def asLong(value: Any): Option[Long] = value match\n    case n: Long => Some(n)\n    case n: Int  => Some(n.toLong)\n    case _       => None\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "predicate": "no_get_on_option_or_try",
+  "cases": [
+    {
+      "name": "blocks_option_get",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/User.scala",
+          "text": "package example\n\nobject User:\n  def displayName(maybe: Option[String]): String = maybe.get\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_try_get",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Parsing.scala",
+          "text": "package example\n\nimport scala.util.Try\n\nobject Parsing:\n  def asInt(raw: String): Int = Try(raw.toInt).get\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_get_or_else",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/User.scala",
+          "text": "package example\n\nobject User:\n  def displayName(maybe: Option[String]): String = maybe.getOrElse(\"anonymous\")\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_map_lookup_with_arg",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Lookup.scala",
+          "text": "package example\n\nobject Lookup:\n  def find(values: Map[String, Int], key: String): Option[Int] = values.get(key)\n"
+        }
+      ]
+    }
+  ]
+}

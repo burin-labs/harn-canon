@@ -1,0 +1,45 @@
+{
+  "predicate": "no_global_execution_context",
+  "cases": [
+    {
+      "name": "blocks_global_execution_context_import",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.ExecutionContext.Implicits.global\nimport scala.concurrent.Future\n\nfinal class Service:\n  def fetch(): Future[Int] = Future(1)\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_wildcard_implicits_import",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.ExecutionContext.Implicits.*\nimport scala.concurrent.Future\n\nfinal class Service:\n  def fetch(): Future[Int] = Future(1)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_execution_context_param",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Service.scala",
+          "text": "package example\n\nimport scala.concurrent.{ExecutionContext, Future}\n\nfinal class Service(ec: ExecutionContext):\n  given ExecutionContext = ec\n  def fetch(): Future[Int] = Future(1)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_global_in_main_entry",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Main.scala",
+          "text": "package example\n\nimport scala.concurrent.ExecutionContext.Implicits.global\nimport scala.concurrent.Future\n\nobject Main:\n  def main(args: Array[String]): Unit =\n    val _ = Future(println(\"hi\"))\n"
+        }
+      ]
+    }
+  ]
+}
