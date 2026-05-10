@@ -1,0 +1,35 @@
+{
+  "predicate": "explicit_imports",
+  "cases": [
+    {
+      "name": "warns_open_import_without_qualified_or_list",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Acme/Report.hs",
+          "text": "module Acme.Report (renderReport) where\n\nimport Data.Map.Strict\n\nrenderReport :: Map ReportId Report -> Text\nrenderReport _ = mempty\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_qualified_import",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Report.hs",
+          "text": "module Acme.Report (renderReport) where\n\nimport qualified Data.Map.Strict as Map\n\nrenderReport :: Map.Map ReportId Report -> Text\nrenderReport _ = mempty\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_import_list",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Report.hs",
+          "text": "module Acme.Report (renderReport) where\n\nimport Data.Map.Strict (Map)\n\nrenderReport :: Map ReportId Report -> Text\nrenderReport _ = mempty\n"
+        }
+      ]
+    }
+  ]
+}

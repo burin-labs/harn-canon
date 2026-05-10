@@ -1,0 +1,25 @@
+{
+  "predicate": "no_orphan_instances",
+  "cases": [
+    {
+      "name": "blocks_orphan_instance",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Acme/Json/Time.hs",
+          "text": "module Acme.Json.Time () where\n\nimport Data.Aeson (FromJSON, ToJSON)\nimport Data.Time (UTCTime)\n\ninstance ToJSON UTCTime where\n  toJSON _ = error \"omitted\"\n\ninstance FromJSON UTCTime where\n  parseJSON _ = error \"omitted\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_instance_owned_by_module",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Json/Time.hs",
+          "text": "module Acme.Json.Time (Timestamp (..)) where\n\nimport Data.Aeson (FromJSON, ToJSON)\nimport Data.Time (UTCTime)\n\nnewtype Timestamp = Timestamp { unTimestamp :: UTCTime }\n  deriving (Eq, Show)\n\ninstance ToJSON Timestamp where\n  toJSON _ = error \"omitted\"\n\ninstance FromJSON Timestamp where\n  parseJSON _ = error \"omitted\"\n"
+        }
+      ]
+    }
+  ]
+}

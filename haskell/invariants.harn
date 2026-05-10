@@ -1,0 +1,290 @@
+let _EVIDENCE_PARTIAL_FUNCTIONS = [
+  "https://hackage.haskell.org/package/base/docs/Prelude.html",
+  "https://wiki.haskell.org/Avoiding_partial_functions",
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/using-warnings.html",
+]
+
+let _EVIDENCE_UNDEFINED = [
+  "https://hackage.haskell.org/package/base/docs/Prelude.html#v:undefined",
+  "https://wiki.haskell.org/Avoiding_partial_functions",
+]
+
+let _EVIDENCE_ERROR_CALL = [
+  "https://hackage.haskell.org/package/base/docs/Prelude.html#v:error",
+  "https://hackage.haskell.org/package/base/docs/Control-Exception.html",
+]
+
+let _EVIDENCE_UNSAFE_PERFORM_IO = [
+  "https://hackage.haskell.org/package/base/docs/System-IO-Unsafe.html",
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/ffi.html",
+]
+
+let _EVIDENCE_EXPLICIT_IMPORTS = [
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/using-warnings.html",
+  "https://hackage.haskell.org/package/hlint",
+]
+
+let _EVIDENCE_EXPLICIT_EXPORT = [
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/using-warnings.html",
+  "https://www.haskell.org/onlinereport/haskell2010/haskellch5.html",
+]
+
+let _EVIDENCE_NEWTYPE = [
+  "https://wiki.haskell.org/Newtype",
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/exts/newtypes.html",
+  "https://hackage.haskell.org/package/hlint",
+]
+
+let _EVIDENCE_TOTAL_FUNCTIONS = [
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/using-warnings.html",
+  "https://wiki.haskell.org/Avoiding_partial_functions",
+]
+
+let _EVIDENCE_ORPHAN_INSTANCES = [
+  "https://downloads.haskell.org/ghc/latest/docs/users_guide/using-warnings.html",
+  "https://wiki.haskell.org/Orphan_instance",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+fn is_haskell_path(path) {
+  return path.ends_with(".hs") || path.ends_with(".lhs")
+}
+
+fn is_test_path(path) {
+  return path.starts_with("test/") || path.contains("/test/")
+    || path.starts_with("tests/") || path.contains("/tests/")
+    || path.starts_with("spec/") || path.contains("/spec/")
+    || path.starts_with("bench/") || path.contains("/bench/")
+    || path.starts_with("benches/") || path.contains("/benches/")
+    || path.starts_with("examples/") || path.contains("/examples/")
+    || path.ends_with("Spec.hs") || path.ends_with("Test.hs")
+    || path.ends_with("_spec.hs") || path.ends_with("_test.hs")
+}
+
+fn is_internal_path(path) {
+  return path.contains("/Internal/")
+    || path.contains(".Internal.")
+    || path.ends_with("/Internal.hs")
+}
+
+fn haskell_files(slice) {
+  return slice.files.filter({ file -> is_haskell_path(file.path) })
+}
+
+fn production_haskell_files(slice) {
+  return haskell_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn pub_api_haskell_files(slice) {
+  return production_haskell_files(slice).filter({ file -> !is_internal_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PARTIAL_FUNCTIONS, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks Prelude partial functions (head, tail, init, last, fromJust, !!) in non-Internal production modules. */
+pub fn no_partial_functions_in_pub_api(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    pub_api_haskell_files(slice),
+    r"(?:^|[^A-Za-z0-9_'.])(?:head|tail|init|last|fromJust)(?:[^A-Za-z0-9_']|$)|(?:^|[^!])!!(?:[^!]|$)",
+    "m",
+  )
+  return block_on_findings(
+    "no_partial_functions_in_pub_api",
+    "Use total alternatives like uncons, listToMaybe, lookup, or pattern matching; if a partial helper is unavoidable, isolate it under an Internal module.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNDEFINED, confidence: 0.88, source_date: "2026-05-10")
+/** Blocks the Prelude `undefined` value in production modules. */
+pub fn no_undefined_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?:^|[^A-Za-z0-9_'.])undefined(?:[^A-Za-z0-9_']|$)",
+    "m",
+  )
+  return block_on_findings(
+    "no_undefined_in_prod",
+    "Replace undefined with a real implementation, a typed Maybe/Either, or move the stub to a test or scratch module.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ERROR_CALL, confidence: 0.7, source_date: "2026-05-10")
+/** Warns when production modules call `error` instead of returning Either or throwing a typed exception. */
+pub fn no_error_call_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?:^|[^A-Za-z0-9_'.])error(?:[^A-Za-z0-9_']|$)",
+    "m",
+  )
+  return warn_on_findings(
+    "no_error_call_in_prod",
+    "Return Either/Maybe or throw a typed exception via Control.Exception (throwIO) instead of error.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNSAFE_PERFORM_IO, confidence: 0.86, source_date: "2026-05-10")
+/** Blocks unsafe IO escapes (unsafePerformIO and friends) in production modules. */
+pub fn no_unsafe_perform_io(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?:^|[^A-Za-z0-9_'.])(unsafePerformIO|unsafeDupablePerformIO|unsafeInterleaveIO|unsafeFixIO)(?:[^A-Za-z0-9_']|$)",
+    "m",
+  )
+  return block_on_findings(
+    "no_unsafe_perform_io",
+    "Thread IO through the type system; if escape is unavoidable, isolate it under an Internal module with a documented invariant and reviewer sign-off.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXPLICIT_IMPORTS, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on open imports — imports without `qualified` and without an explicit import list. */
+pub fn explicit_imports(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?m)^import\s+[A-Z][\w\.]*(?:\s+as\s+\w+)?\s*$",
+    "m",
+  )
+  return warn_on_findings(
+    "explicit_imports",
+    "Add an explicit import list, e.g. `import Data.Map (Map, lookup)`, or qualify the import to keep the namespace stable.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXPLICIT_EXPORT, confidence: 0.74, source_date: "2026-05-10")
+/** Warns when modules omit an explicit export list before `where`. */
+pub fn explicit_export_list(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?m)^module\s+[A-Z][\w\.]*\s+where\b",
+    "m",
+  )
+  return warn_on_findings(
+    "explicit_export_list",
+    "Add an explicit export list to the module header so the public surface is documented and reviewable.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NEWTYPE, confidence: 0.68, source_date: "2026-05-10")
+/** Warns when a single-field `data` record could be a `newtype` for zero runtime overhead. */
+pub fn prefer_newtype_for_single_field(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_haskell_files(slice),
+    r"(?m)^data\s+\w+(?:\s+\w+)*\s*=\s*\w+\s*\{\s*\w+\s*::\s*[^,}\n]+\}",
+    "m",
+  )
+  return warn_on_findings(
+    "prefer_newtype_for_single_field",
+    "Replace `data` with `newtype` for single-constructor, single-field records; it shares the runtime representation with the wrapped type.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_TOTAL_FUNCTIONS, confidence: 0.62, source_date: "2026-05-10")
+/** Blocks production functions that pattern-match non-exhaustively without a documented partial contract. */
+pub fn total_function_semantic_check(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Haskell production code introduces a function whose pattern matches are non-exhaustive — for example, list patterns missing the empty case, Maybe patterns missing Nothing, sum-type patterns missing constructors, lambda-case clauses missing variants, or `head`/`fromJust`-style partial helpers — and the function lacks a Haddock comment, MonadFail context, or other clear documentation that the partiality is intentional. Allow exhaustive matches, GADT/refinement-driven coverage, intentionally partial Internal helpers, and matches whose missing branches are statically impossible."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_haskell_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "total_function_semantic_check",
+      "Cover every constructor, return Maybe/Either, or document the partial contract on a function isolated to an Internal module.",
+      judgement.findings,
+    )
+  }
+  return allow("total_function_semantic_check")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_ORPHAN_INSTANCES, confidence: 0.66, source_date: "2026-05-10")
+/** Blocks orphan typeclass instances — instances declared in a module that defines neither the class nor the type. */
+pub fn no_orphan_instances(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when a changed Haskell module declares a typeclass instance and the slice shows that neither the class nor the head type constructor is defined in this module or its package. Allow newtype-wrapper instances declared alongside the wrapper, and instances that the module clearly owns. The judge may rely on imports and module headers as evidence."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_orphan_instances",
+      "Declare the instance in the module that owns the class or the type, or wrap the type in a newtype and put the instance on the wrapper.",
+      judgement.findings,
+    )
+  }
+  return allow("no_orphan_instances")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-10")
+/** Blocks hardcoded credentials, tokens, and other long-lived secrets in Haskell source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Haskell source embeds API tokens, signing keys, database passwords, production connection strings, private keys, or other long-lived credentials as string literals instead of reading them from environment variables, a secret manager, or a runtime config. Allow obviously fake test fixtures, public identifiers, and example documentation literals."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move secrets to environment variables or a secret manager and rotate any credentials that were exposed in source.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}

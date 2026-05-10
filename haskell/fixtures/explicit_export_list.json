@@ -1,0 +1,25 @@
+{
+  "predicate": "explicit_export_list",
+  "cases": [
+    {
+      "name": "warns_module_without_export_list",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Acme/Inventory.hs",
+          "text": "module Acme.Inventory where\n\nimport qualified Data.Map.Strict as Map\n\nstockOnHand :: Map.Map Sku Int -> Sku -> Int\nstockOnHand m sku = Map.findWithDefault 0 sku m\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_module_with_export_list",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Inventory.hs",
+          "text": "module Acme.Inventory (stockOnHand) where\n\nimport qualified Data.Map.Strict as Map\n\nstockOnHand :: Map.Map Sku Int -> Sku -> Int\nstockOnHand m sku = Map.findWithDefault 0 sku m\n"
+        }
+      ]
+    }
+  ]
+}

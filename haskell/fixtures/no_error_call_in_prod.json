@@ -1,0 +1,25 @@
+{
+  "predicate": "no_error_call_in_prod",
+  "cases": [
+    {
+      "name": "warns_error_with_string_literal",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Acme/Auth.hs",
+          "text": "module Acme.Auth (authenticate) where\n\nauthenticate :: Credentials -> Session\nauthenticate c\n  | not (verify c) = error \"invalid credentials\"\n  | otherwise      = newSession c\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_typed_exception",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Auth.hs",
+          "text": "module Acme.Auth (authenticate, AuthError (..)) where\n\nimport Control.Exception (Exception, throwIO)\n\ndata AuthError = InvalidCredentials\n  deriving (Show)\n\ninstance Exception AuthError\n\nauthenticate :: Credentials -> IO Session\nauthenticate c\n  | not (verify c) = throwIO InvalidCredentials\n  | otherwise      = pure (newSession c)\n"
+        }
+      ]
+    }
+  ]
+}

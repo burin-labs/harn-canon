@@ -1,0 +1,35 @@
+{
+  "predicate": "prefer_newtype_for_single_field",
+  "cases": [
+    {
+      "name": "warns_single_field_record_data",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Acme/Identifiers.hs",
+          "text": "module Acme.Identifiers (UserId (..)) where\n\ndata UserId = UserId { unUserId :: Int }\n  deriving (Eq, Show)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_newtype_single_field",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Identifiers.hs",
+          "text": "module Acme.Identifiers (UserId (..)) where\n\nnewtype UserId = UserId { unUserId :: Int }\n  deriving (Eq, Show)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_multi_field_record_data",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Acme/Identifiers.hs",
+          "text": "module Acme.Identifiers (User (..)) where\n\ndata User = User { userId :: Int, userName :: Text }\n  deriving (Eq, Show)\n"
+        }
+      ]
+    }
+  ]
+}
