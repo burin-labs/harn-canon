@@ -1,0 +1,25 @@
+{
+  "predicate": "key_naming_convention",
+  "cases": [
+    {
+      "name": "warns_on_mixed_case_bare_key",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"demo\"\napiKey = \"placeholder\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_lowercase_snake_and_kebab_keys",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"demo\"\nrust-version = \"1.78\"\nedition = \"2021\"\n\n[dev-dependencies]\nserde_json = \"1\"\n\n[tool.metadata]\n\"Quoted Mixed Case\" = true\n"
+        }
+      ]
+    }
+  ]
+}

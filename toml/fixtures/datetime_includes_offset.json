@@ -1,0 +1,25 @@
+{
+  "predicate": "datetime_includes_offset",
+  "cases": [
+    {
+      "name": "warns_on_local_datetime_without_offset",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "schedule.toml",
+          "text": "[run]\nstart = 2026-01-15T09:30:00\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_offset_datetime_and_plain_date",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schedule.toml",
+          "text": "[run]\nstart_utc = 2026-01-15T09:30:00Z\nstart_pst = 2026-01-15T09:30:00-08:00\nstart_day = 2026-01-15\nstart_time = 09:30:00\n"
+        }
+      ]
+    }
+  ]
+}

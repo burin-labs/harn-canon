@@ -1,0 +1,149 @@
+let _EVIDENCE_DUPLICATE_TABLES = [
+  "https://toml.io/en/v1.0.0#table",
+  "https://toml.io/en/v1.0.0#keys",
+  "https://github.com/toml-lang/toml/blob/1.0.0/toml.md",
+]
+
+let _EVIDENCE_INLINE_TABLE_COMMA = [
+  "https://toml.io/en/v1.0.0#inline-table",
+  "https://github.com/toml-lang/toml/blob/1.0.0/toml.md",
+]
+
+let _EVIDENCE_KEY_NAMING = [
+  "https://toml.io/en/v1.0.0#keys",
+  "https://doc.rust-lang.org/cargo/reference/manifest.html",
+  "https://packaging.python.org/en/latest/specifications/pyproject-toml/",
+]
+
+let _EVIDENCE_DATETIME_OFFSET = [
+  "https://toml.io/en/v1.0.0#offset-date-time",
+  "https://toml.io/en/v1.0.0#local-date-time",
+  "https://datatracker.ietf.org/doc/html/rfc3339",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+  "https://cwe.mitre.org/data/definitions/798.html",
+]
+
+fn toml_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".toml") })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DUPLICATE_TABLES, confidence: 0.78, source_date: "2026-05-09")
+/** Blocks the same standard-table header being defined more than once in a TOML file. */
+pub fn no_duplicate_table_headers(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    toml_files(slice),
+    r"(?ms)^[ \t]*\[([^\]\[\n]+)\][ \t]*(?:#[^\n]*)?$.*?^[ \t]*\[\1\][ \t]*(?:#[^\n]*)?$",
+    "ms",
+  )
+  return block_on_findings(
+    "no_duplicate_table_headers",
+    "Merge the duplicate sections, or rename one; standard tables may only be defined once per TOML document.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_INLINE_TABLE_COMMA, confidence: 0.86, source_date: "2026-05-09")
+/** Blocks trailing commas inside inline tables, which TOML 1.0 rejects. */
+pub fn no_trailing_comma_in_inline_table(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(toml_files(slice), r"\{[^{}\n]*,[ \t]*\}", "s")
+  return block_on_findings(
+    "no_trailing_comma_in_inline_table",
+    "Drop the trailing comma; inline tables disallow it (arrays do permit a trailing comma).",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_KEY_NAMING, confidence: 0.66, source_date: "2026-05-09")
+/** Warns on bare keys that contain uppercase letters; prefer snake_case or kebab-case. */
+pub fn key_naming_convention(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    toml_files(slice),
+    r"(?m)^[ \t]*[A-Za-z0-9_.-]*[A-Z][A-Za-z0-9_.-]*[ \t]*=",
+    "m",
+  )
+  return warn_on_findings(
+    "key_naming_convention",
+    "Use lowercase bare keys (snake_case or kebab-case); quote the key if mixed case is required.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DATETIME_OFFSET, confidence: 0.7, source_date: "2026-05-09")
+/** Warns on RFC 3339 datetime values that omit a timezone offset (local-date-time). */
+pub fn datetime_includes_offset(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    toml_files(slice),
+    r"(?m)^[^=\n#]*=[ \t]*\d{4}-\d{2}-\d{2}[Tt ]\d{2}:\d{2}:\d{2}(?:\.\d+)?[ \t]*(?:#[^\n]*)?$",
+    "m",
+  )
+  return warn_on_findings(
+    "datetime_includes_offset",
+    "Add a timezone offset (e.g. Z or +00:00) so the value is unambiguous across machines.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.62, source_date: "2026-05-09")
+/** Blocks hardcoded credentials, tokens, or signing secrets in TOML configuration. */
+pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when TOML configuration contains a hardcoded credential value such as an API token, database password, signing key, OAuth client secret, private key, or production service credential, instead of a placeholder, environment-variable reference, secret-manager reference, or test/example fixture clearly marked as fake."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: toml_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "secrets_not_hardcoded_in_toml",
+      "Reference the secret via env var, secret manager, or templated config instead of inlining the value.",
+      judgement.findings,
+    )
+  }
+  return allow("secrets_not_hardcoded_in_toml")
+}
