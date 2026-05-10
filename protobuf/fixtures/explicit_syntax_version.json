@@ -1,0 +1,35 @@
+{
+  "predicate": "explicit_syntax_version",
+  "cases": [
+    {
+      "name": "blocks_proto_without_syntax_or_edition",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "package api.v1;\n\nmessage User {\n  string id = 1;\n  string email = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_proto3_syntax_declaration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n  string email = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_editions_declaration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "edition = \"2023\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n}\n"
+        }
+      ]
+    }
+  ]
+}

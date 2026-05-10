@@ -1,0 +1,25 @@
+{
+  "predicate": "no_reserved_field_number_range",
+  "cases": [
+    {
+      "name": "blocks_field_number_in_implementation_reserved_range",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n  string email = 19500;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_field_numbers_outside_reserved_range",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n  string email = 2;\n  string display_name = 18999;\n  string avatar_url = 20000;\n}\n"
+        }
+      ]
+    }
+  ]
+}

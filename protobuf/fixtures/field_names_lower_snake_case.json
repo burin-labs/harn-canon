@@ -1,0 +1,25 @@
+{
+  "predicate": "field_names_lower_snake_case",
+  "cases": [
+    {
+      "name": "warns_camel_case_field",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string userId = 1;\n  string emailAddress = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_lower_snake_case_fields",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string user_id = 1;\n  string email_address = 2;\n  repeated string role_ids = 3;\n}\n"
+        }
+      ]
+    }
+  ]
+}

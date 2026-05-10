@@ -1,0 +1,25 @@
+{
+  "predicate": "reserved_on_field_removal",
+  "cases": [
+    {
+      "name": "blocks_field_removal_without_reserved",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\n// Previously: string email = 2; legacy_id = 3; — both removed without a\n// reserved declaration, so a future field could silently reuse tag 2 or 3\n// and corrupt data on the wire for any client still on the old schema.\nmessage User {\n  string id = 1;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_removal_with_reserved_number_and_name",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  reserved 2, 3;\n  reserved \"email\", \"legacy_id\";\n  string id = 1;\n}\n"
+        }
+      ]
+    }
+  ]
+}
