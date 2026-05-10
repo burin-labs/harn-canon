@@ -1,0 +1,45 @@
+{
+  "predicate": "const_correctness_on_pub_api",
+  "cases": [
+    {
+      "name": "warns_on_non_const_read_only_method",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\n#include <string>\n\nclass Widget {\npublic:\n    explicit Widget(std::string name) : name_(std::move(name)) {}\n    std::string name() { return name_; }\nprivate:\n    std::string name_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_const_qualified_accessor",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\n#include <string>\n\nclass Widget {\npublic:\n    explicit Widget(std::string name) : name_(std::move(name)) {}\n    const std::string& name() const { return name_; }\nprivate:\n    std::string name_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_method_that_mutates_state",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\nclass Widget {\npublic:\n    void increment() { ++n_; }\n    int value() const { return n_; }\nprivate:\n    int n_{0};\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_virtual_override_with_non_const_base",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/handler.cpp",
+          "text": "struct Base {\n    virtual void handle() = 0;\n    virtual ~Base() = default;\n};\n\nclass Derived : public Base {\npublic:\n    void handle() override {\n        // Base::handle is non-const; override must match.\n    }\n};\n"
+        }
+      ]
+    }
+  ]
+}

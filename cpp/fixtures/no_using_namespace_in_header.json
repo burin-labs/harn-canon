@@ -1,0 +1,35 @@
+{
+  "predicate": "no_using_namespace_in_header",
+  "cases": [
+    {
+      "name": "blocks_using_namespace_std_in_header",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\n#include <string>\n\nusing namespace std;\n\nstruct Widget {\n    string name;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_using_alias_in_header",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\n#include <string>\n\nnamespace widget {\nusing String = std::string;\n\nstruct Widget {\n    String name;\n};\n}  // namespace widget\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_using_namespace_inside_cpp_source",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include \"widget/widget.hpp\"\n\nusing namespace std;\n\nvoid Widget::touch() {\n    name = string(\"hi\");\n}\n"
+        }
+      ]
+    }
+  ]
+}

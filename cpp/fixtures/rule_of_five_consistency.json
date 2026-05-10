@@ -1,0 +1,45 @@
+{
+  "predicate": "rule_of_five_consistency",
+  "cases": [
+    {
+      "name": "blocks_class_with_only_destructor_declared",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/handle.cpp",
+          "text": "#include <cstdio>\n\nclass Handle {\npublic:\n    Handle() : fp_(nullptr) {}\n    ~Handle() {\n        if (fp_) std::fclose(fp_);\n    }\nprivate:\n    std::FILE* fp_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_class_with_copy_but_no_move",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/owner.cpp",
+          "text": "class Owner {\npublic:\n    Owner();\n    Owner(const Owner&);\n    Owner& operator=(const Owner&);\n    ~Owner();\n    // Move members intentionally omitted\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_rule_of_zero",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/value.cpp",
+          "text": "#include <string>\n#include <vector>\n\nclass Value {\npublic:\n    int id() const { return id_; }\nprivate:\n    int id_ = 0;\n    std::string name_;\n    std::vector<int> tags_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_full_set",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/handle.cpp",
+          "text": "#include <cstdio>\n\nclass Handle {\npublic:\n    Handle() = default;\n    ~Handle() {\n        if (fp_) std::fclose(fp_);\n    }\n    Handle(const Handle&) = delete;\n    Handle& operator=(const Handle&) = delete;\n    Handle(Handle&& other) noexcept : fp_(other.fp_) { other.fp_ = nullptr; }\n    Handle& operator=(Handle&& other) noexcept {\n        if (this != &other) {\n            if (fp_) std::fclose(fp_);\n            fp_ = other.fp_;\n            other.fp_ = nullptr;\n        }\n        return *this;\n    }\nprivate:\n    std::FILE* fp_ = nullptr;\n};\n"
+        }
+      ]
+    }
+  ]
+}

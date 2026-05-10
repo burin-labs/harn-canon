@@ -1,0 +1,55 @@
+{
+  "predicate": "no_naked_malloc_free",
+  "cases": [
+    {
+      "name": "blocks_malloc_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/buffer.cpp",
+          "text": "#include <cstdlib>\n\nvoid* allocate(size_t bytes) {\n    return malloc(bytes);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_free_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/buffer.cpp",
+          "text": "#include <cstdlib>\n\nvoid release(void* p) {\n    free(p);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_calloc_realloc_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/grow.cpp",
+          "text": "#include <cstdlib>\n\nvoid* zero_alloc(size_t n) {\n    return calloc(n, sizeof(int));\n}\n\nvoid* grow(void* p, size_t bytes) {\n    return realloc(p, bytes);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_vector_and_unique_ptr",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/buffer.cpp",
+          "text": "#include <memory>\n#include <vector>\n\nstd::vector<int> make_buffer(std::size_t n) {\n    return std::vector<int>(n);\n}\n\nstd::unique_ptr<int[]> make_array(std::size_t n) {\n    return std::make_unique<int[]>(n);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_malloc_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/buffer_test.cpp",
+          "text": "#include <cstdlib>\n\nvoid* legacy_alloc(size_t bytes) {\n    return malloc(bytes);\n}\n"
+        }
+      ]
+    }
+  ]
+}

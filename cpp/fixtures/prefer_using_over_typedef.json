@@ -1,0 +1,45 @@
+{
+  "predicate": "prefer_using_over_typedef",
+  "cases": [
+    {
+      "name": "warns_on_typedef_alias",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/types.cpp",
+          "text": "typedef int Counter;\n\nCounter zero() {\n    return 0;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_typedef_function_pointer",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/callbacks.cpp",
+          "text": "typedef void (*Callback)(int);\n\nvoid noop(int) {}\n\nCallback default_callback() {\n    return noop;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_using_alias",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/types.cpp",
+          "text": "using Counter = int;\n\nCounter zero() {\n    return 0;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_using_alias_for_function_pointer",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/callbacks.cpp",
+          "text": "using Callback = void (*)(int);\n\nvoid noop(int) {}\n\nCallback default_callback() {\n    return noop;\n}\n"
+        }
+      ]
+    }
+  ]
+}
