@@ -1,0 +1,25 @@
+{
+  "predicate": "module_registry_version_pinned",
+  "cases": [
+    {
+      "name": "blocks_registry_module_without_version",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "main.tf",
+          "text": "module \"vpc\" {\n  source = \"terraform-aws-modules/vpc/aws\"\n\n  name = \"acme-vpc\"\n  cidr = \"10.0.0.0/16\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_registry_module_with_pinned_version",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "main.tf",
+          "text": "module \"vpc\" {\n  source  = \"terraform-aws-modules/vpc/aws\"\n  version = \"~> 5.8\"\n\n  name = \"acme-vpc\"\n  cidr = \"10.0.0.0/16\"\n}\n"
+        }
+      ]
+    }
+  ]
+}
