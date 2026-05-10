@@ -1,0 +1,25 @@
+{
+  "predicate": "no_tabs_for_indent",
+  "cases": [
+    {
+      "name": "blocks_tab_indented_value",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n\tname: api\n\tport: 8080\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_space_indented_value",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n  name: api\n  port: 8080\n"
+        }
+      ]
+    }
+  ]
+}

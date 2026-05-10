@@ -1,0 +1,25 @@
+{
+  "predicate": "no_anchors_across_docs",
+  "cases": [
+    {
+      "name": "warns_on_alias_in_multi_document_file",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/pipeline.yaml",
+          "text": "---\ndefaults: &defaults\n  retries: 3\n  timeout: 30\n---\njob: build\nsettings: *defaults\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_alias_in_single_document_file",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/pipeline.yaml",
+          "text": "defaults: &defaults\n  retries: 3\n  timeout: 30\njob: build\nsettings: *defaults\n"
+        }
+      ]
+    }
+  ]
+}

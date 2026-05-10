@@ -1,0 +1,25 @@
+{
+  "predicate": "quoted_ambiguous_scalars",
+  "cases": [
+    {
+      "name": "warns_on_unquoted_version_with_trailing_zero",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/release.yaml",
+          "text": "release:\n  version: 1.10\n  legacy_id: 0123\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_quoted_ambiguous_values",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/release.yaml",
+          "text": "release:\n  version: \"1.10\"\n  legacy_id: \"0123\"\n"
+        }
+      ]
+    }
+  ]
+}
