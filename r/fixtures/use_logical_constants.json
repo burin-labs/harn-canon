@@ -1,0 +1,35 @@
+{
+  "predicate": "use_logical_constants",
+  "cases": [
+    {
+      "name": "warns_on_T_as_default",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/format.R",
+          "text": "format_number <- function(x, pretty = T) {\n  if (pretty) format(x, big.mark = \",\") else as.character(x)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_F_in_comparison",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/check.R",
+          "text": "should_skip <- function(flag) {\n  if (flag == F) return(\"skip\")\n  return(\"run\")\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_TRUE_FALSE",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/format.R",
+          "text": "format_number <- function(x, pretty = TRUE) {\n  if (isTRUE(pretty)) format(x, big.mark = \",\") else as.character(x)\n}\n"
+        }
+      ]
+    }
+  ]
+}

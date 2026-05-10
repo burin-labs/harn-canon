@@ -44,6 +44,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [Kotlin](./kotlin/) — v0 draft predicates for Kotlin JVM, Android, and Multiplatform source.
 - [Markdown](./markdown/) — v0 draft predicates for prose Markdown files used for documentation, READMEs, and design notes.
 - [Python](./python/) — v0 draft predicates for Python application and library code.
+- [R](./r/) — v0 draft predicates for R analysis scripts, R Markdown / Quarto documents, and R packages.
 - [Ruby](./ruby/) — v0 draft predicates for Ruby application and library code.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.

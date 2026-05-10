@@ -1,0 +1,35 @@
+{
+  "predicate": "no_right_assign",
+  "cases": [
+    {
+      "name": "warns_on_right_assign",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/transform.R",
+          "text": "mtcars |>\n  subset(mpg > 20) |>\n  nrow() -> efficient_count\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_super_right_assign",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "R/state.R",
+          "text": "init_counter <- function() {\n  0 ->> .counter\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_left_assign",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/transform.R",
+          "text": "efficient_count <- nrow(subset(mtcars, mpg > 20))\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_setwd_in_scripts",
+  "cases": [
+    {
+      "name": "blocks_setwd_to_user_home",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/run_pipeline.R",
+          "text": "setwd(\"/Users/alex/projects/analysis\")\nsource(\"steps/clean.R\")\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_here_package",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/run_pipeline.R",
+          "text": "library(here)\nsource(here(\"steps\", \"clean.R\"))\n"
+        }
+      ]
+    }
+  ]
+}

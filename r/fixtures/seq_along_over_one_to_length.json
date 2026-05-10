@@ -1,0 +1,45 @@
+{
+  "predicate": "seq_along_over_one_to_length",
+  "cases": [
+    {
+      "name": "warns_on_one_to_length",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/iterate.R",
+          "text": "process_each <- function(items) {\n  for (i in 1:length(items)) {\n    cat(i, items[[i]], \"\\n\")\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_one_to_nrow",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/rows.R",
+          "text": "summarize_rows <- function(df) {\n  for (i in 1:nrow(df)) {\n    print(df[i, ])\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_seq_along",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/iterate.R",
+          "text": "process_each <- function(items) {\n  for (i in seq_along(items)) {\n    cat(i, items[[i]], \"\\n\")\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_seq_len_nrow",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/rows.R",
+          "text": "summarize_rows <- function(df) {\n  for (i in seq_len(nrow(df))) {\n    print(df[i, ])\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

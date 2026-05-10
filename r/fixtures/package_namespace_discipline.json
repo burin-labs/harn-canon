@@ -1,0 +1,45 @@
+{
+  "predicate": "package_namespace_discipline",
+  "cases": [
+    {
+      "name": "warns_on_library_in_package_source",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "R/cleaners.R",
+          "text": "library(dplyr)\n\nclean_orders <- function(orders) {\n  orders |> filter(status == \"paid\") |> arrange(created_at)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_unqualified_external_symbol",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "R/cleaners.R",
+          "text": "clean_orders <- function(orders) {\n  orders |> filter(status == \"paid\") |> arrange(created_at)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_qualified_calls",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/cleaners.R",
+          "text": "clean_orders <- function(orders) {\n  orders |> dplyr::filter(status == \"paid\") |> dplyr::arrange(created_at)\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_importFrom_roxygen",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/cleaners.R",
+          "text": "#' @importFrom dplyr filter arrange\nclean_orders <- function(orders) {\n  orders |> filter(status == \"paid\") |> arrange(created_at)\n}\n"
+        }
+      ]
+    }
+  ]
+}

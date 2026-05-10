@@ -1,0 +1,35 @@
+{
+  "predicate": "reproducible_random_seed",
+  "cases": [
+    {
+      "name": "warns_on_sample_without_seed",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "analysis/bootstrap.R",
+          "text": "n <- 1000\nsamples <- replicate(500, mean(sample(rnorm(n), n, replace = TRUE)))\nhist(samples)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_set_seed_before_randomness",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "analysis/bootstrap.R",
+          "text": "set.seed(20260510)\nn <- 1000\nsamples <- replicate(500, mean(sample(rnorm(n), n, replace = TRUE)))\nhist(samples)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_function_only_definition",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "analysis/helpers.R",
+          "text": "draw <- function(n, seed) {\n  set.seed(seed)\n  rnorm(n)\n}\n"
+        }
+      ]
+    }
+  ]
+}

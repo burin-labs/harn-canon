@@ -1,0 +1,35 @@
+{
+  "predicate": "vectorize_over_loops",
+  "cases": [
+    {
+      "name": "warns_on_elementwise_loop",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "R/scale.R",
+          "text": "scale_prices <- function(prices, factor) {\n  out <- numeric(length(prices))\n  for (i in seq_along(prices)) {\n    out[i] <- prices[i] * factor\n  }\n  out\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_vectorized_form",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/scale.R",
+          "text": "scale_prices <- function(prices, factor) {\n  prices * factor\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_loop_with_inter_iteration_state",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/cumulate.R",
+          "text": "running_total <- function(values, threshold) {\n  total <- 0\n  for (v in values) {\n    if (total + v > threshold) break\n    total <- total + v\n  }\n  total\n}\n"
+        }
+      ]
+    }
+  ]
+}
