@@ -1,0 +1,35 @@
+{
+  "predicate": "no_broad_lint_ignores",
+  "cases": [
+    {
+      "name": "warns_on_multi_rule_ignore_for_file",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/widget_tree.dart",
+          "text": "// ignore_for_file: avoid_print, prefer_const_constructors, lines_longer_than_80_chars\n\nvoid main() {}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_type_lint_blanket",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/widget_tree.dart",
+          "text": "// ignore_for_file: type=lint\n\nvoid main() {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_single_rule_ignore_with_reason",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/widget_tree.dart",
+          "text": "// ignore_for_file: avoid_print // CLI tool prints help text\n\nvoid main() {\n  print('hello');\n}\n"
+        }
+      ]
+    }
+  ]
+}

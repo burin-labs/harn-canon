@@ -1,0 +1,45 @@
+{
+  "predicate": "no_dynamic_in_signatures",
+  "cases": [
+    {
+      "name": "warns_on_dynamic_return_type",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/parser.dart",
+          "text": "dynamic decode(String input) {\n  return input.split(',');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_dynamic_parameter_type",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/parser.dart",
+          "text": "List<String> render(dynamic value) {\n  return ['$value'];\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_concrete_signature",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/parser.dart",
+          "text": "List<String> decode(String input) {\n  return input.split(',');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_generic_signature",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/parser.dart",
+          "text": "T identity<T>(T value) => value;\n"
+        }
+      ]
+    }
+  ]
+}

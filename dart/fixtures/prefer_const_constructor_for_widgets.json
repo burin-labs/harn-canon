@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_const_constructor_for_widgets",
+  "cases": [
+    {
+      "name": "warns_on_widget_without_const_constructor",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/greeting.dart",
+          "text": "import 'package:flutter/widgets.dart';\n\nclass Greeting extends StatelessWidget {\n  Greeting({super.key, required this.name});\n\n  final String name;\n\n  @override\n  Widget build(BuildContext context) {\n    return Text('Hello, $name');\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_widget_with_const_constructor",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/greeting.dart",
+          "text": "import 'package:flutter/widgets.dart';\n\nclass Greeting extends StatelessWidget {\n  const Greeting({super.key, required this.name});\n\n  final String name;\n\n  @override\n  Widget build(BuildContext context) {\n    return Text('Hello, $name');\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

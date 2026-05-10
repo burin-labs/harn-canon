@@ -1,0 +1,35 @@
+{
+  "predicate": "no_force_null_assertion",
+  "cases": [
+    {
+      "name": "blocks_force_null_assertion",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/src/profile.dart",
+          "text": "String displayName(User? user) {\n  return user!.name;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_if_null_fallback",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/profile.dart",
+          "text": "String displayName(User? user) {\n  return user?.name ?? 'Anonymous';\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_boolean_negation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/profile.dart",
+          "text": "bool isReady(bool ready) {\n  if (!ready) {\n    return false;\n  }\n  return ready != false;\n}\n"
+        }
+      ]
+    }
+  ]
+}

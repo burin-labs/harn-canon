@@ -1,0 +1,35 @@
+{
+  "predicate": "no_relative_lib_imports",
+  "cases": [
+    {
+      "name": "warns_on_parent_relative_import_in_lib",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/feature/order_view.dart",
+          "text": "import '../../widgets/loader.dart';\n\nclass OrderView {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_package_import_in_lib",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/feature/order_view.dart",
+          "text": "import 'package:my_app/widgets/loader.dart';\n\nclass OrderView {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_sibling_relative_import_in_lib",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/feature/order_view.dart",
+          "text": "import 'order_model.dart';\n\nclass OrderView {}\n"
+        }
+      ]
+    }
+  ]
+}

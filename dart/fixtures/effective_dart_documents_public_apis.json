@@ -1,0 +1,35 @@
+{
+  "predicate": "effective_dart_documents_public_apis",
+  "cases": [
+    {
+      "name": "blocks_undocumented_public_class",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/src/order_repository.dart",
+          "text": "class OrderRepository {\n  Future<Order> findById(String id) async => Order(id);\n}\n\nclass Order {\n  Order(this.id);\n  final String id;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_documented_public_class",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/order_repository.dart",
+          "text": "/// Read-only access to persisted [Order] aggregates.\nclass OrderRepository {\n  /// Loads an order by its identifier.\n  Future<Order> findById(String id) async => Order(id);\n}\n\n/// A purchase order recorded in the system of record.\nclass Order {\n  /// Creates an order with the supplied [id].\n  Order(this.id);\n\n  /// The opaque, server-assigned order identifier.\n  final String id;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_private_member_without_doc",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/order_repository.dart",
+          "text": "/// Read-only access to persisted [_Order] aggregates.\nclass OrderRepository {\n  Future<_Order> _findById(String id) async => _Order(id);\n}\n\nclass _Order {\n  _Order(this.id);\n  final String id;\n}\n"
+        }
+      ]
+    }
+  ]
+}
