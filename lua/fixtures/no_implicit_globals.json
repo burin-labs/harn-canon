@@ -1,0 +1,25 @@
+{
+  "predicate": "no_implicit_globals",
+  "cases": [
+    {
+      "name": "warns_on_top_level_bare_assignment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/config.lua",
+          "text": "DEFAULT_TIMEOUT = 30\nMAX_RETRIES = 5\n\nreturn { timeout = DEFAULT_TIMEOUT, retries = MAX_RETRIES }\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_local_and_explicit_global",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/config.lua",
+          "text": "local DEFAULT_TIMEOUT = 30\n_G.LEGACY_FLAG = true\n\nreturn { timeout = DEFAULT_TIMEOUT }\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unsafe_os_command",
+  "cases": [
+    {
+      "name": "blocks_dynamic_os_execute",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/runner.lua",
+          "text": "local M = {}\n\nfunction M.run(cmd)\n  return os.execute(cmd)\nend\n\nreturn M\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_literal_os_execute",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/runner.lua",
+          "text": "local M = {}\n\nfunction M.healthcheck()\n  return os.execute('uptime')\nend\n\nreturn M\n"
+        }
+      ]
+    }
+  ]
+}

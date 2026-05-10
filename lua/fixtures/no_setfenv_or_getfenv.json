@@ -1,0 +1,25 @@
+{
+  "predicate": "no_setfenv_or_getfenv",
+  "cases": [
+    {
+      "name": "blocks_setfenv_call",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/sandbox.lua",
+          "text": "local function run_in(env, fn)\n  setfenv(fn, env)\n  return fn()\nend\n\nreturn run_in\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_env_upvalue",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/sandbox.lua",
+          "text": "local function run_in(env, source)\n  local chunk = load(source, 'sandbox', 't', env)\n  return chunk and chunk()\nend\n\nreturn run_in\n"
+        }
+      ]
+    }
+  ]
+}

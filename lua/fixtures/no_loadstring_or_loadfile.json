@@ -1,0 +1,25 @@
+{
+  "predicate": "no_loadstring_or_loadfile",
+  "cases": [
+    {
+      "name": "blocks_dynamic_load_of_user_input",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/rules.lua",
+          "text": "local M = {}\n\nfunction M.run(source)\n  local chunk = load(source)\n  return chunk()\nend\n\nreturn M\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_literal_load",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/rules.lua",
+          "text": "local M = {}\n\nfunction M.bootstrap()\n  local chunk = load('return 42')\n  return chunk()\nend\n\nreturn M\n"
+        }
+      ]
+    }
+  ]
+}

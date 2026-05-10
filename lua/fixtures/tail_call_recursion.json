@@ -1,0 +1,25 @@
+{
+  "predicate": "tail_call_recursion",
+  "cases": [
+    {
+      "name": "warns_on_non_tail_recursion",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/math.lua",
+          "text": "local M = {}\n\nfunction M.factorial(n)\n  if n <= 1 then return 1 end\n  return n * M.factorial(n - 1)\nend\n\nreturn M\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_tail_recursive_helper",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/math.lua",
+          "text": "local M = {}\n\nlocal function go(n, acc)\n  if n <= 1 then return acc end\n  return go(n - 1, n * acc)\nend\n\nfunction M.factorial(n)\n  return go(n, 1)\nend\n\nreturn M\n"
+        }
+      ]
+    }
+  ]
+}

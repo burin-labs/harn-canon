@@ -1,0 +1,25 @@
+{
+  "predicate": "metatable_boundary_documented",
+  "cases": [
+    {
+      "name": "blocks_undocumented_index_metamethod",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/store.lua",
+          "text": "local Store = {}\nlocal mt = {}\nmt.__index = function(t, k)\n  return rawget(Store, k) or rawget(t, k) or nil\nend\nsetmetatable(Store, mt)\n\nreturn Store\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_documented_metatable_assignment",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/store.lua",
+          "text": "local Store = {}\nlocal mt = {}\n-- Store: route missing keys to Store's class table so instances inherit methods.\nmt.__index = Store\nsetmetatable(Store, mt)\n\nreturn Store\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "predicate": "module_returns_value",
+  "cases": [
+    {
+      "name": "warns_on_module_without_return",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/util.lua",
+          "text": "local M = {}\n\nfunction M.add(a, b)\n  return a + b\nend\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_module_with_trailing_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/util.lua",
+          "text": "local M = {}\n\nfunction M.add(a, b)\n  return a + b\nend\n\nreturn M\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_shebang_script_without_return",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "bin/migrate.lua",
+          "text": "#!/usr/bin/env lua\n\nlocal db = require('db')\ndb.migrate()\n"
+        }
+      ]
+    }
+  ]
+}

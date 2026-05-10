@@ -1,0 +1,25 @@
+{
+  "predicate": "no_global_function_definition",
+  "cases": [
+    {
+      "name": "blocks_top_level_global_function",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/handlers.lua",
+          "text": "function handle_request(req)\n  return req.body\nend\n\nreturn { handle_request = handle_request }\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_local_function",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/handlers.lua",
+          "text": "local M = {}\n\nlocal function handle_request(req)\n  return req.body\nend\n\nfunction M.dispatch(req)\n  return handle_request(req)\nend\n\nreturn M\n"
+        }
+      ]
+    }
+  ]
+}
