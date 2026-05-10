@@ -1,0 +1,45 @@
+{
+  "predicate": "header_include_guard_or_pragma_once",
+  "cases": [
+    {
+      "name": "blocks_header_without_guard",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "include/widget/widget.h",
+          "text": "struct Widget {\n    int id;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_header_with_pragma_once",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget/widget.h",
+          "text": "#pragma once\n\nstruct Widget {\n    int id;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_header_with_ifndef_guard",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#ifndef WIDGET_WIDGET_HPP\n#define WIDGET_WIDGET_HPP\n\nstruct Widget {\n    int id;\n};\n\n#endif  // WIDGET_WIDGET_HPP\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_third_party_header_without_guard",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "third_party/legacy/legacy.h",
+          "text": "struct Legacy {\n    int v;\n};\n"
+        }
+      ]
+    }
+  ]
+}

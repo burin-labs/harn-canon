@@ -1,0 +1,55 @@
+{
+  "predicate": "no_raw_new_delete",
+  "cases": [
+    {
+      "name": "blocks_raw_new_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include \"widget.h\"\n\nWidget* make_widget() {\n    return new Widget(42);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_raw_delete_array_in_src",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/buffer.cpp",
+          "text": "void release(int* arr) {\n    delete[] arr;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_make_unique",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include <memory>\n#include \"widget.h\"\n\nstd::unique_ptr<Widget> make_widget() {\n    return std::make_unique<Widget>(42);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_raw_new_in_test_path",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/widget_test.cpp",
+          "text": "#include \"widget.h\"\n\nWidget* legacy_factory() {\n    return new Widget(0);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_operator_new_overload",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/arena.cpp",
+          "text": "#include <cstddef>\n\nstruct Arena {\n    static void* operator new(std::size_t bytes);\n    static void operator delete(void* p) noexcept;\n};\n"
+        }
+      ]
+    }
+  ]
+}

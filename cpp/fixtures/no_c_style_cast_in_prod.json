@@ -1,0 +1,45 @@
+{
+  "predicate": "no_c_style_cast_in_prod",
+  "cases": [
+    {
+      "name": "warns_on_c_style_cast_to_int",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/measure.cpp",
+          "text": "#include <cstddef>\n\nint truncate(double x) {\n    return (int)x;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_c_style_cast_to_pointer",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/buffer.cpp",
+          "text": "#include <cstddef>\n\nchar* as_chars(void* p) {\n    return (char*)p;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_named_casts",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/measure.cpp",
+          "text": "#include <cstddef>\n\nint truncate(double x) {\n    return static_cast<int>(x);\n}\n\nchar* as_chars(void* p) {\n    return reinterpret_cast<char*>(p);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_constructor_call",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/measure.cpp",
+          "text": "#include <string>\n\nstd::string make() {\n    return std::string(\"hello\");\n}\n"
+        }
+      ]
+    }
+  ]
+}

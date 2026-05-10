@@ -1,0 +1,45 @@
+{
+  "predicate": "members_initialized",
+  "cases": [
+    {
+      "name": "blocks_class_with_uninitialized_pod_member",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/counter.cpp",
+          "text": "class Counter {\npublic:\n    Counter() {}\n    int value() const { return n_; }\nprivate:\n    int n_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_class_with_uninitialized_pointer_member",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "include/widget/widget.hpp",
+          "text": "#pragma once\n\nclass Widget {\npublic:\n    Widget();\nprivate:\n    int* data_;\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_in_class_default_initializer",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/counter.cpp",
+          "text": "class Counter {\npublic:\n    Counter() = default;\n    int value() const { return n_; }\nprivate:\n    int n_{0};\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_constructor_member_init_list",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/counter.cpp",
+          "text": "class Counter {\npublic:\n    Counter() : n_(0) {}\n    explicit Counter(int n) : n_(n) {}\n    int value() const { return n_; }\nprivate:\n    int n_;\n};\n"
+        }
+      ]
+    }
+  ]
+}

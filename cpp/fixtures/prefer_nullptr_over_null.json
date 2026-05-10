@@ -1,0 +1,45 @@
+{
+  "predicate": "prefer_nullptr_over_null",
+  "cases": [
+    {
+      "name": "warns_on_null_assignment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include \"widget.h\"\n#include <cstddef>\n\nWidget* find() {\n    Widget* p = NULL;\n    return p;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_null_comparison",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include \"widget.h\"\n#include <cstddef>\n\nbool is_set(Widget* p) {\n    return p != NULL;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_nullptr_usage",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/widget.cpp",
+          "text": "#include \"widget.h\"\n\nWidget* find() {\n    Widget* p = nullptr;\n    return p;\n}\n\nbool is_set(Widget* p) {\n    return p != nullptr;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_null_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/widget_test.cpp",
+          "text": "#include \"widget.h\"\n#include <cstddef>\n\nvoid legacy() {\n    Widget* p = NULL;\n    (void)p;\n}\n"
+        }
+      ]
+    }
+  ]
+}
