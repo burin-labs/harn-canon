@@ -1,0 +1,338 @@
+let _EVIDENCE_STRICT_TYPES = [
+  "https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict",
+  "https://wiki.php.net/rfc/scalar_type_hints_v5",
+  "https://phptherightway.com/#strict_types",
+]
+
+let _EVIDENCE_SHORT_OPEN_TAGS = [
+  "https://www.php.net/manual/en/language.basic-syntax.phptags.php",
+  "https://www.php-fig.org/psr/psr-1/",
+]
+
+let _EVIDENCE_DEPRECATED_MYSQL = [
+  "https://www.php.net/manual/en/mysqlinfo.api.choosing.php",
+  "https://wiki.php.net/rfc/mysql_deprecation",
+  "https://www.php.net/manual/en/migration70.removed-exts-sapis.php",
+]
+
+let _EVIDENCE_CREATE_FUNCTION = [
+  "https://www.php.net/manual/en/function.create-function.php",
+  "https://wiki.php.net/rfc/deprecations_php_7_2",
+  "https://www.php.net/migration80",
+]
+
+let _EVIDENCE_EVAL = [
+  "https://www.php.net/manual/en/function.eval.php",
+  "https://owasp.org/www-community/attacks/Code_Injection",
+  "https://cwe.mitre.org/data/definitions/95.html",
+]
+
+let _EVIDENCE_EXTRACT_REQUEST = [
+  "https://www.php.net/manual/en/function.extract.php",
+  "https://owasp.org/www-community/vulnerabilities/PHP_File_Inclusion",
+  "https://www.php.net/manual/en/security.variables.php",
+]
+
+let _EVIDENCE_TYPED_PROPERTIES = [
+  "https://www.php.net/manual/en/language.oop5.properties.php",
+  "https://wiki.php.net/rfc/typed_properties_v2",
+]
+
+let _EVIDENCE_DEBUG_FUNCTIONS = [
+  "https://www.php.net/manual/en/function.var-dump.php",
+  "https://www.php.net/manual/en/function.print-r.php",
+  "https://www.php-fig.org/psr/psr-3/",
+]
+
+let _EVIDENCE_PARAMETERIZED = [
+  "https://www.php.net/manual/en/pdo.prepared-statements.php",
+  "https://www.php.net/manual/en/mysqli.quickstart.prepared-statements.php",
+  "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://www.php.net/manual/en/function.getenv.php",
+  "https://owasp.org/www-project-top-10-ci-cd-security-risks/CICD-SEC-06-Insufficient-Credential-Hygiene",
+]
+
+let _EVIDENCE_UNSERIALIZE = [
+  "https://www.php.net/manual/en/function.unserialize.php",
+  "https://owasp.org/www-community/vulnerabilities/PHP_Object_Injection",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+]
+
+fn is_php_path(path) {
+  return path.ends_with(".php") || path.ends_with(".phtml")
+}
+
+fn is_class_php_path(path) {
+  return path.ends_with(".php")
+}
+
+fn is_test_path(path) {
+  return regex_match(r"(^|/)([Tt]ests?|spec)/", path, "") != nil
+    || path.ends_with("Test.php")
+    || path.ends_with("TestCase.php")
+    || path.ends_with("_test.php")
+}
+
+fn is_script_path(path) {
+  return regex_match(r"(^|/)(bin|scripts?)/", path, "") != nil
+}
+
+fn is_vendored_path(path) {
+  return regex_match(r"(^|/)(vendor|node_modules|build|dist)/", path, "") != nil
+}
+
+fn php_files(slice) {
+  return slice.files.filter({ file -> is_php_path(file.path) && !is_vendored_path(file.path) })
+}
+
+fn class_php_files(slice) {
+  return slice.files
+    .filter({ file -> is_class_php_path(file.path) && !is_vendored_path(file.path) })
+}
+
+fn production_php_files(slice) {
+  return php_files(slice)
+    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+}
+
+fn production_class_php_files(slice) {
+  return class_php_files(slice)
+    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn scan_files_without(files, include_pattern, exclude_pattern) {
+  return scan_files_if(
+    files,
+    { file -> regex_match(include_pattern, file.text, "s") != nil
+      && regex_match(exclude_pattern, file.text, "s") == nil },
+  )
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_STRICT_TYPES, confidence: 0.82, source_date: "2026-05-10")
+/** Blocks production .php class files that open with <?php but lack declare(strict_types=1). */
+pub fn declare_strict_types_enforced(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    production_class_php_files(slice),
+    r"(?s)\A\s*(?:\xef\xbb\xbf)?<\?php\b",
+    r"(?i)declare\s*\(\s*strict_types\s*=\s*1\s*\)",
+  )
+  return block_on_findings(
+    "declare_strict_types_enforced",
+    "Add declare(strict_types=1); as the first statement after the <?php opener so type coercion errors surface early.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SHORT_OPEN_TAGS, confidence: 0.9, source_date: "2026-05-10")
+/** Blocks PHP short open tags `<?` that depend on the short_open_tag ini directive. */
+pub fn no_short_open_tags(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(php_files(slice), r"<\?(?!php\b|=|xml\b)", "")
+  return block_on_findings(
+    "no_short_open_tags",
+    "Use the full <?php opener (and <?= for short echo); short_open_tag is a portability hazard.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DEPRECATED_MYSQL, confidence: 0.95, source_date: "2026-05-10")
+/** Blocks calls to functions in the removed ext/mysql extension. */
+pub fn no_deprecated_mysql_ext(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    php_files(slice),
+    r"(^|[^_A-Za-z0-9>])mysql_[a-z_]+\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_deprecated_mysql_ext",
+    "Replace mysql_* calls with PDO or mysqli; the ext/mysql extension was deprecated in 5.5 and removed in 7.0.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CREATE_FUNCTION, confidence: 0.93, source_date: "2026-05-10")
+/** Blocks calls to create_function(), which was removed in PHP 8.0 and is an eval-style sink. */
+pub fn no_create_function(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    php_files(slice),
+    r"(^|[^_A-Za-z0-9>])create_function\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_create_function",
+    "Use a closure or arrow function instead of create_function(); it was removed in PHP 8.0 and evaluates its body as a string.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EVAL, confidence: 0.85, source_date: "2026-05-10")
+/** Blocks direct eval() calls in PHP source. */
+pub fn no_eval(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(php_files(slice), r"(^|[^_A-Za-z0-9>])eval\s*\(", "m")
+  return block_on_findings(
+    "no_eval",
+    "Replace eval() with explicit dispatch, a parser, or a constrained interpreter; eval is a code-injection sink.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXTRACT_REQUEST, confidence: 0.92, source_date: "2026-05-10")
+/** Blocks extract() over superglobals, which re-creates the register_globals injection footgun. */
+pub fn no_extract_from_request(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    php_files(slice),
+    r"(^|[^_A-Za-z0-9>])extract\s*\(\s*\$_(?:GET|POST|REQUEST|COOKIE|FILES|SERVER|ENV)\b",
+    "m",
+  )
+  return block_on_findings(
+    "no_extract_from_request",
+    "Read individual keys from the superglobal and validate them; extract() over $_GET/$_POST lets attackers overwrite arbitrary local variables.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TYPED_PROPERTIES, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on class property declarations that omit a type (PHP 7.4+ supports typed properties). */
+pub fn typed_properties(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    class_php_files(slice),
+    r"(?m)^\s*(?:var|public|protected|private)(?:\s+static)?\s+\$[A-Za-z_]",
+    "m",
+  )
+  return warn_on_findings(
+    "typed_properties",
+    "Add a property type (e.g. private string $name); typed properties enforce invariants at write time.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DEBUG_FUNCTIONS, confidence: 0.72, source_date: "2026-05-10")
+/** Warns when production PHP source calls var_dump/print_r/var_export-style debug functions. */
+pub fn no_debug_dump_in_prod(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_php_files(slice),
+    r"(^|[^_A-Za-z0-9>])(var_dump|print_r|var_export|debug_zval_dump|debug_print_backtrace)\s*\(",
+    "m",
+  )
+  return warn_on_findings(
+    "no_debug_dump_in_prod",
+    "Route diagnostics through a PSR-3 logger; var_dump/print_r leak internal state to whoever sees the response.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-10")
+/** Blocks SQL built by interpolating user-controlled values into the query text. */
+pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed PHP code builds a SQL query by concatenating, interpolating, or sprintf-ing user-controlled values into the SQL text instead of using PDO or mysqli prepared statements with bound parameters. Allow constant identifiers, whitelisted column or table names assembled from a fixed map, and ORM/query-builder calls that ultimately bind parameters."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "prepared_statements_only",
+      "Bind values with PDO::prepare or mysqli::prepare and execute with parameters; never concatenate untrusted input into SQL.",
+      judgement.findings,
+    )
+  }
+  return allow("prepared_statements_only")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
+/** Blocks hardcoded credentials and high-risk secrets in PHP source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed PHP source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials as string literals or define()/const declarations instead of reading them from getenv, $_ENV, a secret manager, or a parsed configuration file outside the repo."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Load secrets from getenv/$_ENV or a secret manager; rotate any value that touched source control.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_UNSERIALIZE, confidence: 0.7, source_date: "2026-05-10")
+/** Blocks unserialize() calls on data that may originate from untrusted input. */
+pub fn unserialize_input_is_trusted(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed PHP code passes potentially user-controlled data (request bodies, cookies, query parameters, file contents from upload paths, cache entries that store request data, message-queue payloads from external systems) into unserialize() without setting the allowed_classes option to false or to a small explicit allowlist. Allow unserialize() over data that is provably internal (sealed cache values, signed payloads verified before unserialize, fixtures)."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "unserialize_input_is_trusted",
+      "Switch to json_decode for cross-trust-boundary data, or pass allowed_classes => false (or a tight allowlist) to unserialize.",
+      judgement.findings,
+    )
+  }
+  return allow("unserialize_input_is_trusted")
+}

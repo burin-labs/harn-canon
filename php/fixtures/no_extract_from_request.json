@@ -1,0 +1,45 @@
+{
+  "predicate": "no_extract_from_request",
+  "cases": [
+    {
+      "name": "blocks_extract_from_post",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Http/SignupController.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction handle_signup(): void\n{\n    extract($_POST);\n    save_user($email, $password);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_extract_from_request",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Http/LegacyHandler.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nextract($_REQUEST);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_key_reads",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Http/SignupController.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction handle_signup(): void\n{\n    $email = trim((string) ($_POST['email'] ?? ''));\n    $password = (string) ($_POST['password'] ?? '');\n    save_user($email, $password);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_extract_from_known_array",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Templates/Renderer.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction render(string $template, array $bindings): string\n{\n    extract($bindings, EXTR_SKIP);\n    ob_start();\n    require $template;\n    return (string) ob_get_clean();\n}\n"
+        }
+      ]
+    }
+  ]
+}

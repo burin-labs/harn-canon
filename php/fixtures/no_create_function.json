@@ -1,0 +1,25 @@
+{
+  "predicate": "no_create_function",
+  "cases": [
+    {
+      "name": "blocks_create_function",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Util/Sorter.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\n$compare = create_function('$a, $b', 'return $a <=> $b;');\nusort($items, $compare);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_arrow_function",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Util/Sorter.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nusort($items, fn ($a, $b) => $a <=> $b);\n"
+        }
+      ]
+    }
+  ]
+}

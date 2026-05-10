@@ -1,0 +1,35 @@
+{
+  "predicate": "no_short_open_tags",
+  "cases": [
+    {
+      "name": "blocks_short_open_tag_in_template",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "resources/views/banner.phtml",
+          "text": "<? if ($flash): ?>\n  <div class=\"flash\"><?= $flash ?></div>\n<? endif; ?>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_full_open_and_short_echo",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "resources/views/banner.phtml",
+          "text": "<?php if ($flash): ?>\n  <div class=\"flash\"><?= $flash ?></div>\n<?php endif; ?>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_xml_prolog_in_response",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Http/SitemapResponse.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nheader('Content-Type: application/xml');\necho '<?xml version=\"1.0\" encoding=\"UTF-8\"?>';\n"
+        }
+      ]
+    }
+  ]
+}
