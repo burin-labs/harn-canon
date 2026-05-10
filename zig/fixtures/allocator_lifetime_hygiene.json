@@ -1,0 +1,35 @@
+{
+  "predicate": "allocator_lifetime_hygiene",
+  "cases": [
+    {
+      "name": "blocks_alloc_without_defer_free",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/leaky.zig",
+          "text": "const std = @import(\"std\");\n\npub fn buildBuffer(allocator: std.mem.Allocator, n: usize) !void {\n    const buf = try allocator.alloc(u8, n);\n    @memset(buf, 0);\n    // buf is never freed, never returned, never stored on a struct.\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_alloc_paired_with_defer",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/scoped.zig",
+          "text": "const std = @import(\"std\");\n\npub fn writeOut(allocator: std.mem.Allocator, n: usize) !void {\n    const buf = try allocator.alloc(u8, n);\n    defer allocator.free(buf);\n    @memset(buf, 0);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_alloc_returned_to_caller",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/owned.zig",
+          "text": "const std = @import(\"std\");\n\n/// Caller owns the returned slice and must free it with `allocator`.\npub fn build(allocator: std.mem.Allocator, n: usize) ![]u8 {\n    const buf = try allocator.alloc(u8, n);\n    @memset(buf, 0);\n    return buf;\n}\n"
+        }
+      ]
+    }
+  ]
+}

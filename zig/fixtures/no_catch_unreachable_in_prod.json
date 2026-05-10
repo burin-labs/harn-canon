@@ -1,0 +1,45 @@
+{
+  "predicate": "no_catch_unreachable_in_prod",
+  "cases": [
+    {
+      "name": "warns_on_catch_unreachable_in_prod",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main.zig",
+          "text": "const std = @import(\"std\");\n\npub fn main() void {\n    const v = parseConfig() catch unreachable;\n    std.log.info(\"loaded {s}\", .{v});\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_capture_then_unreachable",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/lib.zig",
+          "text": "pub fn first(slice: []const u8) u8 {\n    return slice[0] catch |_| unreachable;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_error_propagation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main.zig",
+          "text": "pub fn main() !void {\n    const v = try parseConfig();\n    _ = v;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_catch_unreachable_in_test_file",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/parser_test.zig",
+          "text": "const std = @import(\"std\");\nconst parser = @import(\"parser.zig\");\n\ntest \"parses fixture\" {\n    const v = parser.parse(\"ok\") catch unreachable;\n    try std.testing.expectEqualStrings(\"ok\", v);\n}\n"
+        }
+      ]
+    }
+  ]
+}

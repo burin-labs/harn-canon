@@ -1,0 +1,35 @@
+{
+  "predicate": "build_zon_dependency_hash_pinned",
+  "cases": [
+    {
+      "name": "blocks_url_dependency_without_hash",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "build.zig.zon",
+          "text": ".{\n    .name = \"example\",\n    .version = \"0.1.0\",\n    .minimum_zig_version = \"0.13.0\",\n    .dependencies = .{\n        .mecha = .{\n            .url = \"https://github.com/Hejsil/mecha/archive/refs/tags/0.8.0.tar.gz\",\n        },\n    },\n    .paths = .{ \"\" },\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_url_dependency_with_hash",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "build.zig.zon",
+          "text": ".{\n    .name = \"example\",\n    .version = \"0.1.0\",\n    .minimum_zig_version = \"0.13.0\",\n    .dependencies = .{\n        .mecha = .{\n            .url = \"https://github.com/Hejsil/mecha/archive/refs/tags/0.8.0.tar.gz\",\n            .hash = \"1220a1b2c3d4e5f60708091a0b0c0d0e0f10111213141516171819aabbccddeeff\",\n        },\n    },\n    .paths = .{ \"\" },\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_path_dependency_without_hash",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "build.zig.zon",
+          "text": ".{\n    .name = \"example\",\n    .version = \"0.1.0\",\n    .minimum_zig_version = \"0.13.0\",\n    .dependencies = .{\n        .local = .{\n            .path = \"../local-pkg\",\n        },\n    },\n    .paths = .{ \"\" },\n}\n"
+        }
+      ]
+    }
+  ]
+}

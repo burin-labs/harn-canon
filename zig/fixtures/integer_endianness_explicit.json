@@ -1,0 +1,25 @@
+{
+  "predicate": "integer_endianness_explicit",
+  "cases": [
+    {
+      "name": "warns_on_bitcast_from_byte_slice_without_endian",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/wire.zig",
+          "text": "const std = @import(\"std\");\n\npub fn parseLength(frame: []const u8) u32 {\n    const head: *const [4]u8 = @ptrCast(frame.ptr);\n    return @bitCast(head.*);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_readint_with_endianness_argument",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/wire.zig",
+          "text": "const std = @import(\"std\");\n\npub fn parseLength(frame: []const u8) u32 {\n    return std.mem.readInt(u32, frame[0..4], .big);\n}\n"
+        }
+      ]
+    }
+  ]
+}

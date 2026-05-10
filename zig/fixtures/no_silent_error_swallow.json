@@ -1,0 +1,45 @@
+{
+  "predicate": "no_silent_error_swallow",
+  "cases": [
+    {
+      "name": "blocks_empty_catch_block",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/io.zig",
+          "text": "const std = @import(\"std\");\n\npub fn save(buf: []const u8) void {\n    std.fs.cwd().writeFile(.{ .sub_path = \"out.bin\", .data = buf }) catch {};\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_capture_then_empty_block",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/runner.zig",
+          "text": "pub fn run() void {\n    doWork() catch |_| {};\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_error_handling",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/runner.zig",
+          "text": "const std = @import(\"std\");\n\npub fn run() !void {\n    doWork() catch |err| {\n        std.log.err(\"work failed: {}\", .{err});\n        return err;\n    };\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_try_propagation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/runner.zig",
+          "text": "pub fn run() !void {\n    try doWork();\n}\n"
+        }
+      ]
+    }
+  ]
+}

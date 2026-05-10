@@ -1,0 +1,45 @@
+{
+  "predicate": "unsafe_cast_has_justification",
+  "cases": [
+    {
+      "name": "warns_on_truncate_without_comment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/encode.zig",
+          "text": "pub fn lowByte(value: u32) u8 {\n    return @truncate(value);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_ptrcast_without_comment",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/buffers.zig",
+          "text": "pub fn header(buf: []u8) *Header {\n    return @ptrCast(buf.ptr);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_truncate_with_inline_comment",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/encode.zig",
+          "text": "pub fn lowByte(value: u32) u8 {\n    return @truncate(value); // value is bounded to u8 range by validateInput\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_alignment_cast_with_comment",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/buffers.zig",
+          "text": "pub fn align16(buf: [*]u8) [*]align(16) u8 {\n    return @alignCast(buf); // caller guarantees buf is 16-byte aligned\n}\n"
+        }
+      ]
+    }
+  ]
+}
