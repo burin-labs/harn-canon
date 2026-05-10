@@ -1,0 +1,25 @@
+{
+  "predicate": "no_field_number_renumbering",
+  "cases": [
+    {
+      "name": "blocks_renumbered_existing_field",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\n// Previously: string email = 2; — this change reassigns the existing field\n// to a new tag, breaking every already-deployed client.\nmessage User {\n  string id = 1;\n  string email = 7;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_additive_field",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\n// Adds a new optional field with a fresh number; existing tags untouched.\nmessage User {\n  string id = 1;\n  string email = 2;\n  optional string display_name = 3;\n}\n"
+        }
+      ]
+    }
+  ]
+}

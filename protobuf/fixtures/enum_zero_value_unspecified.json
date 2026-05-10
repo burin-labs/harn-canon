@@ -1,0 +1,25 @@
+{
+  "predicate": "enum_zero_value_unspecified",
+  "cases": [
+    {
+      "name": "warns_enum_without_unspecified_zero",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nenum Status {\n  ACTIVE = 0;\n  INACTIVE = 1;\n  BANNED = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_enum_with_unspecified_zero",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nenum Status {\n  STATUS_UNSPECIFIED = 0;\n  STATUS_ACTIVE = 1;\n  STATUS_INACTIVE = 2;\n  STATUS_BANNED = 3;\n}\n"
+        }
+      ]
+    }
+  ]
+}

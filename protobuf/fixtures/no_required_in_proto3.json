@@ -1,0 +1,35 @@
+{
+  "predicate": "no_required_in_proto3",
+  "cases": [
+    {
+      "name": "blocks_required_field_in_proto3",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  required string id = 1;\n  string email = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_singular_and_optional_proto3",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n  optional string email = 2;\n  repeated string roles = 3;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_required_in_proto2",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/legacy.proto",
+          "text": "syntax = \"proto2\";\n\npackage api.legacy;\n\nmessage Legacy {\n  required string id = 1;\n}\n"
+        }
+      ]
+    }
+  ]
+}

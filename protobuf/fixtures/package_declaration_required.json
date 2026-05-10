@@ -1,0 +1,25 @@
+{
+  "predicate": "package_declaration_required",
+  "cases": [
+    {
+      "name": "warns_proto_without_package",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\nmessage User {\n  string id = 1;\n  string email = 2;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_dotted_package",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "api/v1/user.proto",
+          "text": "syntax = \"proto3\";\n\npackage api.v1;\n\nmessage User {\n  string id = 1;\n  string email = 2;\n}\n"
+        }
+      ]
+    }
+  ]
+}
