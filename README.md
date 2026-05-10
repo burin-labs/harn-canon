@@ -32,6 +32,7 @@ See the Harn Flow design docs for the full predicate language spec.
 ## Packs
 
 - [C#](./csharp/) — v0 draft predicates for plain C# and .NET library or application code.
+- [CSS](./css/) — v0 draft predicates for CSS, Sass, and Less stylesheets covering cascade hygiene, internationalization, and accessibility.
 - [Go](./go/) — v0 draft predicates for Go modules, command packages, and reusable libraries.
 - [Harn](./harn/) — v0 draft predicates for `.harn` scripts, Flow workflows, and agent-facing Harn modules.
 - [Java](./java/) — v0 draft predicates for plain Java application and library code.

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_important_without_comment",
+  "cases": [
+    {
+      "name": "blocks_unjustified_important",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "components/banner.css",
+          "text": ".banner {\n  color: red !important;\n  padding: 1rem;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_important_with_inline_justification",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/banner.css",
+          "text": ".banner {\n  /* third-party widget injects a higher-specificity rule we cannot reach */\n  color: red !important;\n  padding: 1rem;\n}\n"
+        }
+      ]
+    }
+  ]
+}

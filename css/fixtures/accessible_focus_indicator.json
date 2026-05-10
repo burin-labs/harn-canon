@@ -1,0 +1,25 @@
+{
+  "predicate": "accessible_focus_indicator",
+  "cases": [
+    {
+      "name": "blocks_outline_none_without_replacement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "components/button.css",
+          "text": ".button:focus {\n  outline: none;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_outline_none_paired_with_focus_visible_replacement",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/button.css",
+          "text": ".button:focus {\n  outline: none;\n}\n\n.button:focus-visible {\n  outline: 2px solid #0a84ff;\n  outline-offset: 2px;\n}\n"
+        }
+      ]
+    }
+  ]
+}

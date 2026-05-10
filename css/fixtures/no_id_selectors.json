@@ -1,0 +1,35 @@
+{
+  "predicate": "no_id_selectors",
+  "cases": [
+    {
+      "name": "warns_on_id_rule",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "components/sidebar.css",
+          "text": "#sidebar {\n  width: 240px;\n  background: #f5f5f5;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_id_in_multiline_selector_list",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "components/footer.scss",
+          "text": ".footer-link,\n#legal-link {\n  color: #333;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_class_rule_hex_colors_and_sass_interpolation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/sidebar.scss",
+          "text": "$prefix: nav;\n\n.#{$prefix}-sidebar {\n  width: 240px;\n  background: linear-gradient(45deg, #abc, #def);\n  color: #f5f5f5;\n}\n"
+        }
+      ]
+    }
+  ]
+}
