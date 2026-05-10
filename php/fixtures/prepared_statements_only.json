@@ -1,0 +1,25 @@
+{
+  "predicate": "prepared_statements_only",
+  "cases": [
+    {
+      "name": "blocks_string_concatenated_query",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Repository/UserLookup.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class UserLookup\n{\n    public function __construct(private PDO $pdo) {}\n\n    public function findByEmail(string $email): ?array\n    {\n        $row = $this->pdo->query(\"SELECT id, email FROM users WHERE email = '\" . $email . \"'\")->fetch(PDO::FETCH_ASSOC);\n        return $row ?: null;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pdo_prepared_statement",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Repository/UserLookup.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class UserLookup\n{\n    public function __construct(private PDO $pdo) {}\n\n    public function findByEmail(string $email): ?array\n    {\n        $stmt = $this->pdo->prepare('SELECT id, email FROM users WHERE email = :email');\n        $stmt->execute(['email' => $email]);\n        $row = $stmt->fetch(PDO::FETCH_ASSOC);\n        return $row ?: null;\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "predicate": "unserialize_input_is_trusted",
+  "cases": [
+    {
+      "name": "blocks_unserialize_of_cookie",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Session/CartLoader.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class CartLoader\n{\n    public function load(): Cart\n    {\n        $payload = $_COOKIE['cart'] ?? '';\n        return unserialize($payload);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_json_decode_for_untrusted_payload",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Session/CartLoader.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class CartLoader\n{\n    public function load(): Cart\n    {\n        $payload = $_COOKIE['cart'] ?? '{}';\n        $data = json_decode($payload, associative: true, flags: JSON_THROW_ON_ERROR);\n        return Cart::fromArray($data);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unserialize_with_allowed_classes_false",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Cache/Loader.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class Loader\n{\n    public function read(string $blob): array\n    {\n        return unserialize($blob, ['allowed_classes' => false]);\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

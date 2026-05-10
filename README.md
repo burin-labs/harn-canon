@@ -43,6 +43,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [JSON](./json/) — v0 draft predicates for strict JSON conformance, encoding hygiene, declared-schema respect, and untrusted-data boundaries.
 - [Kotlin](./kotlin/) — v0 draft predicates for Kotlin JVM, Android, and Multiplatform source.
 - [Markdown](./markdown/) — v0 draft predicates for prose Markdown files used for documentation, READMEs, and design notes.
+- [PHP](./php/) — v0 draft predicates for plain PHP application and library code.
 - [Python](./python/) — v0 draft predicates for Python application and library code.
 - [Ruby](./ruby/) — v0 draft predicates for Ruby application and library code.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.

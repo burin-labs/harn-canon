@@ -1,0 +1,35 @@
+{
+  "predicate": "no_deprecated_mysql_ext",
+  "cases": [
+    {
+      "name": "blocks_mysql_query_call",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Legacy/UserRepository.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction find_user(int $id): array {\n    $conn = mysql_connect('localhost', 'app', 'secret');\n    $result = mysql_query('SELECT id, email FROM users WHERE id = ' . $id, $conn);\n    return mysql_fetch_assoc($result);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pdo_equivalent",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Legacy/UserRepository.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction find_user(PDO $pdo, int $id): array {\n    $stmt = $pdo->prepare('SELECT id, email FROM users WHERE id = :id');\n    $stmt->execute(['id' => $id]);\n    return $stmt->fetch(PDO::FETCH_ASSOC);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_mysqli_function",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Legacy/Connection.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\n$conn = mysqli_connect('localhost', 'app', getenv('DB_PASS'));\n"
+        }
+      ]
+    }
+  ]
+}

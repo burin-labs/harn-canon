@@ -1,0 +1,45 @@
+{
+  "predicate": "no_debug_dump_in_prod",
+  "cases": [
+    {
+      "name": "warns_var_dump_in_production_path",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Http/InvoiceController.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class InvoiceController\n{\n    public function show(Invoice $invoice): void\n    {\n        var_dump($invoice);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_print_r_with_return_in_production_path",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Reports/Renderer.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfunction render(array $rows): string\n{\n    return print_r($rows, true);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_logger_call_in_production",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Http/InvoiceController.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class InvoiceController\n{\n    public function __construct(private LoggerInterface $logger) {}\n\n    public function show(Invoice $invoice): void\n    {\n        $this->logger->debug('rendering invoice', ['id' => $invoice->id()]);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_var_dump_in_test_path",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tests/Unit/Http/InvoiceControllerTest.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class InvoiceControllerTest\n{\n    public function testDebug(): void\n    {\n        var_dump($this->invoice);\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

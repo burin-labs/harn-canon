@@ -1,0 +1,35 @@
+{
+  "predicate": "declare_strict_types_enforced",
+  "cases": [
+    {
+      "name": "blocks_class_file_without_strict_types",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Billing/InvoiceService.php",
+          "text": "<?php\n\nnamespace App\\Billing;\n\nfinal class InvoiceService\n{\n    public function total(int $cents): int\n    {\n        return $cents;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_class_file_with_strict_types",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Billing/InvoiceService.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nnamespace App\\Billing;\n\nfinal class InvoiceService\n{\n    public function total(int $cents): int\n    {\n        return $cents;\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_template_phtml_file",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "resources/views/invoice.phtml",
+          "text": "<!doctype html>\n<html>\n  <body>\n    <h1>Invoice <?= htmlspecialchars($invoice->number()) ?></h1>\n  </body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

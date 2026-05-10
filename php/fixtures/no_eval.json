@@ -1,0 +1,35 @@
+{
+  "predicate": "no_eval",
+  "cases": [
+    {
+      "name": "blocks_eval_call",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/Rules/Engine.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class Engine\n{\n    public function run(string $expression): mixed\n    {\n        return eval('return ' . $expression . ';');\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_dispatch",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Rules/Engine.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class Engine\n{\n    /** @var array<string, callable(int): int> */\n    private array $ops = [\n        'double' => fn (int $v): int => $v * 2,\n    ];\n\n    public function run(string $op, int $value): int\n    {\n        return ($this->ops[$op])($value);\n    }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_method_call_named_eval",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Rules/Caller.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\n$result = $evaluator->eval($tree);\n"
+        }
+      ]
+    }
+  ]
+}

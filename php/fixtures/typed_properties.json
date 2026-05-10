@@ -1,0 +1,35 @@
+{
+  "predicate": "typed_properties",
+  "cases": [
+    {
+      "name": "warns_untyped_visibility_property",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Domain/User.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class User\n{\n    private $email;\n    public $createdAt;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_legacy_var_keyword",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/Domain/Legacy.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nclass Legacy\n{\n    var $name;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_typed_properties",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/Domain/User.php",
+          "text": "<?php\n\ndeclare(strict_types=1);\n\nfinal class User\n{\n    private string $email;\n    private ?DateTimeImmutable $createdAt = null;\n    private static array $cache = [];\n    public readonly string $id;\n}\n"
+        }
+      ]
+    }
+  ]
+}
