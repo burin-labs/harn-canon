@@ -1,0 +1,25 @@
+{
+  "predicate": "no_return_keyword",
+  "cases": [
+    {
+      "name": "warns_explicit_return",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Search.scala",
+          "text": "package example\n\nobject Search:\n  def first(values: List[Int]): Option[Int] =\n    for value <- values do\n      if value > 0 then\n        return Some(value)\n    None\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_last_expression_result",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Search.scala",
+          "text": "package example\n\nobject Search:\n  def first(values: List[Int]): Option[Int] = values.find(_ > 0)\n"
+        }
+      ]
+    }
+  ]
+}

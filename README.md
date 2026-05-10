@@ -53,6 +53,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [R](./r/) — v0 draft predicates for R analysis scripts, R Markdown / Quarto documents, and R packages.
 - [Ruby](./ruby/) — v0 draft predicates for Ruby application and library code.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.
+- [Scala](./scala/) — v0 draft predicates for Scala 2 and Scala 3 source covering null safety, immutability, effect-system hygiene, and pattern-match exhaustiveness.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.
 - [Swift](./swift/) — v0 draft predicates for Swift application and UI code.
 - [Terraform](./terraform/) — v0 draft predicates for Terraform configurations across AWS, Azure, and GCP providers.

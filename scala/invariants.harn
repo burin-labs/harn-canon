@@ -1,0 +1,320 @@
+let _EVIDENCE_PUBLIC_API_TYPES = [
+  "https://docs.scala-lang.org/scala3/book/methods-most.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_NULL = [
+  "https://docs.scala-lang.org/scala3/book/fp-functional-error-handling.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_MUTABILITY = [
+  "https://docs.scala-lang.org/scala3/book/taste-vars-data-types.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_RETURN = [
+  "https://docs.scala-lang.org/scala3/reference/dropped-features/nonlocal-returns.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_EXPLICIT_TYPES = [
+  "https://docs.scala-lang.org/scala3/book/methods-most.html",
+  "https://docs.scala-lang.org/style/declarations.html",
+]
+
+let _EVIDENCE_OPTION_GET = [
+  "https://docs.scala-lang.org/scala3/book/fp-functional-error-handling.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_TYPE_CASTS = [
+  "https://docs.scala-lang.org/scala3/reference/changed-features/pattern-matching.html",
+  "https://www.wartremover.org/doc/warts.html",
+]
+
+let _EVIDENCE_GLOBAL_EC = [
+  "https://docs.scala-lang.org/overviews/core/futures.html",
+  "https://typelevel.org/cats-effect/docs/getting-started",
+]
+
+let _EVIDENCE_AWAIT = [
+  "https://docs.scala-lang.org/overviews/core/futures.html",
+  "https://typelevel.org/cats-effect/docs/getting-started",
+]
+
+let _EVIDENCE_EFFECTS = [
+  "https://typelevel.org/cats-effect/docs/getting-started",
+  "https://zio.dev/reference/core/zio/",
+]
+
+let _EVIDENCE_PATTERN_EXHAUSTIVE = [
+  "https://docs.scala-lang.org/scala3/reference/changed-features/pattern-matching.html",
+  "https://docs.scala-lang.org/tour/pattern-matching.html",
+]
+
+fn is_scala_path(path) {
+  return path.ends_with(".scala")
+}
+
+fn is_test_path(path) {
+  return path.contains("/src/test/")
+    || path.contains("/src/it/")
+    || path.contains("/src/funTest/")
+    || path.contains("/test/")
+    || path.contains("/tests/")
+    || path.contains("/it/")
+    || path.ends_with("Spec.scala")
+    || path.ends_with("Suite.scala")
+    || path.ends_with("Test.scala")
+    || path.ends_with("Tests.scala")
+    || path.ends_with("Properties.scala")
+}
+
+fn is_generated_path(path) {
+  return path.contains("/target/")
+    || path.contains("/.bloop/")
+    || path.contains("/.metals/")
+    || path.contains("/.bsp/")
+    || path.contains("/generated/")
+    || path.ends_with(".scala.bak")
+}
+
+fn is_main_entry_path(path) {
+  return path.ends_with("/Main.scala")
+    || path.ends_with("/App.scala")
+    || path.ends_with("/Application.scala")
+    || path.ends_with("/Boot.scala")
+}
+
+fn production_scala_files(slice) {
+  return slice.files.filter(
+    { file -> is_scala_path(file.path)
+      && !is_test_path(file.path)
+      && !is_generated_path(file.path) },
+  )
+}
+
+fn library_scala_files(slice) {
+  return production_scala_files(slice).filter({ file -> !is_main_entry_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PUBLIC_API_TYPES, confidence: 0.7, source_date: "2026-05-10")
+/** Warns when a non-private def declares Any, AnyRef, or AnyVal as its return type. */
+pub fn no_any_in_public_api(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_scala_files(slice),
+    r"(?m)^\s*(?:final\s+|override\s+|implicit\s+|inline\s+|transparent\s+|opaque\s+|protected(?:\[[^\]]+\])?\s+)*def\s+\w+\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\)\s*)*:\s*(?:Any|AnyRef|AnyVal)\b",
+    "m",
+  )
+  return warn_on_findings(
+    "no_any_in_public_api",
+    "Replace Any/AnyRef/AnyVal in public return types with a concrete type, sealed family, or generic parameter.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NULL, confidence: 0.74, source_date: "2026-05-10")
+/** Blocks null literals in production Scala source outside of tests and Java interop layers. */
+pub fn no_null(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_scala_files(slice), r"(?:^|[\s=,(:!\[])null\b", "ms")
+  return block_on_findings(
+    "no_null",
+    "Use Option, Either, or Try to model absence; reserve null for narrowly scoped Java interop wrappers.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MUTABILITY, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on mutable var declarations in production Scala source. */
+pub fn immutable_by_default(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_scala_files(slice),
+    r"(?m)^\s*(?:private(?:\[[^\]]+\])?\s+|protected(?:\[[^\]]+\])?\s+|implicit\s+|lazy\s+|final\s+|override\s+)*var\s+\w+\s*[:=]",
+    "m",
+  )
+  return warn_on_findings(
+    "immutable_by_default",
+    "Prefer val; reach for var only when the object's contract intentionally mutates.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RETURN, confidence: 0.72, source_date: "2026-05-10")
+/** Warns on explicit return statements in production Scala source. */
+pub fn no_return_keyword(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_scala_files(slice), r"(?m)^\s*return\b", "m")
+  return warn_on_findings(
+    "no_return_keyword",
+    "Let the last expression be the result; for early exit use boundary/break or restructure with match.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXPLICIT_TYPES, confidence: 0.7, source_date: "2026-05-10")
+/** Warns when a non-private def omits an explicit return type. */
+pub fn explicit_return_types_on_public_defs(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_scala_files(slice),
+    r"(?m)^\s*(?:final\s+|override\s+|implicit\s+|inline\s+|transparent\s+|opaque\s+|protected(?:\[[^\]]+\])?\s+)*def\s+\w+\s*(?:\[[^\]]*\])?\s*(?:\([^)]*\)\s*)*=\s*",
+    "m",
+  )
+  return warn_on_findings(
+    "explicit_return_types_on_public_defs",
+    "Annotate public defs with an explicit return type; inferred public types churn binary compatibility.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OPTION_GET, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks .get accessor calls on Option/Try values in production Scala source. */
+pub fn no_get_on_option_or_try(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_scala_files(slice), r"\.get\b(?!\s*\()", "s")
+  return block_on_findings(
+    "no_get_on_option_or_try",
+    "Use getOrElse, fold, pattern matching, or for-comprehensions; .get throws on None/Failure.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TYPE_CASTS, confidence: 0.74, source_date: "2026-05-10")
+/** Warns on asInstanceOf or isInstanceOf type casts in production Scala source. */
+pub fn no_unchecked_type_casts(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_scala_files(slice), r"\.(?:asInstanceOf|isInstanceOf)\b", "s")
+  return warn_on_findings(
+    "no_unchecked_type_casts",
+    "Replace asInstanceOf/isInstanceOf with pattern matching, sealed hierarchies, or a TypeTest.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_GLOBAL_EC, confidence: 0.84, source_date: "2026-05-10")
+/** Blocks imports of the global ExecutionContext in production library Scala source. */
+pub fn no_global_execution_context(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    library_scala_files(slice),
+    r"import\s+scala\.concurrent\.ExecutionContext\.Implicits\.(?:global|_|\*)",
+    "s",
+  )
+  return block_on_findings(
+    "no_global_execution_context",
+    "Take an ExecutionContext as a parameter or wire one explicitly; the global pool is not safe for blocking workloads.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_AWAIT, confidence: 0.82, source_date: "2026-05-10")
+/** Blocks Await.result and Await.ready outside of tests and main entry points. */
+pub fn no_await_in_library_code(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(library_scala_files(slice), r"\bAwait\s*\.\s*(?:result|ready)\s*\(", "s")
+  return block_on_findings(
+    "no_await_in_library_code",
+    "Compose Futures with map/flatMap/for or expose them in the API; keep Await at the process boundary.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.62, source_date: "2026-05-10")
+/** Blocks unsafe boundaries between effect types and Future in production Scala. */
+pub fn effect_typed_boundaries(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed production Scala mixes a typed effect (cats-effect IO/Resource, ZIO, Monix Task) with scala.concurrent.Future in a way that defeats cancellation, error channels, or resource scoping. Examples: calling .unsafeRunSync inside a Future or eager block to thread a value back to async code; turning an IO into a Future without IO.fromFuture/IO.fromFutureCancelable or the equivalent ZIO.fromFuture; awaiting a Future inside an IO body instead of suspending it. Allow code that crosses the boundary explicitly through documented adapter APIs."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "effect_typed_boundaries",
+      "Cross IO/ZIO and Future boundaries through fromFuture/fromFutureCancelable adapters; never unsafeRun inside another effect.",
+      judgement.findings,
+    )
+  }
+  return allow("effect_typed_boundaries")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.66, source_date: "2026-05-10")
+/** Blocks unsafe runtime escapes outside of process entry points. */
+pub fn no_unsafe_run_in_library_code(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Scala calls an effect runtime escape hatch (cats-effect unsafeRunSync/unsafeRunAsync/unsafeRunTimed, IORuntime.global.unsafe, ZIO Runtime.default.unsafe.run, Monix runSyncUnsafe) from a file that is not a Main, App, IOApp, ZIOAppDefault, test, or documented Dispatcher boundary. Allow these calls in process entry points and in test setup or teardown."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_unsafe_run_in_library_code",
+      "Move unsafeRun/runtime.unsafe calls to IOApp/ZIOAppDefault main, a Dispatcher, or test-only setup.",
+      judgement.findings,
+    )
+  }
+  return allow("no_unsafe_run_in_library_code")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_PATTERN_EXHAUSTIVE, confidence: 0.6, source_date: "2026-05-10")
+/** Warns when production match expressions are non-exhaustive without an explicit fallback. */
+pub fn pattern_matches_are_exhaustive(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed production Scala adds a match expression whose subject is not a sealed family, enum, ADT, or otherwise compiler-checked exhaustive type, and the match omits both a `case _ =>` fallback and any defensive Try/Either wrapping. Allow matches over sealed types, enums, tuples decomposed positionally, and explicit `case _ => ...` fallbacks."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
+  if judgement.verdict == "Block" {
+    return warn(
+      "pattern_matches_are_exhaustive",
+      "Add a `case _ =>` fallback or constrain the matched type to a sealed family the compiler can check.",
+      judgement.findings,
+    )
+  }
+  return allow("pattern_matches_are_exhaustive")
+}

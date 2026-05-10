@@ -1,0 +1,35 @@
+{
+  "predicate": "pattern_matches_are_exhaustive",
+  "cases": [
+    {
+      "name": "warns_open_match_without_fallback",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Decoder.scala",
+          "text": "package example\n\nobject Decoder:\n  def label(value: Any): String = value match\n    case s: String => s\n    case n: Int    => n.toString\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_sealed_subject",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Direction.scala",
+          "text": "package example\n\nenum Direction:\n  case North, South, East, West\n\nobject Compass:\n  def label(d: Direction): String = d match\n    case Direction.North => \"N\"\n    case Direction.South => \"S\"\n    case Direction.East  => \"E\"\n    case Direction.West  => \"W\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_default_case",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Decoder.scala",
+          "text": "package example\n\nobject Decoder:\n  def label(value: Any): String = value match\n    case s: String => s\n    case n: Int    => n.toString\n    case _         => \"unknown\"\n"
+        }
+      ]
+    }
+  ]
+}

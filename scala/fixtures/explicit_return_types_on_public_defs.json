@@ -1,0 +1,45 @@
+{
+  "predicate": "explicit_return_types_on_public_defs",
+  "cases": [
+    {
+      "name": "warns_inferred_return_type",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Greeter.scala",
+          "text": "package example\n\nobject Greeter:\n  def hello(name: String) = s\"Hello, $name\"\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_inferred_with_type_params",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/main/scala/example/Box.scala",
+          "text": "package example\n\nfinal class Box[A](a: A):\n  def map[B](f: A => B) = Box(f(a))\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_return_type",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Greeter.scala",
+          "text": "package example\n\nobject Greeter:\n  def hello(name: String): String = s\"Hello, $name\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_private_inferred",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Greeter.scala",
+          "text": "package example\n\nobject Greeter:\n  private def banner = \"--- hello ---\"\n  def hello(name: String): String = s\"$banner $name\"\n"
+        }
+      ]
+    }
+  ]
+}

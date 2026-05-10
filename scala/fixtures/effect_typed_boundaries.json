@@ -1,0 +1,25 @@
+{
+  "predicate": "effect_typed_boundaries",
+  "cases": [
+    {
+      "name": "blocks_unsafe_run_inside_future",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Bridge.scala",
+          "text": "package example\n\nimport cats.effect.IO\nimport cats.effect.unsafe.IORuntime\nimport scala.concurrent.{ExecutionContext, Future}\n\nfinal class Bridge(io: IO[Int])(using ExecutionContext, IORuntime):\n  def asFuture(): Future[Int] = Future(io.unsafeRunSync())\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_io_from_future_adapter",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Bridge.scala",
+          "text": "package example\n\nimport cats.effect.IO\nimport scala.concurrent.{ExecutionContext, Future}\n\nfinal class Bridge(future: => Future[Int])(using ExecutionContext):\n  def asIO: IO[Int] = IO.fromFuture(IO(future))\n"
+        }
+      ]
+    }
+  ]
+}

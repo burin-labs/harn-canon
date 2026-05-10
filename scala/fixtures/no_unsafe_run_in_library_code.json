@@ -1,0 +1,35 @@
+{
+  "predicate": "no_unsafe_run_in_library_code",
+  "cases": [
+    {
+      "name": "blocks_unsafe_run_sync_in_service",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main/scala/example/Repository.scala",
+          "text": "package example\n\nimport cats.effect.IO\nimport cats.effect.unsafe.IORuntime\n\nfinal class Repository(load: IO[Int])(using IORuntime):\n  def value: Int = load.unsafeRunSync()\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unsafe_run_in_main",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/Main.scala",
+          "text": "package example\n\nimport cats.effect.IO\nimport cats.effect.unsafe.IORuntime\n\nobject Main:\n  def main(args: Array[String]): Unit =\n    given IORuntime = IORuntime.global\n    IO.println(\"hi\").unsafeRunSync()\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_io_app_main",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main/scala/example/App.scala",
+          "text": "package example\n\nimport cats.effect.{IO, IOApp, ExitCode}\n\nobject Bootstrap extends IOApp:\n  def run(args: List[String]): IO[ExitCode] = IO.pure(ExitCode.Success)\n"
+        }
+      ]
+    }
+  ]
+}
