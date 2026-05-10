@@ -1,0 +1,35 @@
+{
+  "predicate": "prefer_copy_over_add",
+  "cases": [
+    {
+      "name": "warns_on_local_path_add",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nWORKDIR /app\nADD requirements.txt /app/requirements.txt\nRUN pip install --no-cache-dir -r requirements.txt\nUSER 1000\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_copy_for_local_paths",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nWORKDIR /app\nCOPY requirements.txt /app/requirements.txt\nRUN pip install --no-cache-dir -r requirements.txt\nUSER 1000\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_add_for_remote_url",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nADD https://example.com/installer.sh /tmp/installer.sh\nRUN sha256sum -c /tmp/installer.sha256 && bash /tmp/installer.sh\nUSER 1000\n"
+        }
+      ]
+    }
+  ]
+}

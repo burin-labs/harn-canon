@@ -1,0 +1,45 @@
+{
+  "predicate": "no_latest_or_unpinned_base_image",
+  "cases": [
+    {
+      "name": "blocks_latest_tag",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM node:latest\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD [\"node\", \"server.js\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_missing_tag",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM node\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD [\"node\", \"server.js\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_pinned_tag",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM node:22.11.0-alpine\nWORKDIR /app\nCOPY . .\nRUN npm ci\nCMD [\"node\", \"server.js\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_digest_pin",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM node@sha256:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\nWORKDIR /app\nCOPY . .\nCMD [\"node\", \"server.js\"]\n"
+        }
+      ]
+    }
+  ]
+}

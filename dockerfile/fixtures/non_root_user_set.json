@@ -1,0 +1,45 @@
+{
+  "predicate": "non_root_user_set",
+  "cases": [
+    {
+      "name": "warns_when_no_user_directive",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nWORKDIR /app\nCOPY . .\nRUN pip install --no-cache-dir -r requirements.txt\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_when_user_is_root",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nWORKDIR /app\nCOPY . .\nRUN pip install --no-cache-dir -r requirements.txt\nUSER root\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_named_non_root_user",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nRUN useradd --system --uid 1001 --create-home appuser\nWORKDIR /app\nCOPY --chown=appuser:appuser . .\nRUN pip install --no-cache-dir -r requirements.txt\nUSER appuser\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_numeric_non_root_user",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nWORKDIR /app\nCOPY . .\nRUN pip install --no-cache-dir -r requirements.txt\nUSER 1001\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    }
+  ]
+}

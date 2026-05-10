@@ -1,0 +1,25 @@
+{
+  "predicate": "apt_get_no_install_recommends",
+  "cases": [
+    {
+      "name": "warns_when_recommends_flag_missing",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update \\\n  && apt-get install -y curl ca-certificates \\\n  && rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_no_install_recommends_present",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update \\\n  && apt-get install -y --no-install-recommends curl ca-certificates \\\n  && rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
+        }
+      ]
+    }
+  ]
+}
