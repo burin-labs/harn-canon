@@ -1,0 +1,25 @@
+{
+  "predicate": "xsd_constrains_user_input",
+  "cases": [
+    {
+      "name": "blocks_xsd_relaxing_user_field_to_anytype",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "schemas/comment.xsd",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n           targetNamespace=\"https://example.com/comments/v1\"\n           xmlns:c=\"https://example.com/comments/v1\"\n           elementFormDefault=\"qualified\">\n  <xs:element name=\"comment\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:any processContents=\"skip\" minOccurs=\"0\" maxOccurs=\"unbounded\"/>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_constrained_user_input_schema",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schemas/comment.xsd",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n           targetNamespace=\"https://example.com/comments/v1\"\n           xmlns:c=\"https://example.com/comments/v1\"\n           elementFormDefault=\"qualified\">\n  <xs:element name=\"comment\">\n    <xs:complexType>\n      <xs:sequence>\n        <xs:element name=\"author\">\n          <xs:simpleType>\n            <xs:restriction base=\"xs:string\">\n              <xs:maxLength value=\"80\"/>\n            </xs:restriction>\n          </xs:simpleType>\n        </xs:element>\n        <xs:element name=\"body\">\n          <xs:simpleType>\n            <xs:restriction base=\"xs:string\">\n              <xs:maxLength value=\"4000\"/>\n            </xs:restriction>\n          </xs:simpleType>\n        </xs:element>\n      </xs:sequence>\n    </xs:complexType>\n  </xs:element>\n</xs:schema>\n"
+        }
+      ]
+    }
+  ]
+}

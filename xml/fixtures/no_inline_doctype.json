@@ -1,0 +1,25 @@
+{
+  "predicate": "no_inline_doctype",
+  "cases": [
+    {
+      "name": "blocks_inline_doctype_in_payload",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/users.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE users [\n  <!ELEMENT users ANY>\n]>\n<users>\n  <user id=\"1\">alice</user>\n</users>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_payload_without_doctype",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/users.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<users xmlns=\"https://example.com/users/v1\">\n  <user id=\"1\">alice</user>\n</users>\n"
+        }
+      ]
+    }
+  ]
+}

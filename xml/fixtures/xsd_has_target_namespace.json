@@ -1,0 +1,25 @@
+{
+  "predicate": "xsd_has_target_namespace",
+  "cases": [
+    {
+      "name": "warns_when_xsd_omits_target_namespace",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "schemas/order.xsd",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\n  <xs:element name=\"order\" type=\"xs:string\"/>\n</xs:schema>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_xsd_with_target_namespace",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schemas/order.xsd",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\n           targetNamespace=\"https://example.com/orders/v1\"\n           xmlns:ord=\"https://example.com/orders/v1\"\n           elementFormDefault=\"qualified\">\n  <xs:element name=\"order\" type=\"xs:string\"/>\n</xs:schema>\n"
+        }
+      ]
+    }
+  ]
+}

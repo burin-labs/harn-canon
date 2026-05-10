@@ -1,0 +1,252 @@
+let _EVIDENCE_DOCTYPE_XXE = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
+  "https://cwe.mitre.org/data/definitions/611.html",
+  "https://www.w3.org/TR/xml/#dt-doctype",
+]
+
+let _EVIDENCE_EXTERNAL_ENTITIES = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
+  "https://cwe.mitre.org/data/definitions/776.html",
+  "https://www.w3.org/TR/xml/#sec-external-ent",
+]
+
+let _EVIDENCE_UTF8 = [
+  "https://www.w3.org/TR/xml/#charencoding",
+  "https://datatracker.ietf.org/doc/html/rfc7303",
+]
+
+let _EVIDENCE_NAMESPACES = [
+  "https://www.w3.org/TR/xml-names/",
+  "https://www.w3.org/TR/xml-names/#scoping",
+]
+
+let _EVIDENCE_XSD_TARGET_NAMESPACE = [
+  "https://www.w3.org/TR/xmlschema11-1/#sec-src-resolve",
+  "https://www.w3.org/TR/xmlschema-0/#NS",
+]
+
+let _EVIDENCE_XSLT_EXTERNAL = [
+  "https://www.w3.org/TR/xslt-30/#dt-stable-uri-collection",
+  "https://owasp.org/www-community/vulnerabilities/XSLT_Injection",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+let _EVIDENCE_SCHEMA_DOS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/XML_Security_Cheat_Sheet.html",
+  "https://cwe.mitre.org/data/definitions/776.html",
+]
+
+fn xml_files(slice) {
+  return slice.files
+    .filter(
+    { file -> file.path.ends_with(".xml")
+      || file.path.ends_with(".xsd")
+      || file.path.ends_with(".xsl")
+      || file.path.ends_with(".xslt")
+      || file.path.ends_with(".wsdl")
+      || file.path.ends_with(".svg")
+      || file.path.ends_with(".rss")
+      || file.path.ends_with(".atom") },
+  )
+}
+
+fn xml_payload_files(slice) {
+  return xml_files(slice)
+    .filter(
+    { file -> !file.path.ends_with(".xsd")
+      && !file.path.ends_with(".xsl")
+      && !file.path.ends_with(".xslt") },
+  )
+}
+
+fn xsd_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".xsd") })
+}
+
+fn xslt_files(slice) {
+  return slice.files
+    .filter({ file -> file.path.ends_with(".xsl") || file.path.ends_with(".xslt") })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DOCTYPE_XXE, confidence: 0.92, source_date: "2026-05-09")
+/** Blocks inline DOCTYPE declarations in XML payload files; the entity subset is the primary XXE vector. */
+pub fn no_inline_doctype(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(xml_payload_files(slice), r"<!DOCTYPE\b", "is")
+  return block_on_findings(
+    "no_inline_doctype",
+    "Remove the DOCTYPE; validate against an external schema and disable DTD loading in the parser.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXTERNAL_ENTITIES, confidence: 0.95, source_date: "2026-05-09")
+/** Blocks ENTITY declarations that resolve external resources or recursively expand. */
+pub fn no_external_entity_references(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    xml_files(slice),
+    r"<!ENTITY\s+(%\s+)?[A-Za-z_][A-Za-z0-9._-]*\s+(SYSTEM|PUBLIC)\b",
+    "is",
+  )
+  return block_on_findings(
+    "no_external_entity_references",
+    "Remove SYSTEM/PUBLIC entity declarations; reference external content through application code instead.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UTF8, confidence: 0.78, source_date: "2026-05-09")
+/** Warns when an XML file lacks an XML declaration that pins UTF-8 encoding. */
+pub fn xml_declares_utf8(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    xml_files(slice),
+    { file -> regex_match(r"^\s*<\?xml\b[^?]*encoding\s*=\s*[\"']utf-8[\"'][^?]*\?>", file.text, "is")
+      == nil },
+  )
+  return warn_on_findings(
+    "xml_declares_utf8",
+    "Start XML files with <?xml version=\"1.0\" encoding=\"UTF-8\"?> for stable interop.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NAMESPACES, confidence: 0.66, source_date: "2026-05-09")
+/** Warns when XML uses prefixed element names but declares no xmlns:prefix bindings in the same file. */
+pub fn xml_namespace_prefixes_declared(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    xml_files(slice),
+    { file -> regex_match(r"<\s*[A-Za-z_][A-Za-z0-9._-]*:[A-Za-z_][A-Za-z0-9._-]*\b", file.text, "s")
+      != nil
+      && regex_match(r"\bxmlns:[A-Za-z_][A-Za-z0-9._-]*\s*=", file.text, "s") == nil },
+  )
+  return warn_on_findings(
+    "xml_namespace_prefixes_declared",
+    "Bind every namespace prefix with xmlns:prefix=\"...\" in the same document.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_XSD_TARGET_NAMESPACE, confidence: 0.74, source_date: "2026-05-09")
+/** Warns when an XSD schema document does not declare a targetNamespace. */
+pub fn xsd_has_target_namespace(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    xsd_files(slice),
+    { file -> regex_match(r"<\s*([A-Za-z_][A-Za-z0-9._-]*:)?schema\b[^>]*\btargetNamespace\s*=", file.text, "is")
+      == nil },
+  )
+  return warn_on_findings(
+    "xsd_has_target_namespace",
+    "Set targetNamespace on the xs:schema root so consumers can disambiguate types.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_XSLT_EXTERNAL, confidence: 0.88, source_date: "2026-05-09")
+/** Blocks XSLT that loads stylesheets or documents from absolute http(s)/file/ftp URIs. */
+pub fn xslt_no_external_documents(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    xslt_files(slice),
+    r"<\s*xsl:(include|import)\b[^>]*\bhref\s*=\s*[\"'](https?|ftp|file)://|\bdocument\s*\(\s*[\"'](https?|ftp|file)://",
+    "is",
+  )
+  return block_on_findings(
+    "xslt_no_external_documents",
+    "Resolve XSLT includes and document() calls through trusted application code, not absolute network URIs.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
+/** Blocks credentials, tokens, private keys, and production connection strings embedded in XML. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed XML embeds a credential, API key, bearer token, signing secret, password, private key, or production connection string instead of referencing a managed secret source or environment variable."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: xml_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SCHEMA_DOS, confidence: 0.62, source_date: "2026-05-09")
+/** Blocks XSD shapes that disable validation or invite quadratic blowup of attacker-controlled input. */
+pub fn xsd_constrains_user_input(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed XSD intentionally weakens input validation on attacker-reachable fields, for example using xs:any or xs:anyType in place of a real type, omitting maxLength on free-form strings nested under unbounded sequences, or removing pattern/enumeration facets that previously constrained an externally posted value."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: xsd_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "xsd_constrains_user_input",
+      "Restore type constraints on externally reachable fields before relaxing the schema.",
+      judgement.findings,
+    )
+  }
+  return allow("xsd_constrains_user_input")
+}

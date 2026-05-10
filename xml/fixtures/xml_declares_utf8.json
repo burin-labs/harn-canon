@@ -1,0 +1,25 @@
+{
+  "predicate": "xml_declares_utf8",
+  "cases": [
+    {
+      "name": "warns_when_xml_declaration_missing",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/feed.xml",
+          "text": "<feed xmlns=\"https://example.com/feed/v1\">\n  <entry id=\"1\">hello</entry>\n</feed>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_utf8_declared_payload",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/feed.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<feed xmlns=\"https://example.com/feed/v1\">\n  <entry id=\"1\">hello</entry>\n</feed>\n"
+        }
+      ]
+    }
+  ]
+}
