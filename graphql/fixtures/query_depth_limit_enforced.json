@@ -1,0 +1,25 @@
+{
+  "predicate": "query_depth_limit_enforced",
+  "cases": [
+    {
+      "name": "blocks_unbounded_apollo_server",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/server.ts",
+          "text": "import { ApolloServer } from '@apollo/server';\nimport { startStandaloneServer } from '@apollo/server/standalone';\nimport { typeDefs, resolvers } from './schema';\n\nconst server = new ApolloServer({ typeDefs, resolvers });\nawait startStandaloneServer(server, { listen: { port: 4000 } });\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_depth_limited_server",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/server.ts",
+          "text": "import { ApolloServer } from '@apollo/server';\nimport { startStandaloneServer } from '@apollo/server/standalone';\nimport depthLimit from 'graphql-depth-limit';\nimport { typeDefs, resolvers } from './schema';\n\nconst server = new ApolloServer({\n  typeDefs,\n  resolvers,\n  validationRules: [depthLimit(7)],\n});\nawait startStandaloneServer(server, { listen: { port: 4000 } });\n"
+        }
+      ]
+    }
+  ]
+}

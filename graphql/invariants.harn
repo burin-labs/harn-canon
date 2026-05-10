@@ -1,0 +1,259 @@
+let _EVIDENCE_NAMING = [
+  "https://www.apollographql.com/docs/technotes/TN0002-schema-naming-conventions/",
+  "https://the-guild.dev/graphql/eslint/rules/naming-convention",
+]
+
+let _EVIDENCE_RESERVED_NAMES = [
+  "https://spec.graphql.org/October2021/#sec-Names.Reserved-Names",
+  "https://graphql.org/learn/introspection/",
+]
+
+let _EVIDENCE_DESCRIPTIONS = [
+  "https://spec.graphql.org/October2021/#sec-Descriptions",
+  "https://the-guild.dev/graphql/eslint/rules/require-description",
+]
+
+let _EVIDENCE_MUTATION_INPUT = [
+  "https://www.apollographql.com/docs/technotes/TN0002-schema-naming-conventions/",
+  "https://relay.dev/docs/guides/graphql-server-specification/#mutations",
+]
+
+let _EVIDENCE_PAGINATION = [
+  "https://relay.dev/graphql/connections.htm",
+  "https://graphql.org/learn/pagination/",
+]
+
+let _EVIDENCE_BREAKING = [
+  "https://www.apollographql.com/docs/graphos/platform/schema-management/checks/",
+  "https://the-guild.dev/graphql/inspector/docs/essentials/diff",
+]
+
+let _EVIDENCE_DEPRECATION = [
+  "https://spec.graphql.org/October2021/#sec--deprecated",
+  "https://graphql.org/learn/best-practices/#versioning",
+]
+
+let _EVIDENCE_DEPTH_LIMIT = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/GraphQL_Cheat_Sheet.html",
+  "https://www.apollographql.com/docs/router/configuration/operation-limits/",
+]
+
+fn schema_files(slice) {
+  return slice.files.filter(
+    { file -> file.path.ends_with(".graphql")
+      || file.path.ends_with(".graphqls")
+      || file.path.ends_with(".gql") },
+  )
+}
+
+fn is_generated_path(path) {
+  return contains(path, "/generated/")
+    || contains(path, "/__generated__/")
+    || contains(path, ".generated.")
+}
+
+fn production_schema_files(slice) {
+  return schema_files(slice).filter({ file -> !is_generated_path(file.path) })
+}
+
+fn server_config_files(slice) {
+  return slice.files.filter(
+    { file -> file.path.ends_with(".ts")
+      || file.path.ends_with(".tsx")
+      || file.path.ends_with(".js")
+      || file.path.ends_with(".mjs")
+      || file.path.ends_with(".py")
+      || file.path.ends_with(".rb")
+      || file.path.ends_with(".go")
+      || file.path.ends_with(".rs")
+      || file.path.ends_with(".kt")
+      || file.path.ends_with(".java") },
+  )
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_NAMING, confidence: 0.84, source_date: "2026-05-09")
+/** Blocks GraphQL enum values that are not UPPER_SNAKE_CASE. */
+pub fn enum_values_upper_snake_case(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_schema_files(slice),
+    r"\benum\s+\w+\s*\{[^}]*?(?m:^\s*[a-z])",
+    "s",
+  )
+  return block_on_findings(
+    "enum_values_upper_snake_case",
+    "Rename enum values to UPPER_SNAKE_CASE per the Apollo and graphql-eslint convention.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RESERVED_NAMES, confidence: 0.94, source_date: "2026-05-09")
+/** Blocks user-defined names that begin with a double underscore. */
+pub fn no_double_underscore_names(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_schema_files(slice),
+    r"^\s*(?:type|interface|enum|input|union|scalar|directive)\s+__\w+|^\s*__\w+\s*[:(]",
+    "m",
+  )
+  return block_on_findings(
+    "no_double_underscore_names",
+    "Rename the type or field; the GraphQL spec reserves a leading double underscore for introspection.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DESCRIPTIONS, confidence: 0.6, source_date: "2026-05-09")
+/** Warns when a schema file declares public types without any descriptions. */
+pub fn descriptions_on_public_types(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_schema_files(slice),
+    { file -> regex_match(
+      r"^\s*(?:type|interface|input|enum|union)\s+[A-Z]\w*",
+      file.text,
+      "m",
+    )
+      != nil
+      && regex_match(r"\"\"\"|^\s*\"[^\"]+\"", file.text, "m") == nil },
+  )
+  return warn_on_findings(
+    "descriptions_on_public_types",
+    "Add a description string above each public type and field so clients and tools can render documentation.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MUTATION_INPUT, confidence: 0.7, source_date: "2026-05-09")
+/** Warns when Mutation fields take arguments other than a single input object. */
+pub fn mutation_uses_input_type(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_schema_files(slice),
+    r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\(\s*(?!input\s*:)[^)]+\)",
+    "s",
+  )
+  return warn_on_findings(
+    "mutation_uses_input_type",
+    "Wrap mutation arguments in a single input object so the field can evolve without breaking callers.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_PAGINATION, confidence: 0.66, source_date: "2026-05-09")
+/** Warns when root Query list-returning fields expose no pagination arguments. */
+pub fn pagination_args_on_root_list_fields(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_schema_files(slice),
+    r"\btype\s+Query\s*\{[^}]*?(?m:^\s*\w+\s*(?::\s*\[|\(\s*\)\s*:\s*\[))",
+    "s",
+  )
+  return warn_on_findings(
+    "pagination_args_on_root_list_fields",
+    "Expose pagination arguments such as first/after or limit/offset on root Query list fields to bound result size.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_BREAKING, confidence: 0.7, source_date: "2026-05-09")
+/** Blocks schema changes that break existing clients without an aliasing or migration path. */
+pub fn no_breaking_schema_change(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed GraphQL schema files remove a public type, field, enum value, union member, interface implementation, or directive; rename one in place; narrow a return type; widen an input type; mark a previously optional argument as non-null; or change an argument's type, and the change does not retain a backwards-compatible alias, default, or wrapper."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_schema_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_breaking_schema_change",
+      "Keep the prior surface area as a deprecated alias or stage the change behind a new field, then remove later.",
+      judgement.findings,
+    )
+  }
+  return allow("no_breaking_schema_change")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_DEPRECATION, confidence: 0.7, source_date: "2026-05-09")
+/** Blocks removal of public schema elements that were not first marked @deprecated. */
+pub fn deprecation_over_removal(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed GraphQL schema files delete a public field, enum value, type, union member, or argument that was not marked @deprecated with a reason in the same file before the deletion, and the slice does not show the @deprecated annotation being removed alongside the deletion as part of a documented sunset window."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_schema_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "deprecation_over_removal",
+      "Mark the element @deprecated with a reason and removal date first, then drop it after callers have migrated.",
+      judgement.findings,
+    )
+  }
+  return allow("deprecation_over_removal")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_DEPTH_LIMIT, confidence: 0.6, source_date: "2026-05-09")
+/** Blocks new public GraphQL endpoints that lack a query depth or complexity limit. */
+pub fn query_depth_limit_enforced(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed code wires up a public GraphQL HTTP endpoint or router using Apollo Server, Apollo Router, GraphQL Yoga, Mercurius, Strawberry, Ariadne, gqlgen, graphql-ruby, or a similar server, and the changed configuration does not set a max query depth, max query complexity, max alias count, max token count, or persisted-query allowlist."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: server_config_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "query_depth_limit_enforced",
+      "Configure a query depth, complexity, or persisted-operation limit on the GraphQL server to bound execution cost.",
+      judgement.findings,
+    )
+  }
+  return allow("query_depth_limit_enforced")
+}

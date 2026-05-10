@@ -1,0 +1,25 @@
+{
+  "predicate": "deprecation_over_removal",
+  "cases": [
+    {
+      "name": "blocks_undeprecated_removal",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "schema/user.graphql",
+          "text": "type User {\n  id: ID!\n  displayName: String\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_deprecated_then_removed",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/user.graphql",
+          "text": "type User {\n  id: ID!\n  email: String! @deprecated(reason: \"Use contactEmail; will be removed 2027-01-01.\")\n  contactEmail: String!\n}\n"
+        }
+      ]
+    }
+  ]
+}
