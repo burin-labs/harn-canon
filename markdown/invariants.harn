@@ -1,0 +1,232 @@
+let _EVIDENCE_FENCE_LANGUAGE = [
+  "https://github.github.com/gfm/#fenced-code-blocks",
+  "https://spec.commonmark.org/0.31.2/#fenced-code-blocks",
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md040.md",
+]
+
+let _EVIDENCE_HEADING_LEVELS = [
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md001.md",
+  "https://www.w3.org/WAI/tutorials/page-structure/headings/",
+  "https://www.w3.org/WAI/WCAG22/Understanding/info-and-relationships.html",
+]
+
+let _EVIDENCE_SINGLE_H1 = [
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md025.md",
+  "https://www.w3.org/WAI/tutorials/page-structure/headings/",
+]
+
+let _EVIDENCE_IMAGE_ALT = [
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md045.md",
+  "https://www.w3.org/WAI/tutorials/images/",
+  "https://www.w3.org/WAI/WCAG22/Understanding/non-text-content.html",
+]
+
+let _EVIDENCE_DANGEROUS_HTML = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html",
+  "https://github.github.com/gfm/#disallowed-raw-html-extension-",
+  "https://spec.commonmark.org/0.31.2/#raw-html",
+]
+
+let _EVIDENCE_BROKEN_LINKS = [
+  "https://spec.commonmark.org/0.31.2/#links",
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md051.md",
+  "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html",
+]
+
+let _EVIDENCE_LINK_STYLE = [
+  "https://github.com/DavidAnson/markdownlint/blob/main/doc/md054.md",
+  "https://spec.commonmark.org/0.31.2/#links",
+  "https://docs.github.com/en/get-started/writing-on-github/getting-started-with-writing-and-formatting-on-github/basic-writing-and-formatting-syntax",
+]
+
+fn is_markdown_path(path) {
+  return path.ends_with(".md") || path.ends_with(".markdown")
+}
+
+fn is_vendored_path(path) {
+  return regex_match(
+    r"(^|/)(node_modules|vendor|third_party|target|dist|build|out|\.git)(/|$)",
+    path,
+    "",
+  ) != nil
+}
+
+fn is_fixture_path(path) {
+  return regex_match(r"(^|/)(fixtures?|testdata|tests?)(/|$)", path, "") != nil
+}
+
+fn markdown_files(slice) {
+  return slice.files.filter({ file -> is_markdown_path(file.path) })
+}
+
+fn production_markdown_files(slice) {
+  return markdown_files(slice)
+    .filter({ file -> !is_vendored_path(file.path) && !is_fixture_path(file.path) })
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+fn has_heading_level_skip(file) {
+  let h2 = regex_match(r"(?m)^## \S", file.text, "m") != nil
+  let h3 = regex_match(r"(?m)^### \S", file.text, "m") != nil
+  let h4 = regex_match(r"(?m)^#### \S", file.text, "m") != nil
+  let h5 = regex_match(r"(?m)^##### \S", file.text, "m") != nil
+  let h6 = regex_match(r"(?m)^###### \S", file.text, "m") != nil
+  return (h3 && !h2) || (h4 && !h3) || (h5 && !h4) || (h6 && !h5)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_FENCE_LANGUAGE, confidence: 0.74, source_date: "2026-05-09")
+/** Warns when fenced code blocks open without a language tag. */
+pub fn code_fence_language_specified(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> regex_match(
+      r"(?m)^[ ]{0,3}```[ \t]*\n(?:(?![ ]{0,3}```)[^\n]*\n)+[ ]{0,3}```[ \t]*$",
+      file.text,
+      "m",
+    ) != nil },
+  )
+  return warn_on_findings(
+    "code_fence_language_specified",
+    "Tag fenced code blocks with a language (```ts, ```bash, ```text) so highlighters and screen readers can do their jobs.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_HEADING_LEVELS, confidence: 0.7, source_date: "2026-05-09")
+/** Warns on documents that use a heading level without the parent level present. */
+pub fn heading_level_discipline(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> has_heading_level_skip(file) },
+  )
+  return warn_on_findings(
+    "heading_level_discipline",
+    "Increment heading levels one at a time so screen readers and outlines stay coherent.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SINGLE_H1, confidence: 0.78, source_date: "2026-05-09")
+/** Warns on documents that contain more than one top-level H1. */
+pub fn single_h1_per_doc(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> regex_match(r"(?m)^# [^\n]+\n[\s\S]*?\n# [^\n]+", file.text, "m") != nil },
+  )
+  return warn_on_findings(
+    "single_h1_per_doc",
+    "Use a single H1 as the document title; promote sibling sections to H2.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_IMAGE_ALT, confidence: 0.86, source_date: "2026-05-09")
+/** Blocks Markdown images that omit alternate text. */
+pub fn image_alt_text_present(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> regex_match(r"!\[[ \t]*\]\(", file.text, "") != nil },
+  )
+  return block_on_findings(
+    "image_alt_text_present",
+    "Add descriptive alt text inside the brackets, or use an empty alt only for purely decorative images that an assistive technology should skip.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DANGEROUS_HTML, confidence: 0.82, source_date: "2026-05-09")
+/** Blocks raw HTML constructs that are common XSS sinks when Markdown is rendered without sanitization. */
+pub fn no_dangerous_inline_html(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> regex_match(
+      r"(?i)<\s*(script|iframe|object|embed|form)\b|\bjavascript:|\bon(click|load|error|focus|blur|submit|change|input|key[a-z]+|mouse[a-z]+)\s*=",
+      file.text,
+      "is",
+    ) != nil },
+  )
+  return block_on_findings(
+    "no_dangerous_inline_html",
+    "Drop raw <script>, <iframe>, javascript: URLs, and event handlers from Markdown; use links, code samples, or a vetted shortcode instead.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_BROKEN_LINKS, confidence: 0.66, source_date: "2026-05-09")
+/** Blocks changed Markdown that introduces relative links or anchors with no resolvable target. */
+pub fn no_broken_internal_links(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Markdown introduces or modifies a relative path link, image reference, or fragment anchor whose target cannot be resolved against the slice plus repo_at_base. Anchor checks must compare the fragment to the rendered heading slugs in the destination Markdown file. Allow external URLs, mailto links, and links whose target is created in the same slice."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: markdown_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_broken_internal_links",
+      "Point the link at an existing path or heading anchor, or add the target file in the same change.",
+      judgement.findings,
+    )
+  }
+  return allow("no_broken_internal_links")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_LINK_STYLE, confidence: 0.6, source_date: "2026-05-09")
+/** Warns when a single document mixes inline, reference, and bare-URL link styles in ways that hurt readability. */
+pub fn consistent_link_format(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when a single changed Markdown document mixes inline links, full reference-style links, collapsed/shortcut reference links, and bare autolinks in ways that materially hurt readability. Do not flag single-style documents, code samples that show alternative syntaxes intentionally, or short-form patterns inside link tables."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: markdown_files(slice)})
+  if judgement.verdict == "Warn" {
+    return warn(
+      "consistent_link_format",
+      "Pick one link style per document and use it consistently; convert ad hoc bare URLs to titled inline or reference links.",
+      judgement.findings,
+    )
+  }
+  return allow("consistent_link_format")
+}

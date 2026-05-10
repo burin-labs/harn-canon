@@ -1,0 +1,25 @@
+{
+  "predicate": "code_fence_language_specified",
+  "cases": [
+    {
+      "name": "warns_on_bare_fence",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "docs/install.md",
+          "text": "# Install\n\nRun the setup script:\n\n```\n./bin/setup --release\n```\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_tagged_fence",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/install.md",
+          "text": "# Install\n\nRun the setup script:\n\n```bash\n./bin/setup --release\n```\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "predicate": "no_dangerous_inline_html",
+  "cases": [
+    {
+      "name": "blocks_inline_script_tag",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "docs/widget.md",
+          "text": "# Widget\n\nDrop this on the page:\n\n<script>alert('xss')</script>\n\nDone.\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_javascript_url",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "docs/links.md",
+          "text": "# Links\n\n[Click me](javascript:alert(1))\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_safe_html_table",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/data.md",
+          "text": "# Data\n\n<table>\n  <tr><th>Key</th><th>Value</th></tr>\n  <tr><td>a</td><td>1</td></tr>\n</table>\n"
+        }
+      ]
+    }
+  ]
+}

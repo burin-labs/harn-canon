@@ -1,0 +1,43 @@
+{
+  "predicate": "no_broken_internal_links",
+  "cases": [
+    {
+      "name": "blocks_link_to_missing_file",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "docs/index.md",
+          "text": "# Index\n\nSee the [installation guide](./install.md) for setup.\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_anchor_with_no_matching_heading",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "docs/index.md",
+          "text": "# Index\n\nJump to [advanced setup](./guide.md#advanced-cluster-mode) for production.\n"
+        },
+        {
+          "path": "docs/guide.md",
+          "text": "# Guide\n\n## Basic setup\n\nSteps.\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_link_to_existing_file_and_anchor",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/index.md",
+          "text": "# Index\n\nSee the [installation guide](./install.md#prerequisites) for setup.\n"
+        },
+        {
+          "path": "docs/install.md",
+          "text": "# Install\n\n## Prerequisites\n\nYou need Rust and Node.\n"
+        }
+      ]
+    }
+  ]
+}
