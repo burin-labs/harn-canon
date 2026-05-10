@@ -1,0 +1,25 @@
+{
+  "predicate": "require_assigned_to_local",
+  "cases": [
+    {
+      "name": "warns_on_bare_top_level_require",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/init.lua",
+          "text": "require('logger')\nrequire 'metrics'\n\nreturn true\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_local_bound_require",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/init.lua",
+          "text": "local logger = require('logger')\nlocal metrics = require('metrics')\n\nreturn { logger = logger, metrics = metrics }\n"
+        }
+      ]
+    }
+  ]
+}

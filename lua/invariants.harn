@@ -1,0 +1,314 @@
+let _EVIDENCE_GLOBAL_FUNCTION = [
+  "https://www.lua.org/manual/5.4/manual.html#3.4.11",
+  "https://www.lua.org/pil/6.2.html",
+  "https://luacheck.readthedocs.io/en/stable/warnings.html",
+]
+
+let _EVIDENCE_IMPLICIT_GLOBALS = [
+  "https://www.lua.org/manual/5.4/manual.html#3.3.3",
+  "https://luacheck.readthedocs.io/en/stable/warnings.html",
+  "http://lua-users.org/wiki/ScopeTutorial",
+]
+
+let _EVIDENCE_LOAD_FAMILY = [
+  "https://www.lua.org/manual/5.4/manual.html#pdf-load",
+  "https://www.lua.org/manual/5.4/manual.html#pdf-loadfile",
+  "https://www.lua.org/manual/5.4/manual.html#pdf-dofile",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Code_Injection_Prevention_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_SETFENV_GETFENV = [
+  "https://www.lua.org/manual/5.2/manual.html#8.1",
+  "https://www.lua.org/manual/5.4/manual.html#6.1",
+  "http://lua-users.org/wiki/LuaFiveTwo",
+]
+
+let _EVIDENCE_OS_COMMAND = [
+  "https://www.lua.org/manual/5.4/manual.html#pdf-os.execute",
+  "https://www.lua.org/manual/5.4/manual.html#pdf-io.popen",
+  "https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_MODULE_RETURN = [
+  "https://www.lua.org/manual/5.4/manual.html#6.3",
+  "https://www.lua.org/pil/15.html",
+  "http://lua-users.org/wiki/ModulesTutorial",
+]
+
+let _EVIDENCE_REQUIRE_LOCAL = [
+  "https://www.lua.org/manual/5.4/manual.html#pdf-require",
+  "https://www.lua.org/pil/15.1.html",
+  "http://lua-users.org/wiki/ModulesTutorial",
+]
+
+let _EVIDENCE_TAIL_CALLS = [
+  "https://www.lua.org/manual/5.4/manual.html#3.4.10",
+  "https://www.lua.org/pil/6.3.html",
+]
+
+let _EVIDENCE_METATABLES = [
+  "https://www.lua.org/manual/5.4/manual.html#2.4",
+  "https://www.lua.org/pil/13.html",
+  "http://lua-users.org/wiki/MetatablesTutorial",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+fn is_lua_path(path) {
+  return path.ends_with(".lua")
+}
+
+fn is_test_path(path) {
+  return path.contains("/spec/")
+    || path.contains("/test/")
+    || path.contains("/tests/")
+    || path.ends_with("_spec.lua")
+    || path.ends_with("_test.lua")
+}
+
+fn is_script_path(path) {
+  return path.contains("/bin/")
+    || path.contains("/scripts/")
+    || path.contains("/script/")
+    || path.contains("/examples/")
+}
+
+fn lua_files(slice) {
+  return slice.files.filter({ file -> is_lua_path(file.path) })
+}
+
+fn production_lua_files(slice) {
+  return lua_files(slice)
+    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+}
+
+fn module_lua_files(slice) {
+  return production_lua_files(slice)
+    .filter({ file -> regex_match(r"\A#!", file.text, "s") == nil })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn scan_files_without(files, include_pattern, exclude_pattern) {
+  return scan_files_if(
+    files,
+    { file -> regex_match(include_pattern, file.text, "s") != nil
+      && regex_match(exclude_pattern, file.text, "s") == nil },
+  )
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_GLOBAL_FUNCTION, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks top-level `function name(...)` definitions that create implicit globals. */
+pub fn no_global_function_definition(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_lua_files(slice),
+    r"(?m)^[ \t]*function\s+[A-Za-z_][A-Za-z0-9_]*\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_global_function_definition",
+    "Use `local function name(...)` or attach the function to a module table (`function M.name(...)`).",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_IMPLICIT_GLOBALS, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on bare column-zero assignments that create implicit globals instead of locals. */
+pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_lua_files(slice),
+    r"(?m)^[A-Za-z_][A-Za-z0-9_]*(?:\s*,\s*[A-Za-z_][A-Za-z0-9_]*)*\s*=[^=]",
+    "m",
+  )
+  return warn_on_findings(
+    "no_implicit_globals",
+    "Prefix top-level bindings with `local`, or write through `_G.` to make the global write explicit.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_LOAD_FAMILY, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks dynamic source loading via load/loadstring/loadfile/dofile with non-literal arguments. */
+pub fn no_loadstring_or_loadfile(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    lua_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.:])(loadstring|load|loadfile|dofile)\s*\(",
+    r"(?m)(^|[^A-Za-z0-9_.:])(loadstring|load|loadfile|dofile)\s*\(\s*(['\"]|\[\[|\[=)",
+  )
+  return block_on_findings(
+    "no_loadstring_or_loadfile",
+    "Pass a literal string or trusted file path; never compile or execute caller-supplied source.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SETFENV_GETFENV, confidence: 0.88, source_date: "2026-05-10")
+/** Blocks setfenv/getfenv usage that was removed in Lua 5.2 and is unavailable on modern runtimes. */
+pub fn no_setfenv_or_getfenv(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    lua_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.:])(setfenv|getfenv)\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_setfenv_or_getfenv",
+    "Use the Lua 5.2+ `_ENV` upvalue or an explicit environment table; setfenv/getfenv were removed.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OS_COMMAND, confidence: 0.74, source_date: "2026-05-10")
+/** Blocks os.execute/io.popen calls whose first argument is not a literal string. */
+pub fn no_unsafe_os_command(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_without(
+    lua_files(slice),
+    r"\b(os\.execute|io\.popen)\s*\(",
+    r"\b(os\.execute|io\.popen)\s*\(\s*(['\"]|\[\[|\[=)",
+  )
+  return block_on_findings(
+    "no_unsafe_os_command",
+    "Build the argv as a table or quote each interpolated value; never concatenate untrusted input into a shell string.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_MODULE_RETURN, confidence: 0.66, source_date: "2026-05-10")
+/** Warns when a Lua module file has no column-zero `return` statement. */
+pub fn module_returns_value(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    module_lua_files(slice),
+    { file -> regex_match(r"(?m)^return\b", file.text, "m") == nil },
+  )
+  return warn_on_findings(
+    "module_returns_value",
+    "End the module with `return M` (or the module table you defined) so `require` consumers receive a value.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_REQUIRE_LOCAL, confidence: 0.7, source_date: "2026-05-10")
+/** Warns on `require` calls at top-level that are not assigned to a local binding. */
+pub fn require_assigned_to_local(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_lua_files(slice),
+    r"(?m)^[ \t]*require\s*[\(\"'\[]",
+    "m",
+  )
+  return warn_on_findings(
+    "require_assigned_to_local",
+    "Bind require results to a local: `local mod = require('mod')`; bare `require` calls leak through package.loaded only.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_TAIL_CALLS, confidence: 0.6, source_date: "2026-05-10")
+/** Warns on recursive Lua functions whose recursive call is not in tail position. */
+pub fn tail_call_recursion(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when changed Lua source defines a function that calls itself recursively and the recursive call is not in tail position — that is, the result is consumed by an arithmetic, logical, indexing, or wrapping expression before being returned. A call is in tail position when it is the entire return expression (e.g., `return f(...)`). Allow when recursion depth is bounded by a small literal, when the recursive call is wrapped in pcall/xpcall for protected execution, or when the function is iterative."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
+  if judgement.verdict == "Block" {
+    return warn(
+      "tail_call_recursion",
+      "Move the recursive call into tail position (`return self_call(...)`) or rewrite as a loop to avoid stack growth.",
+      judgement.findings,
+    )
+  }
+  return allow("tail_call_recursion")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_METATABLES, confidence: 0.62, source_date: "2026-05-10")
+/** Blocks metatable mutations that change reads, writes, or identity without an adjacent comment. */
+pub fn metatable_boundary_documented(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Lua source assigns to a metatable field that crosses a behavior boundary — `__index`, `__newindex`, `__metatable`, `__call`, `__eq`, `__lt`, `__le`, `__add`, `__concat`, `__tostring`, or `__gc` — without an adjacent comment, docstring, or annotation that names the target type and explains the new behavior. Allow purely additive helper assignments inside a class-builder helper that already documents the pattern."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "metatable_boundary_documented",
+      "Document the metatable contract in a comment next to the assignment: which field, which type, and what the new behavior is.",
+      judgement.findings,
+    )
+  }
+  return allow("metatable_boundary_documented")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-10")
+/** Blocks hardcoded credentials and high-risk secrets in Lua source. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Lua source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment variable."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}
