@@ -1,0 +1,25 @@
+{
+  "predicate": "no_duplicate_table_headers",
+  "cases": [
+    {
+      "name": "blocks_repeated_standard_table",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "[server]\nhost = \"localhost\"\nport = 8080\n\n[server]\ntimeout = 30\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_distinct_tables_and_array_of_tables",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "[server]\nhost = \"localhost\"\nport = 8080\n\n[client]\ntimeout = 30\n\n[[products]]\nname = \"a\"\n\n[[products]]\nname = \"b\"\n"
+        }
+      ]
+    }
+  ]
+}

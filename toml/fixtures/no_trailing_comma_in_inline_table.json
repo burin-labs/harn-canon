@@ -1,0 +1,25 @@
+{
+  "predicate": "no_trailing_comma_in_inline_table",
+  "cases": [
+    {
+      "name": "blocks_trailing_comma",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "point = { x = 1, y = 2, }\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_inline_table_without_trailing_comma",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "point = { x = 1, y = 2 }\nempty = {}\narr = [1, 2, 3,]\n"
+        }
+      ]
+    }
+  ]
+}

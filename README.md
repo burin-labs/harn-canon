@@ -42,6 +42,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.
 - [Swift](./swift/) — v0 draft predicates for Swift application and UI code.
+- [TOML](./toml/) — v0 draft predicates for TOML configuration documents (`Cargo.toml`, `pyproject.toml`, tool configs).
 - [TypeScript](./typescript/) — v0 draft predicates for TypeScript and TSX code.
 
 ## Status
