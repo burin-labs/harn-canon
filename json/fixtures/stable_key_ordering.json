@@ -1,0 +1,25 @@
+{
+  "predicate": "stable_key_ordering",
+  "cases": [
+    {
+      "name": "warns_when_unrelated_keys_reordered",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "package.json",
+          "text": "{\n  \"version\": \"1.2.4\",\n  \"name\": \"app\",\n  \"description\": \"a tiny demo\",\n  \"scripts\": {\n    \"build\": \"tsc\",\n    \"test\": \"vitest\"\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_value_only_change",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "package.json",
+          "text": "{\n  \"name\": \"app\",\n  \"version\": \"1.2.4\",\n  \"description\": \"a tiny demo\",\n  \"scripts\": {\n    \"build\": \"tsc\",\n    \"test\": \"vitest\"\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

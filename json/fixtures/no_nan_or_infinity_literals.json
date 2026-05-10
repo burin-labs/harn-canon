@@ -1,0 +1,35 @@
+{
+  "predicate": "no_nan_or_infinity_literals",
+  "cases": [
+    {
+      "name": "blocks_nan_value",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "metrics/snapshot.json",
+          "text": "{\n  \"latencyMs\": NaN\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_negative_infinity",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "metrics/snapshot.json",
+          "text": "{\n  \"floor\": -Infinity\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_null_for_missing_value",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "metrics/snapshot.json",
+          "text": "{\n  \"latencyMs\": null\n}\n"
+        }
+      ]
+    }
+  ]
+}

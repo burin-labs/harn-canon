@@ -1,0 +1,25 @@
+{
+  "predicate": "respects_declared_schema",
+  "cases": [
+    {
+      "name": "blocks_value_violating_declared_schema",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/server.json",
+          "text": "{\n  \"$schema\": \"https://example.com/schemas/server.v1.json\",\n  \"port\": \"eight thousand\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_value_matching_declared_schema",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/server.json",
+          "text": "{\n  \"$schema\": \"https://example.com/schemas/server.v1.json\",\n  \"port\": 8080\n}\n"
+        }
+      ]
+    }
+  ]
+}

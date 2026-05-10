@@ -1,0 +1,25 @@
+{
+  "predicate": "no_bom_prefix",
+  "cases": [
+    {
+      "name": "warns_on_utf8_bom",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "﻿{\n  \"port\": 8080\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_utf8",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"port\": 8080\n}\n"
+        }
+      ]
+    }
+  ]
+}

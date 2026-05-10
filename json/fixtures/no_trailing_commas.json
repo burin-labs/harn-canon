@@ -1,0 +1,45 @@
+{
+  "predicate": "no_trailing_commas",
+  "cases": [
+    {
+      "name": "blocks_trailing_comma_in_object",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"name\": \"app\",\n  \"port\": 8080,\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_trailing_comma_in_array",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/hosts.json",
+          "text": "{\n  \"hosts\": [\n    \"a.example.com\",\n    \"b.example.com\",\n  ]\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_object",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"name\": \"app\",\n  \"port\": 8080\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_trailing_comma_in_jsonc",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.jsonc",
+          "text": "{\n  \"name\": \"app\",\n  \"port\": 8080,\n}\n"
+        }
+      ]
+    }
+  ]
+}
