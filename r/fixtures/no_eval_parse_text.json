@@ -1,0 +1,35 @@
+{
+  "predicate": "no_eval_parse_text",
+  "cases": [
+    {
+      "name": "blocks_eval_parse_text_with_user_input",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "R/dispatcher.R",
+          "text": "run_user_expr <- function(user_expr) {\n  eval(parse(text = user_expr))\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_rlang_expr",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/dispatcher.R",
+          "text": "run_user_expr <- function(value) {\n  eval(rlang::expr(.x * 2), list(.x = value))\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_bquote",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "R/dispatcher.R",
+          "text": "run_user_expr <- function(value) {\n  eval(bquote(.(value) * 2))\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "predicate": "no_attach",
+  "cases": [
+    {
+      "name": "blocks_attach_call",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/load_iris.R",
+          "text": "data(iris)\nattach(iris)\nplot(Sepal.Length, Petal.Length)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_column_access",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/load_iris.R",
+          "text": "data(iris)\nplot(iris$Sepal.Length, iris$Petal.Length)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_with_block",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/load_iris.R",
+          "text": "data(iris)\nwith(iris, plot(Sepal.Length, Petal.Length))\n"
+        }
+      ]
+    }
+  ]
+}

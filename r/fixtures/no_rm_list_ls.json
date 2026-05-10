@@ -1,0 +1,35 @@
+{
+  "predicate": "no_rm_list_ls",
+  "cases": [
+    {
+      "name": "blocks_rm_list_ls_at_top",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/fit_model.R",
+          "text": "rm(list = ls())\nlibrary(stats)\nfit <- lm(mpg ~ wt, data = mtcars)\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_rm_list_ls_no_spaces",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/fit_model.R",
+          "text": "rm(list=ls())\nfit <- lm(mpg ~ wt, data = mtcars)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_targeted_rm",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/fit_model.R",
+          "text": "tmp <- 1\nrm(tmp)\nfit <- lm(mpg ~ wt, data = mtcars)\n"
+        }
+      ]
+    }
+  ]
+}

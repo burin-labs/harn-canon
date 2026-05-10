@@ -1,0 +1,344 @@
+let _EVIDENCE_ATTACH = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/attach.html",
+  "https://adv-r.hadley.nz/environments.html",
+  "https://r-pkgs.org/code.html",
+]
+
+let _EVIDENCE_SETWD = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/getwd.html",
+  "https://here.r-lib.org/articles/here.html",
+  "https://www.tidyverse.org/blog/2017/12/workflow-vs-script/",
+]
+
+let _EVIDENCE_RM_LIST_LS = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/rm.html",
+  "https://www.tidyverse.org/blog/2017/12/workflow-vs-script/",
+  "https://r4ds.hadley.nz/workflow-scripts.html",
+]
+
+let _EVIDENCE_LOGICAL_CONSTANTS = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/logical.html",
+  "https://style.tidyverse.org/syntax.html",
+  "https://google.github.io/styleguide/Rguide.html",
+]
+
+let _EVIDENCE_RIGHT_ASSIGN = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/assignOps.html",
+  "https://style.tidyverse.org/syntax.html",
+  "https://google.github.io/styleguide/Rguide.html",
+]
+
+let _EVIDENCE_SEQ_ALONG = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/seq.html",
+  "https://adv-r.hadley.nz/control-flow.html",
+  "https://r4ds.hadley.nz/iteration.html",
+]
+
+let _EVIDENCE_INSTALL_PACKAGES = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/utils/html/install.packages.html",
+  "https://r-pkgs.org/dependencies-mindset-background.html",
+  "https://rstudio.github.io/renv/articles/renv.html",
+]
+
+let _EVIDENCE_EVAL_PARSE = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/eval.html",
+  "https://adv-r.hadley.nz/expressions.html",
+  "https://rlang.r-lib.org/reference/eval_tidy.html",
+]
+
+let _EVIDENCE_VECTORIZE = [
+  "https://adv-r.hadley.nz/perf-improve.html",
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/lapply.html",
+  "https://r4ds.hadley.nz/iteration.html",
+]
+
+let _EVIDENCE_RANDOM_SEED = [
+  "https://stat.ethz.ch/R-manual/R-devel/library/base/html/Random.html",
+  "https://rstudio.github.io/renv/articles/reproducibility.html",
+  "https://r4ds.hadley.nz/quarto.html",
+]
+
+let _EVIDENCE_NAMESPACE = [
+  "https://r-pkgs.org/dependencies-in-practice.html",
+  "https://r-pkgs.org/namespace.html",
+  "https://cran.r-project.org/doc/manuals/r-release/R-exts.html",
+]
+
+fn is_r_source_path(path) {
+  return path.ends_with(".R")
+    || path.ends_with(".r")
+    || path.ends_with(".Rmd")
+    || path.ends_with(".rmd")
+    || path.ends_with(".qmd")
+    || path.ends_with(".Rnw")
+}
+
+fn is_test_path(path) {
+  return path.contains("/tests/")
+    || path.contains("/testthat/")
+    || path.contains("/test/")
+    || path.contains("/inst/extdata/")
+    || path.contains("/man-roxygen/")
+    || path.contains("/data-raw/")
+    || path.contains("/dev/")
+}
+
+fn is_package_source_path(path) {
+  return (path.contains("/R/") || path.starts_with("R/"))
+    && !is_test_path(path)
+}
+
+fn is_analysis_script_path(path) {
+  return is_r_source_path(path)
+    && !is_package_source_path(path)
+    && !is_test_path(path)
+}
+
+fn r_files(slice) {
+  return slice.files.filter({ file -> is_r_source_path(file.path) })
+}
+
+fn production_r_files(slice) {
+  return r_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn package_source_files(slice) {
+  return r_files(slice).filter({ file -> is_package_source_path(file.path) })
+}
+
+fn analysis_script_files(slice) {
+  return r_files(slice).filter({ file -> is_analysis_script_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ATTACH, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks calls to attach() that splice a database into the search path. */
+pub fn no_attach(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.$@])attach\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_attach",
+    "Reference columns explicitly with df$col, with(df, ...), or dplyr verbs; attach() pollutes the search path and shadows variables.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SETWD, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks setwd() calls that hardcode the working directory in committed source. */
+pub fn no_setwd_in_scripts(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.$@])setwd\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_setwd_in_scripts",
+    "Use here::here() or project-relative paths so the script runs from any working directory and on any contributor's machine.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RM_LIST_LS, confidence: 0.8, source_date: "2026-05-10")
+/** Blocks rm(list = ls()) idioms that wipe the calling environment. */
+pub fn no_rm_list_ls(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"\brm\s*\(\s*list\s*=\s*ls\s*\(",
+    "s",
+  )
+  return block_on_findings(
+    "no_rm_list_ls",
+    "Restart the R session for a clean slate instead of rm(list = ls()); the latter only clears user objects and gives a false sense of reproducibility.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_LOGICAL_CONSTANTS, confidence: 0.55, source_date: "2026-05-10")
+/** Warns on T or F used as logical literals; both are reassignable identifiers. */
+pub fn use_logical_constants(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(?:[=,(]|<-|<<-|==|!=|&&|\|\||&|\|)\s*[TF](?:\s*[,)\s;&|]|$)",
+    "m",
+  )
+  return warn_on_findings(
+    "use_logical_constants",
+    "Write TRUE and FALSE explicitly; T and F are ordinary symbols that any caller (or earlier line) can rebind, silently flipping branches.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_RIGHT_ASSIGN, confidence: 0.66, source_date: "2026-05-10")
+/** Warns on right-assign operators -> and ->>; reading order obscures the assignment target. */
+pub fn no_right_assign(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(^|[^<\-])->>?\s*[A-Za-z_.]",
+    "m",
+  )
+  return warn_on_findings(
+    "no_right_assign",
+    "Use <- for assignment so the target name appears on the left; -> and ->> hide the binding and are easy to miss in review.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SEQ_ALONG, confidence: 0.74, source_date: "2026-05-10")
+/** Warns on 1:length(x), 1:nrow(x), 1:ncol(x) idioms that iterate c(1, 0) when the input is empty. */
+pub fn seq_along_over_one_to_length(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"\b1\s*:\s*(?:length|nrow|ncol|NROW|NCOL)\s*\(",
+    "s",
+  )
+  return warn_on_findings(
+    "seq_along_over_one_to_length",
+    "Use seq_along(x) or seq_len(nrow(x)); 1:length(x) silently iterates twice when x has length zero, hitting both ends of the empty input bug.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_INSTALL_PACKAGES, confidence: 0.78, source_date: "2026-05-10")
+/** Blocks install.packages() and update.packages() calls in committed source. */
+pub fn no_install_or_update_packages(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.$@])(?:install|update)\.packages\s*\(",
+    "m",
+  )
+  return block_on_findings(
+    "no_install_or_update_packages",
+    "Pin dependencies with renv, DESCRIPTION Imports, or a setup script the contributor opts into; never mutate the user's library on import.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EVAL_PARSE, confidence: 0.74, source_date: "2026-05-10")
+/** Blocks eval(parse(text = ...)) which evaluates arbitrary text as R code. */
+pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_r_files(slice),
+    r"\beval\s*\(\s*parse\s*\(\s*text\s*=",
+    "s",
+  )
+  return block_on_findings(
+    "no_eval_parse_text",
+    "Build expressions with rlang::expr / bquote / substitute and evaluate them with eval(); eval(parse(text = ...)) is an injection sink and skips static checks.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_VECTORIZE, confidence: 0.55, source_date: "2026-05-10")
+/** Warns on for loops over vectors or rows that perform a simple element-wise computation a vectorized op would express directly. */
+pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when a changed R for loop iterates over a vector, list, or row indices and computes a result that maps cleanly onto a built-in vectorized operation (arithmetic on whole vectors, ifelse, pmin/pmax, rowSums/colSums, sweep, apply/lapply/vapply/sapply/map_*) without inter-iteration state. Allow loops that mutate external resources, accumulate dependent state across iterations, recurse, or break/next on a non-trivial condition."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: r_files(slice)})
+  if judgement.verdict == "Warn" {
+    return warn(
+      "vectorize_over_loops",
+      "Replace the loop with a vectorized expression or apply/map family call; element-wise loops in R are typically 10-100x slower and harder to read.",
+      judgement.findings,
+    )
+  }
+  return allow("vectorize_over_loops")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_RANDOM_SEED, confidence: 0.62, source_date: "2026-05-10")
+/** Warns when an analysis script invokes randomness without an explicit set.seed() upstream. */
+pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when a changed R analysis script (.R, .Rmd, or .qmd outside R/ package source and outside test directories) calls a stochastic function such as sample, runif, rnorm, rbinom, rpois, rgamma, rbeta, rexp, rweibull, rt, rchisq, rmultinom, or simulate, AND the same script does not call set.seed() with a literal integer earlier in the file. Allow files where set.seed() is called before the first stochastic call, files that only define functions to be called by other code, and package R/ source where setting the seed would clobber the caller's RNG state."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: analysis_script_files(slice)})
+  if judgement.verdict == "Warn" {
+    return warn(
+      "reproducible_random_seed",
+      "Call set.seed(<integer>) at the top of the script so reruns reproduce; in package code, expose a seed argument instead.",
+      judgement.findings,
+    )
+  }
+  return allow("reproducible_random_seed")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_NAMESPACE, confidence: 0.62, source_date: "2026-05-10")
+/** Warns when package R/ source loads dependencies via library()/require() or uses unqualified non-base symbols without an importFrom roxygen tag. */
+pub fn package_namespace_discipline(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when a changed file under a package's R/ directory either (a) calls library(), require(), requireNamespace() purely for side-effect attachment, or (b) uses a symbol from a non-base, non-recommended package without either a pkg:: prefix or an @importFrom roxygen tag elsewhere in the file. Allow conditional requireNamespace(..., quietly = TRUE) checks that gate optional behavior, allow base/recommended packages (base, stats, utils, graphics, grDevices, methods, tools), and allow files that only contain comments, roxygen, or data definitions."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: package_source_files(slice)})
+  if judgement.verdict == "Warn" {
+    return warn(
+      "package_namespace_discipline",
+      "Declare dependencies in DESCRIPTION Imports and reference them with pkg::fn() or @importFrom; library() inside R/ alters the user's search path on load.",
+      judgement.findings,
+    )
+  }
+  return allow("package_namespace_discipline")
+}
