@@ -1,0 +1,25 @@
+{
+  "predicate": "index_on_fk",
+  "cases": [
+    {
+      "name": "blocks_postgres_fk_without_index",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "db/migrate/20260509140000_add_orders_user_fk.sql",
+          "text": "ALTER TABLE orders\n  ADD COLUMN user_id BIGINT NOT NULL REFERENCES users (id);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_fk_with_accompanying_index",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "db/migrate/20260509140100_add_orders_user_fk.sql",
+          "text": "ALTER TABLE orders\n  ADD COLUMN user_id BIGINT NOT NULL REFERENCES users (id);\n\nCREATE INDEX orders_user_id_idx ON orders (user_id);\n"
+        }
+      ]
+    }
+  ]
+}

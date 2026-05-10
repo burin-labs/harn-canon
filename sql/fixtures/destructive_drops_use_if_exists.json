@@ -1,0 +1,45 @@
+{
+  "predicate": "destructive_drops_use_if_exists",
+  "cases": [
+    {
+      "name": "warns_drop_table_without_if_exists",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "db/migrate/20260509130000_drop_legacy_audit.sql",
+          "text": "DROP TABLE legacy_audit;\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_drop_index_without_if_exists",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "db/migrate/20260509130100_drop_old_index.sql",
+          "text": "DROP INDEX users_lower_email_idx;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_drop_table_if_exists",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "db/migrate/20260509130200_drop_legacy_audit.sql",
+          "text": "DROP TABLE IF EXISTS legacy_audit;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_drop_materialized_view_if_exists",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "db/migrate/20260509130300_drop_metrics_mv.sql",
+          "text": "DROP MATERIALIZED VIEW IF EXISTS daily_metrics;\n"
+        }
+      ]
+    }
+  ]
+}

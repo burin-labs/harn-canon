@@ -1,0 +1,25 @@
+{
+  "predicate": "parameterized_queries_only",
+  "cases": [
+    {
+      "name": "blocks_dynamic_sql_concatenation",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "procs/find_user_by_email.sql",
+          "text": "CREATE OR REPLACE FUNCTION find_user_by_email(raw_email text)\nRETURNS SETOF users AS $$\nBEGIN\n  RETURN QUERY EXECUTE 'SELECT * FROM users WHERE email = ''' || raw_email || '''';\nEND;\n$$ LANGUAGE plpgsql;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_format_with_literal_quoting",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "procs/find_user_by_email.sql",
+          "text": "CREATE OR REPLACE FUNCTION find_user_by_email(raw_email text)\nRETURNS SETOF users AS $$\nBEGIN\n  RETURN QUERY EXECUTE format('SELECT id, email FROM users WHERE email = %L', raw_email);\nEND;\n$$ LANGUAGE plpgsql;\n"
+        }
+      ]
+    }
+  ]
+}

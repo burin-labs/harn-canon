@@ -1,0 +1,25 @@
+{
+  "predicate": "explicit_join_type",
+  "cases": [
+    {
+      "name": "blocks_comma_join",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "queries/orders_with_users.sql",
+          "text": "SELECT o.id, u.email\nFROM orders o, users u\nWHERE o.user_id = u.id;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_inner_join",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "queries/orders_with_users.sql",
+          "text": "SELECT o.id, u.email\nFROM orders o\nINNER JOIN users u ON o.user_id = u.id;\n"
+        }
+      ]
+    }
+  ]
+}

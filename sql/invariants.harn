@@ -1,11 +1,260 @@
-no_select_star:
-  description: Avoid using SELECT * for better performance and clarity.
+let _EVIDENCE_SELECT_STAR = [
+  "https://www.postgresql.org/docs/current/sql-createview.html",
+  "https://docs.gitlab.com/development/sql/",
+]
 
-explicit_join_type:
-  description: Use explicit JOIN syntax instead of comma joins.
+let _EVIDENCE_EXPLICIT_JOIN = [
+  "https://www.postgresql.org/docs/current/queries-table-expressions.html",
+  "https://www.sqlstyle.guide/",
+]
 
-parameterized_queries_only:
-  description: Prevent SQL injection by using parameterized queries.
+let _EVIDENCE_UNBOUNDED_DML = [
+  "https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html",
+  "https://www.postgresql.org/docs/current/sql-update.html",
+  "https://www.postgresql.org/docs/current/sql-delete.html",
+]
 
-index_on_fk:
-  description: Foreign key columns should be indexed.
+let _EVIDENCE_IF_NOT_EXISTS = [
+  "https://www.postgresql.org/docs/current/sql-createtable.html",
+  "https://www.postgresql.org/docs/current/sql-createindex.html",
+  "https://dev.mysql.com/doc/refman/8.0/en/create-table.html",
+]
+
+let _EVIDENCE_DROP_IF_EXISTS = [
+  "https://www.postgresql.org/docs/current/sql-droptable.html",
+  "https://dev.mysql.com/doc/refman/8.0/en/drop-table.html",
+]
+
+let _EVIDENCE_PARAMETERIZED = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
+  "https://www.postgresql.org/docs/current/sql-prepare.html",
+  "https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-executesql-transact-sql",
+]
+
+let _EVIDENCE_FK_INDEX = [
+  "https://www.postgresql.org/docs/current/ddl-constraints.html",
+  "https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html",
+]
+
+fn is_sql_path(path) {
+  return path.ends_with(".sql")
+}
+
+fn is_test_path(path) {
+  return path.contains("/test/")
+    || path.contains("/tests/")
+    || path.contains("/testdata/")
+    || path.contains("/fixtures/")
+    || path.contains("/seed/")
+    || path.contains("/seeds/")
+    || path.ends_with("_test.sql")
+    || path.ends_with("_seed.sql")
+    || path.ends_with("_fixture.sql")
+}
+
+fn is_migration_path(path) {
+  return path.contains("/migrations/")
+    || path.contains("/migration/")
+    || path.contains("/migrate/")
+    || path.contains("/changelog/")
+    || path.contains("/changesets/")
+    || path.contains("/flyway/")
+    || path.contains("/liquibase/")
+    || path.contains("/sqitch/")
+}
+
+fn sql_files(slice) {
+  return slice.files.filter({ file -> is_sql_path(file.path) })
+}
+
+fn production_sql_files(slice) {
+  return sql_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn migration_sql_files(slice) {
+  return production_sql_files(slice).filter({ file -> is_migration_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+fn any_match_lacks(matches, lack_pattern) {
+  if matches == nil {
+    return false
+  }
+  for m in matches {
+    if regex_match(lack_pattern, m, "i") == nil {
+      return true
+    }
+  }
+  return false
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SELECT_STAR, confidence: 0.78, source_date: "2026-05-09")
+/** Blocks unqualified SELECT * in production SQL files. */
+pub fn no_select_star(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(production_sql_files(slice), r"(?i)\bSELECT\s+\*\s+FROM\b", "is")
+  return block_on_findings(
+    "no_select_star",
+    "List explicit columns instead of SELECT *; column drift breaks views, contracts, and downstream consumers.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_EXPLICIT_JOIN, confidence: 0.74, source_date: "2026-05-09")
+/** Blocks comma-separated table lists in FROM in favor of explicit JOIN syntax. */
+pub fn explicit_join_type(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    production_sql_files(slice),
+    r"(?i)\bFROM\s+[\w\.]+(?:\s+(?:AS\s+)?\w+)?\s*,\s*[\w\.]+",
+    "is",
+  )
+  return block_on_findings(
+    "explicit_join_type",
+    "Use INNER JOIN, LEFT JOIN, or CROSS JOIN with explicit ON predicates instead of comma joins.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNBOUNDED_DML, confidence: 0.82, source_date: "2026-05-09")
+/** Blocks DELETE or UPDATE statements that lack a WHERE clause. */
+pub fn no_unbounded_delete_or_update(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    production_sql_files(slice),
+    { file -> any_match_lacks(regex_match(r"(?is)\bDELETE\s+FROM\s+[^;]+;", file.text, "is"), r"(?i)\bWHERE\b")
+      || any_match_lacks(
+      regex_match(r"(?is)\bUPDATE\s+[\w\.]+(?:\s+(?:AS\s+)?\w+)?\s+SET\s+[^;]+;", file.text, "is"),
+      r"(?i)\bWHERE\b",
+    ) },
+  )
+  return block_on_findings(
+    "no_unbounded_delete_or_update",
+    "Add a WHERE clause to scope the rows; use TRUNCATE for intentional full-table operations.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_IF_NOT_EXISTS, confidence: 0.7, source_date: "2026-05-09")
+/** Warns when migration CREATE TABLE or CREATE INDEX statements omit IF NOT EXISTS. */
+pub fn migrations_use_if_not_exists(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    migration_sql_files(slice),
+    { file -> any_match_lacks(
+      regex_match(r"(?is)\bCREATE\s+(?:TABLE|UNIQUE\s+INDEX|INDEX)(?:\s+\w+){1,4}", file.text, "is"),
+      r"(?i)\bIF\s+NOT\s+EXISTS\b",
+    ) },
+  )
+  return warn_on_findings(
+    "migrations_use_if_not_exists",
+    "Add IF NOT EXISTS so re-running the migration is a no-op when the object already exists.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DROP_IF_EXISTS, confidence: 0.78, source_date: "2026-05-09")
+/** Warns when migration DROP statements omit IF EXISTS. */
+pub fn destructive_drops_use_if_exists(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    migration_sql_files(slice),
+    { file -> any_match_lacks(
+      regex_match(
+        r"(?is)\bDROP\s+(?:TABLE|INDEX|VIEW|MATERIALIZED\s+VIEW|TYPE|SCHEMA|SEQUENCE)(?:\s+\w+){1,3}",
+        file.text,
+        "is",
+      ),
+      r"(?i)\bIF\s+EXISTS\b",
+    ) },
+  )
+  return warn_on_findings(
+    "destructive_drops_use_if_exists",
+    "Add IF EXISTS so the migration tolerates partially applied state and re-runs cleanly.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-09")
+/** Blocks dynamic SQL that interpolates untrusted input instead of binding parameters. */
+pub fn parameterized_queries_only(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed SQL builds a query by concatenating, formatting, or interpolating user-controlled values into the SQL text instead of using bind parameters, prepared statements, or sp_executesql with typed parameters. Allow safe identifier whitelisting, format() with %I or %L, and template substitutions where the substituted token is a constant or trusted identifier."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: sql_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "parameterized_queries_only",
+      "Bind values with prepared statements, sp_executesql parameters, or format() %L; never concatenate untrusted input.",
+      judgement.findings,
+    )
+  }
+  return allow("parameterized_queries_only")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_FK_INDEX, confidence: 0.6, source_date: "2026-05-09")
+/** Blocks new foreign-key references that lack a covering index on the referencing column. */
+pub fn index_on_fk(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when a SQL migration or schema change adds a FOREIGN KEY constraint or REFERENCES clause on a column that is not already the leading column of an index, primary key, or unique constraint, and the same change set does not add a CREATE INDEX covering it. Allow MySQL InnoDB inline FOREIGN KEY constraints that auto-create the supporting index, and allow columns already covered by an existing index."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: production_sql_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "index_on_fk",
+      "Add a CREATE INDEX on the referencing column when introducing a foreign key in engines that do not auto-index it.",
+      judgement.findings,
+    )
+  }
+  return allow("index_on_fk")
+}

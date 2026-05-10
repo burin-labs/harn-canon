@@ -1,0 +1,55 @@
+{
+  "predicate": "no_unbounded_delete_or_update",
+  "cases": [
+    {
+      "name": "blocks_delete_without_where",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "migrations/20260509120000_purge_sessions.sql",
+          "text": "DELETE FROM sessions;\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_update_without_where",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "migrations/20260509120100_clear_flags.sql",
+          "text": "UPDATE feature_flags SET enabled = false;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_delete_with_where",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "migrations/20260509120200_purge_old_sessions.sql",
+          "text": "DELETE FROM sessions WHERE expires_at < now() - interval '90 days';\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_update_with_where",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "migrations/20260509120300_disable_legacy_flags.sql",
+          "text": "UPDATE feature_flags SET enabled = false WHERE legacy = true;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_truncate",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "migrations/20260509120400_truncate_audit_buffer.sql",
+          "text": "TRUNCATE TABLE audit_buffer;\n"
+        }
+      ]
+    }
+  ]
+}
