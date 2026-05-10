@@ -1,0 +1,25 @@
+{
+  "predicate": "no_inline_styles",
+  "cases": [
+    {
+      "name": "warns_on_inline_style",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <p style=\"color: red; font-weight: bold;\">Sale!</p>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_class_styling",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><link rel=\"stylesheet\" href=\"/site.css\"></head>\n<body>\n  <p class=\"sale-banner\">Sale!</p>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

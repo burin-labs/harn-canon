@@ -1,0 +1,241 @@
+let _EVIDENCE_IMG_ALT = [
+  "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img",
+  "https://www.w3.org/WAI/tutorials/images/decision-tree/",
+]
+
+let _EVIDENCE_HTML_LANG = [
+  "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/lang",
+  "https://www.w3.org/WAI/WCAG22/Understanding/language-of-page.html",
+]
+
+let _EVIDENCE_INLINE_HANDLERS = [
+  "https://developer.mozilla.org/en-US/docs/Web/Events/Event_handlers",
+  "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
+  "https://web.dev/articles/strict-csp",
+]
+
+let _EVIDENCE_INLINE_STYLES = [
+  "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/style",
+  "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
+]
+
+let _EVIDENCE_SEMANTIC = [
+  "https://html.spec.whatwg.org/multipage/sections.html",
+  "https://developer.mozilla.org/en-US/docs/Glossary/Semantics",
+]
+
+let _EVIDENCE_TARGET_BLANK = [
+  "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/noopener",
+  "https://web.dev/articles/external-anchors-use-rel-noopener",
+]
+
+let _EVIDENCE_FORM_LABELS = [
+  "https://www.w3.org/WAI/tutorials/forms/labels/",
+  "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html",
+]
+
+let _EVIDENCE_LINK_PURPOSE = [
+  "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html",
+  "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a",
+]
+
+fn is_html_path(path) {
+  return path.ends_with(".html") || path.ends_with(".htm")
+}
+
+fn is_excluded_path(path) {
+  return contains(path, "node_modules/")
+    || path.starts_with("dist/") || contains(path, "/dist/")
+    || path.starts_with("build/") || contains(path, "/build/")
+    || path.starts_with("out/") || contains(path, "/out/")
+    || path.starts_with("coverage/") || contains(path, "/coverage/")
+    || path.starts_with("vendor/") || contains(path, "/vendor/")
+    || path.starts_with(".next/") || contains(path, "/.next/")
+    || path.starts_with(".nuxt/") || contains(path, "/.nuxt/")
+    || path.starts_with(".svelte-kit/") || contains(path, "/.svelte-kit/")
+    || path.starts_with(".cache/") || contains(path, "/.cache/")
+    || path.starts_with("target/") || contains(path, "/target/")
+    || path.starts_with("test-results/") || contains(path, "/test-results/")
+}
+
+fn html_files(slice) {
+  return slice.files.filter({ file -> is_html_path(file.path) && !is_excluded_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_IMG_ALT, confidence: 0.86, source_date: "2026-05-09")
+/** Blocks <img> elements that omit an alt attribute. */
+pub fn images_have_alt_text(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(html_files(slice), r"(?i)<img\b(?![^>]*\balt\s*=)[^>]*>", "s")
+  return block_on_findings(
+    "images_have_alt_text",
+    "Add an alt attribute; use alt=\"\" for purely decorative images that contribute no information.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_HTML_LANG, confidence: 0.84, source_date: "2026-05-09")
+/** Blocks full HTML documents that omit a lang attribute on the root element. */
+pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    html_files(slice),
+    { file -> regex_match(r"(?i)<html\b", file.text, "s") != nil
+      && regex_match(r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=", file.text, "s") == nil },
+  )
+  return block_on_findings(
+    "documents_specify_lang",
+    "Add a primary language to the root element, e.g. <html lang=\"en\">.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_INLINE_HANDLERS, confidence: 0.82, source_date: "2026-05-09")
+/** Blocks inline event-handler attributes such as onclick, onload, or onerror. */
+pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    html_files(slice),
+    r"(?i)<[a-z][a-z0-9-]*\b[^>]*\son[a-z]+\s*=\s*[\"']",
+    "s",
+  )
+  return block_on_findings(
+    "no_inline_event_handlers",
+    "Bind handlers in JavaScript with addEventListener; inline handlers break under strict CSP.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_INLINE_STYLES, confidence: 0.7, source_date: "2026-05-09")
+/** Warns on style attributes set directly on elements in production HTML. */
+pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    html_files(slice),
+    r"(?i)<[a-z][a-z0-9-]*\b[^>]*\sstyle\s*=\s*[\"']",
+    "s",
+  )
+  return warn_on_findings(
+    "no_inline_styles",
+    "Move declarations to a stylesheet or scoped class; inline styles defeat caching and strict CSP.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_SEMANTIC, confidence: 0.6, source_date: "2026-05-09")
+/** Warns when divs use class or id names that match HTML5 landmark elements. */
+pub fn prefer_semantic_landmarks(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    html_files(slice),
+    r"(?i)<div\b[^>]*\b(?:class|id)\s*=\s*[\"'][^\"']*\b(?:nav|navbar|navigation|header|main-?content|main|footer|sidebar|article|aside)\b[^\"']*[\"']",
+    "s",
+  )
+  return warn_on_findings(
+    "prefer_semantic_landmarks",
+    "Use <nav>, <header>, <main>, <footer>, <aside>, or <article> instead of a <div> with a landmark-shaped class or id.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TARGET_BLANK, confidence: 0.84, source_date: "2026-05-09")
+/** Blocks <a target="_blank"> anchors that omit rel="noopener" or rel="noreferrer". */
+pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    html_files(slice),
+    r"(?i)<a\b(?![^>]*\brel\s*=\s*[\"'][^\"']*\b(?:noopener|noreferrer)\b)[^>]*\btarget\s*=\s*[\"']?_blank[\"']?",
+    "s",
+  )
+  return block_on_findings(
+    "target_blank_uses_rel_noopener",
+    "Add rel=\"noopener\" (or rel=\"noreferrer\") to anchors that open new windows; otherwise the new page can navigate the opener.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_FORM_LABELS, confidence: 0.66, source_date: "2026-05-09")
+/** Blocks form controls that lack an accessible name from a label, aria-label, or aria-labelledby. */
+pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed HTML introduces or modifies a form control such as <input> (other than type=\"hidden\", \"submit\", \"button\", \"reset\", or \"image\" with alt), <select>, or <textarea>, and the control has no associated <label> (wrapping or with for=id), no aria-label, no aria-labelledby pointing at visible text, and no title attribute carrying the name."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "form_controls_have_accessible_names",
+      "Pair every form control with a <label>, aria-label, or aria-labelledby reference so assistive tech can announce it.",
+      judgement.findings,
+    )
+  }
+  return allow("form_controls_have_accessible_names")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_LINK_PURPOSE, confidence: 0.58, source_date: "2026-05-09")
+/** Blocks generic anchor text such as "click here" or "read more" without disambiguating context. */
+pub fn link_purpose_is_clear(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed HTML introduces an anchor whose visible text is generic placeholder phrasing such as \"click here\", \"here\", \"more\", \"read more\", or \"learn more\", and the anchor lacks a programmatic accessible name from aria-label or aria-labelledby and has no descriptive surrounding text in the same paragraph, list item, table cell, or heading that disambiguates the link target."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "link_purpose_is_clear",
+      "Replace generic link text with the destination's purpose, or supply context via aria-label or aria-labelledby.",
+      judgement.findings,
+    )
+  }
+  return allow("link_purpose_is_clear")
+}

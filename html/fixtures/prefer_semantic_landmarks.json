@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_semantic_landmarks",
+  "cases": [
+    {
+      "name": "warns_on_div_named_nav",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <div class=\"nav\">\n    <a href=\"/\">Home</a>\n    <a href=\"/about\">About</a>\n  </div>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_semantic_nav_element",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <nav class=\"primary\">\n    <a href=\"/\">Home</a>\n    <a href=\"/about\">About</a>\n  </nav>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "documents_specify_lang",
+  "cases": [
+    {
+      "name": "blocks_html_without_lang",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html>\n<head><title>Home</title></head>\n<body><p>Hello.</p></body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_html_with_lang",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<head><title>Home</title></head>\n<body><p>Hello.</p></body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

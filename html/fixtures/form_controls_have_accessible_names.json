@@ -1,0 +1,25 @@
+{
+  "predicate": "form_controls_have_accessible_names",
+  "cases": [
+    {
+      "name": "blocks_input_without_label",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/signup.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <form>\n    <input type=\"email\" name=\"email\" placeholder=\"you@example.com\">\n    <button type=\"submit\">Sign up</button>\n  </form>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_input_with_label",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/signup.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <form>\n    <label for=\"email\">Email address</label>\n    <input id=\"email\" type=\"email\" name=\"email\">\n    <button type=\"submit\">Sign up</button>\n  </form>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

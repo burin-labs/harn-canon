@@ -1,0 +1,25 @@
+{
+  "predicate": "no_inline_event_handlers",
+  "cases": [
+    {
+      "name": "blocks_inline_onclick",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/checkout.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <button onclick=\"submit()\">Pay</button>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_handler_bound_in_script",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/checkout.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <button id=\"pay\">Pay</button>\n  <script src=\"/checkout.js\" type=\"module\"></script>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}
