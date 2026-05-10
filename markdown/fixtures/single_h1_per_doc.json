@@ -1,0 +1,25 @@
+{
+  "predicate": "single_h1_per_doc",
+  "cases": [
+    {
+      "name": "warns_on_two_h1_headings",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "docs/overview.md",
+          "text": "# Overview\n\nFirst section.\n\n# Architecture\n\nSecond section.\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_single_h1_with_h2_siblings",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/overview.md",
+          "text": "# Overview\n\nFirst section.\n\n## Architecture\n\nSecond section.\n\n## Deployment\n\nThird section.\n"
+        }
+      ]
+    }
+  ]
+}

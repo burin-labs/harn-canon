@@ -1,0 +1,25 @@
+{
+  "predicate": "consistent_link_format",
+  "cases": [
+    {
+      "name": "warns_on_mixed_link_styles_in_one_doc",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "docs/links.md",
+          "text": "# Links\n\nWe use the [official spec](https://spec.commonmark.org/), and the [GFM extension][gfm], plus https://github.github.com/gfm/ for the rendered version, and the shortcut form [CommonMark][].\n\n[gfm]: https://github.github.com/gfm/\n[CommonMark]: https://commonmark.org/\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_consistent_inline_links",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/links.md",
+          "text": "# Links\n\nWe use the [CommonMark spec](https://spec.commonmark.org/) and the [GFM extension](https://github.github.com/gfm/) as our authoritative references.\n"
+        }
+      ]
+    }
+  ]
+}

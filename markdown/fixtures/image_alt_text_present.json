@@ -1,0 +1,25 @@
+{
+  "predicate": "image_alt_text_present",
+  "cases": [
+    {
+      "name": "blocks_image_without_alt_text",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "docs/architecture.md",
+          "text": "# Architecture\n\nSee the diagram below.\n\n![](./diagrams/system.png)\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_image_with_descriptive_alt",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/architecture.md",
+          "text": "# Architecture\n\nSee the diagram below.\n\n![Request flow from gateway to scheduler to worker pool](./diagrams/system.png)\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "heading_level_discipline",
+  "cases": [
+    {
+      "name": "warns_on_h1_to_h3_skip",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "docs/runbook.md",
+          "text": "# Runbook\n\nIntro paragraph.\n\n### Step one\n\nDetails.\n\n### Step two\n\nMore details.\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_monotonic_levels",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "docs/runbook.md",
+          "text": "# Runbook\n\nIntro paragraph.\n\n## Steps\n\n### Step one\n\nDetails.\n\n### Step two\n\nMore details.\n"
+        }
+      ]
+    }
+  ]
+}
