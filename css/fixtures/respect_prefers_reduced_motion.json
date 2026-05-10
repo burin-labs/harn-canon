@@ -1,0 +1,25 @@
+{
+  "predicate": "respect_prefers_reduced_motion",
+  "cases": [
+    {
+      "name": "blocks_long_animation_without_reduced_motion_guard",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "components/spinner.css",
+          "text": "@keyframes spin {\n  from { transform: rotate(0deg); }\n  to { transform: rotate(360deg); }\n}\n\n.spinner {\n  animation: spin 1.2s linear infinite;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_animation_with_reduced_motion_guard",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/spinner.css",
+          "text": "@keyframes spin {\n  from { transform: rotate(0deg); }\n  to { transform: rotate(360deg); }\n}\n\n.spinner {\n  animation: spin 1.2s linear infinite;\n}\n\n@media (prefers-reduced-motion: reduce) {\n  .spinner {\n    animation: none;\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "prefer_logical_properties",
+  "cases": [
+    {
+      "name": "warns_on_physical_margin_left",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "components/list.css",
+          "text": ".list-item {\n  margin-left: 1rem;\n  text-align: right;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_logical_equivalents",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/list.css",
+          "text": ".list-item {\n  margin-inline-start: 1rem;\n  text-align: end;\n}\n"
+        }
+      ]
+    }
+  ]
+}

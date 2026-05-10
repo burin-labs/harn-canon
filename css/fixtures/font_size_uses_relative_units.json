@@ -1,0 +1,25 @@
+{
+  "predicate": "font_size_uses_relative_units",
+  "cases": [
+    {
+      "name": "warns_on_pixel_font_size",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "components/typography.css",
+          "text": "body {\n  font-size: 14px;\n  line-height: 1.5;\n}\n\nh1 {\n  font-size: 24pt;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_relative_units",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/typography.css",
+          "text": "body {\n  font-size: 1rem;\n  line-height: 1.5;\n}\n\nh1 {\n  font-size: 2em;\n}\n\nsmall {\n  font-size: 87.5%;\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "no_zero_with_unit",
+  "cases": [
+    {
+      "name": "warns_on_zero_px",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "components/card.css",
+          "text": ".card {\n  margin: 0px;\n  padding: 1rem;\n  border: 0em solid transparent;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unitless_zero_and_nonzero_lengths",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "components/card.css",
+          "text": ".card {\n  margin: 0;\n  padding: 1rem;\n  border: 0 solid transparent;\n  transition: opacity 0.2s ease;\n  transform: rotate(0deg);\n}\n"
+        }
+      ]
+    }
+  ]
+}
