@@ -1,0 +1,25 @@
+{
+  "predicate": "images_have_alt_text",
+  "cases": [
+    {
+      "name": "blocks_img_without_alt",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <img src=\"/logo.png\" width=\"120\">\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_img_with_alt",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <img src=\"/logo.png\" alt=\"Acme logo\" width=\"120\">\n  <img src=\"/divider.png\" alt=\"\" role=\"presentation\">\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

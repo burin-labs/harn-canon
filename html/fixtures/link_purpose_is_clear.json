@@ -1,0 +1,25 @@
+{
+  "predicate": "link_purpose_is_clear",
+  "cases": [
+    {
+      "name": "blocks_generic_click_here",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/docs.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <p>For installation instructions, <a href=\"/install\">click here</a>.</p>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_descriptive_link_text",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/docs.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <p>Read the <a href=\"/install\">installation guide</a> to get started.</p>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}

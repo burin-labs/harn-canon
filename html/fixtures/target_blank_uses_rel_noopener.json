@@ -1,0 +1,25 @@
+{
+  "predicate": "target_blank_uses_rel_noopener",
+  "cases": [
+    {
+      "name": "blocks_target_blank_without_rel",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <a href=\"https://example.com\" target=\"_blank\">Docs</a>\n</body>\n</html>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_target_blank_with_noopener",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "public/index.html",
+          "text": "<!DOCTYPE html>\n<html lang=\"en\">\n<body>\n  <a href=\"https://example.com\" target=\"_blank\" rel=\"noopener\">Docs</a>\n  <a href=\"https://example.org\" target=\"_blank\" rel=\"external noreferrer\">Mirror</a>\n</body>\n</html>\n"
+        }
+      ]
+    }
+  ]
+}
