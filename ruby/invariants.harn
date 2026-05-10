@@ -59,10 +59,10 @@ fn ruby_files(slice) {
   return slice.files
     .filter(
     { file -> file.path.ends_with(".rb")
-    || file.path.ends_with(".rake")
-    || file.path.ends_with(".gemspec")
-    || file.path.ends_with("Gemfile")
-    || file.path.ends_with("Rakefile") },
+      || file.path.ends_with(".rake")
+      || file.path.ends_with(".gemspec")
+      || file.path.ends_with("Gemfile")
+      || file.path.ends_with("Rakefile") },
   )
 }
 
@@ -182,11 +182,7 @@ pub fn no_monkey_patch_stdlib(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_GLOBAL_VARIABLES, confidence: 0.78, source_date: "2026-05-08")
 /** Blocks assignment to application-defined global variables. */
 pub fn no_global_variables(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    ruby_files(slice),
-    r"(?m)(^|[^$])\$[a-z_][A-Za-z0-9_]*\s*=",
-    "m",
-  )
+  let findings = scan_files(ruby_files(slice), r"(?m)(^|[^$])\$[a-z_][A-Za-z0-9_]*\s*=", "m")
   return block_on_findings(
     "no_global_variables",
     "Replace application globals with injected dependencies, constants, or object state.",
@@ -232,7 +228,7 @@ pub fn no_dynamic_eval(slice, _ctx, _repo_at_base) {
   let findings = scan_files_without(
     ruby_files(slice),
     r"(?m)(^|[^A-Za-z0-9_])(eval|instance_eval|class_eval|module_eval)\s*\(",
-    r"(eval|instance_eval|class_eval|module_eval)\s*\(\s*['\"]",
+    "(eval|instance_eval|class_eval|module_eval)\\s*\\(\\s*['\\\"]",
   )
   return block_on_findings(
     "no_dynamic_eval",

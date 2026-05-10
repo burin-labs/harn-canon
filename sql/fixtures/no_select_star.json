@@ -1,0 +1,35 @@
+{
+  "predicate": "no_select_star",
+  "cases": [
+    {
+      "name": "blocks_select_star_in_view",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "schema/views/active_users.sql",
+          "text": "CREATE VIEW active_users AS\nSELECT * FROM users WHERE last_seen_at > now() - interval '30 days';\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_explicit_columns",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/views/active_users.sql",
+          "text": "CREATE VIEW active_users AS\nSELECT id, email, last_seen_at FROM users WHERE last_seen_at > now() - interval '30 days';\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_count_star_aggregate",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "queries/user_count.sql",
+          "text": "SELECT COUNT(*) AS total FROM users;\n"
+        }
+      ]
+    }
+  ]
+}

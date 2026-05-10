@@ -1,0 +1,45 @@
+{
+  "predicate": "migrations_use_if_not_exists",
+  "cases": [
+    {
+      "name": "warns_create_table_without_if_not_exists",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "db/migrate/20260509120000_create_invoices.sql",
+          "text": "CREATE TABLE invoices (\n  id BIGSERIAL PRIMARY KEY,\n  amount NUMERIC(12,2) NOT NULL\n);\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_create_index_without_if_not_exists",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "db/migrate/20260509120100_index_invoices_user_id.sql",
+          "text": "CREATE INDEX invoices_user_id_idx ON invoices (user_id);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_create_table_if_not_exists",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "db/migrate/20260509120200_create_invoices.sql",
+          "text": "CREATE TABLE IF NOT EXISTS invoices (\n  id BIGSERIAL PRIMARY KEY,\n  amount NUMERIC(12,2) NOT NULL\n);\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_create_index_concurrently_if_not_exists",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "db/migrate/20260509120300_index_invoices_user_id.sql",
+          "text": "CREATE INDEX CONCURRENTLY IF NOT EXISTS invoices_user_id_idx ON invoices (user_id);\n"
+        }
+      ]
+    }
+  ]
+}
