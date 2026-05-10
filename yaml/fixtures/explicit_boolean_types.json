@@ -1,0 +1,25 @@
+{
+  "predicate": "explicit_boolean_types",
+  "cases": [
+    {
+      "name": "warns_on_yes_boolean_value",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/feature.yaml",
+          "text": "feature:\n  enabled: yes\n  retry: no\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_true_false_booleans",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/feature.yaml",
+          "text": "feature:\n  enabled: true\n  retry: false\n"
+        }
+      ]
+    }
+  ]
+}

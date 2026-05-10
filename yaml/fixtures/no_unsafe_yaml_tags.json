@@ -1,0 +1,25 @@
+{
+  "predicate": "no_unsafe_yaml_tags",
+  "cases": [
+    {
+      "name": "blocks_python_object_apply_tag",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/jobs.yaml",
+          "text": "job: !!python/object/apply:os.system\n  args: [\"echo unsafe\"]\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_standard_tags_only",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/jobs.yaml",
+          "text": "job:\n  command: echo safe\n  args: []\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "predicate": "consistent_indent",
+  "cases": [
+    {
+      "name": "warns_on_three_space_indent",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n  name: api\n   port: 8080\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_consistent_two_space_indent",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n  name: api\n  port: 8080\n  metrics:\n    enabled: true\n"
+        }
+      ]
+    }
+  ]
+}

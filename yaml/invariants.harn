@@ -1,0 +1,231 @@
+let _EVIDENCE_INDENT_TABS = [
+  "https://yaml.org/spec/1.2.2/#61-indentation-spaces",
+  "https://yamllint.readthedocs.io/en/stable/rules.html#module-yamllint.rules.indentation",
+]
+
+let _EVIDENCE_BOOLEAN = [
+  "https://yaml.org/spec/1.2.2/#10212-boolean",
+  "https://yamllint.readthedocs.io/en/stable/rules.html#module-yamllint.rules.truthy",
+]
+
+let _EVIDENCE_AMBIGUOUS_SCALARS = [
+  "https://yaml.org/spec/1.2.2/#1032-tag-resolution",
+  "https://yamllint.readthedocs.io/en/stable/rules.html#module-yamllint.rules.quoted-strings",
+]
+
+let _EVIDENCE_CONSISTENT_INDENT = [
+  "https://yaml.org/spec/1.2.2/#61-indentation-spaces",
+  "https://yamllint.readthedocs.io/en/stable/rules.html#module-yamllint.rules.indentation",
+]
+
+let _EVIDENCE_UNSAFE_TAGS = [
+  "https://pyyaml.org/wiki/PyYAMLDocumentation",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
+]
+
+let _EVIDENCE_ANCHORS = [
+  "https://yaml.org/spec/1.2.2/#692-node-anchors",
+  "https://yaml.org/spec/1.2.2/#92-streams",
+]
+
+let _EVIDENCE_YAMLLINT = [
+  "https://yamllint.readthedocs.io/en/stable/rules.html",
+  "https://yamllint.readthedocs.io/en/stable/configuration.html",
+]
+
+let _EVIDENCE_SECRETS = [
+  "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
+  "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
+]
+
+fn yaml_files(slice) {
+  return slice.files.filter({ file -> file.path.ends_with(".yaml") || file.path.ends_with(".yml") })
+}
+
+fn is_test_path(path) {
+  return contains(path, "/fixtures/")
+    || contains(path, "/__fixtures__/")
+    || contains(path, "/testdata/")
+    || contains(path, "/test-data/")
+    || contains(path, "/test/")
+    || contains(path, "/tests/")
+    || contains(path, "/spec/")
+}
+
+fn non_test_yaml_files(slice) {
+  return yaml_files(slice).filter({ file -> !is_test_path(file.path) })
+}
+
+fn scan_files(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_if(files, predicate) {
+  var findings = []
+  for file in files {
+    if predicate(file) {
+      findings = findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+fn allow(rule) {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+fn warn(rule, remediation, findings) {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block(rule, remediation, findings) {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+fn block_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return block(rule, remediation, findings)
+}
+
+fn warn_on_findings(rule, remediation, findings) {
+  if findings.none() {
+    return allow(rule)
+  }
+  return warn(rule, remediation, findings)
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_INDENT_TABS, confidence: 0.92, source_date: "2026-05-09")
+/** Blocks tabs used as indentation; the YAML 1.2 spec allows only spaces. */
+pub fn no_tabs_for_indent(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(non_test_yaml_files(slice), r"(?m)^\t+\S", "m")
+  return block_on_findings(
+    "no_tabs_for_indent",
+    "Replace leading tabs with spaces; YAML forbids tab characters as indentation.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_BOOLEAN, confidence: 0.84, source_date: "2026-05-09")
+/** Warns on bare yes/no/on/off/y/n values that change meaning between YAML 1.1 and 1.2 parsers. */
+pub fn explicit_boolean_types(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    non_test_yaml_files(slice),
+    r"(?mi)(?::\s+|^\s*-\s+)(?:yes|no|on|off|y|n)\s*(?:#.*)?$",
+    "m",
+  )
+  return warn_on_findings(
+    "explicit_boolean_types",
+    "Use true/false for booleans, or quote yes/no/on/off when they are strings.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_AMBIGUOUS_SCALARS, confidence: 0.7, source_date: "2026-05-09")
+/** Warns on bare scalars that parsers commonly mis-type: trailing-zero versions, leading-zero numbers, sexagesimal forms. */
+pub fn quoted_ambiguous_scalars(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    non_test_yaml_files(slice),
+    r"(?m):\s+(?:0\d+|\d+\.\d+0|\d+:\d+(?::\d+)+)\s*(?:#.*)?$",
+    "m",
+  )
+  return warn_on_findings(
+    "quoted_ambiguous_scalars",
+    "Quote version numbers, leading-zero ids, and time-like scalars to keep them as strings.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CONSISTENT_INDENT, confidence: 0.74, source_date: "2026-05-09")
+/** Warns on lines whose leading indentation is an odd number of spaces, which almost always signals an inconsistent indent step. */
+pub fn consistent_indent(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(non_test_yaml_files(slice), r"(?m)^(?: |   |     |       )\S", "m")
+  return warn_on_findings(
+    "consistent_indent",
+    "Use a single, consistent indent step (typically two spaces) for all nested blocks in a YAML file.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_UNSAFE_TAGS, confidence: 0.95, source_date: "2026-05-09")
+/** Blocks YAML language-specific object construction tags that map to remote-code-execution sinks. */
+pub fn no_unsafe_yaml_tags(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    yaml_files(slice),
+    r"(?m)!{1,2}(?:python|ruby|java|javax|perl|exec)\b",
+    "m",
+  )
+  return block_on_findings(
+    "no_unsafe_yaml_tags",
+    "Remove language-specific !!python/!ruby/!!java tags; load this YAML with a safe loader instead.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ANCHORS, confidence: 0.66, source_date: "2026-05-09")
+/** Warns when a multi-document YAML file uses aliases that may reference anchors in a different document. */
+pub fn no_anchors_across_docs(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    non_test_yaml_files(slice),
+    { file -> regex_match(r"(?ms)^---\s*$.+?^---\s*$", file.text, "ms") != nil
+      && regex_match(r"(?m)(?:^|[^&\\])\*[A-Za-z_][A-Za-z0-9_-]*", file.text, "m") != nil },
+  )
+  return warn_on_findings(
+    "no_anchors_across_docs",
+    "YAML anchors reset at every --- separator; inline the shared content into each document or split the file.",
+    findings,
+  )
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_YAMLLINT, confidence: 0.66, source_date: "2026-05-09")
+/** Blocks changed YAML that yamllint would flag as an error under a sensible default configuration. */
+pub fn yamllint_compliance(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed YAML clearly violates a yamllint default rule that yamllint reports as an error: duplicate keys, empty mapping values where a value is required, line-length runaway, missing document start when policy requires it, octal value misuse, or syntax that fails to parse. Do not block on style preferences when yamllint defaults treat them as warnings."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: yaml_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "yamllint_compliance",
+      "Resolve the yamllint error or scope a narrow rule disable with a justification comment.",
+      judgement.findings,
+    )
+  }
+  return allow("yamllint_compliance")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
+/** Blocks credentials, tokens, and private keys committed in YAML configuration. */
+pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed YAML embeds an API key, access token, password, private key, signing secret, or production connection string instead of referencing a secret manager, environment variable, or sealed/encrypted secret store."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: yaml_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "no_hardcoded_secrets",
+      "Move the secret to a managed store (e.g. SealedSecrets, SOPS, env-injected reference) and rotate exposed values.",
+      judgement.findings,
+    )
+  }
+  return allow("no_hardcoded_secrets")
+}

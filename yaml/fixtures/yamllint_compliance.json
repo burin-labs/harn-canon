@@ -1,0 +1,25 @@
+{
+  "predicate": "yamllint_compliance",
+  "cases": [
+    {
+      "name": "blocks_duplicate_top_level_keys",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n  name: api\nservice:\n  name: worker\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_yaml",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.yaml",
+          "text": "service:\n  name: api\nworker:\n  name: worker\n"
+        }
+      ]
+    }
+  ]
+}

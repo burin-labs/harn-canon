@@ -49,6 +49,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [TOML](./toml/) — v0 draft predicates for TOML configuration documents (`Cargo.toml`, `pyproject.toml`, tool configs).
 - [TypeScript](./typescript/) — v0 draft predicates for TypeScript and TSX code.
 - [XML](./xml/) — v0 draft predicates for XML payloads, XSD schemas, XSLT stylesheets, and related XML-shaped formats.
+- [YAML](./yaml/) — v0 draft predicates for plain YAML configuration covering parser footguns and unsafe deserialization tags.
 
 ## Status
 
