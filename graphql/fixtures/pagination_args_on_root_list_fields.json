@@ -1,0 +1,25 @@
+{
+  "predicate": "pagination_args_on_root_list_fields",
+  "cases": [
+    {
+      "name": "warns_on_unbounded_list_field",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "schema/query.graphql",
+          "text": "type Query {\n  users: [User!]!\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_paginated_list_field",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/query.graphql",
+          "text": "type Query {\n  users(first: Int!, after: String): UserConnection!\n}\n"
+        }
+      ]
+    }
+  ]
+}

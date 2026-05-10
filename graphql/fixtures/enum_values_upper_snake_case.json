@@ -1,0 +1,25 @@
+{
+  "predicate": "enum_values_upper_snake_case",
+  "cases": [
+    {
+      "name": "blocks_lowercase_enum_value",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "schema/order.graphql",
+          "text": "enum OrderStatus {\n  PLACED\n  pending\n  SHIPPED\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_upper_snake_case_values",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/order.graphql",
+          "text": "enum OrderStatus {\n  PLACED\n  PENDING_FULFILLMENT\n  SHIPPED\n}\n"
+        }
+      ]
+    }
+  ]
+}

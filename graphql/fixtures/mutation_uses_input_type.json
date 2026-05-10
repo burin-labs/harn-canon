@@ -1,0 +1,25 @@
+{
+  "predicate": "mutation_uses_input_type",
+  "cases": [
+    {
+      "name": "warns_on_loose_mutation_arguments",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "schema/mutation.graphql",
+          "text": "type Mutation {\n  createUser(name: String!, email: String!): User\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_input_object_mutation",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/mutation.graphql",
+          "text": "input CreateUserInput {\n  name: String!\n  email: String!\n}\n\ntype Mutation {\n  createUser(input: CreateUserInput!): User\n}\n"
+        }
+      ]
+    }
+  ]
+}

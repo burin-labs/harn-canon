@@ -1,0 +1,25 @@
+{
+  "predicate": "no_double_underscore_names",
+  "cases": [
+    {
+      "name": "blocks_double_underscore_type_name",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "schema/internal.graphql",
+          "text": "type __InternalCache {\n  hitRate: Float!\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_normal_type_name",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "schema/internal.graphql",
+          "text": "type InternalCache {\n  hitRate: Float!\n}\n"
+        }
+      ]
+    }
+  ]
+}

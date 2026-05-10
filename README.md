@@ -33,6 +33,7 @@ See the Harn Flow design docs for the full predicate language spec.
 
 - [C#](./csharp/) — v0 draft predicates for plain C# and .NET library or application code.
 - [Go](./go/) — v0 draft predicates for Go modules, command packages, and reusable libraries.
+- [GraphQL](./graphql/) — v0 draft predicates for GraphQL schema files and the server wiring that hosts them.
 - [Harn](./harn/) — v0 draft predicates for `.harn` scripts, Flow workflows, and agent-facing Harn modules.
 - [Java](./java/) — v0 draft predicates for plain Java application and library code.
 - [JavaScript](./javascript/) — v0 draft predicates for plain JavaScript source, async handling, dynamic-code hazards, and untrusted data boundaries.
