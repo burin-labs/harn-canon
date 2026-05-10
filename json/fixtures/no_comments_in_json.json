@@ -1,0 +1,55 @@
+{
+  "predicate": "no_comments_in_json",
+  "cases": [
+    {
+      "name": "blocks_line_comment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  // application port\n  \"port\": 8080\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_block_comment",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"port\": 8080,\n  /* timeout in ms */\n  \"timeout\": 30000\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_clean_json",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"port\": 8080,\n  \"timeoutMs\": 30000\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_url_with_double_slash",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/links.json",
+          "text": "{\n  \"docs\": \"https://example.com/docs\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_comments_in_tsconfig",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "tsconfig.json",
+          "text": "{\n  // strict TypeScript settings\n  \"compilerOptions\": {\n    \"strict\": true\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}
