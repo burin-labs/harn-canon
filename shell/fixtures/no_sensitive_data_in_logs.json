@@ -1,0 +1,25 @@
+{
+  "predicate": "no_sensitive_data_in_logs",
+  "cases": [
+    {
+      "name": "blocks_echoing_password",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/login.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nuser=\"$1\"\npassword=\"$2\"\necho \"logging in $user with password $password\" >> /var/log/login.log\nperform_login \"$user\" \"$password\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_redacted_diagnostic_logs",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/login.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nuser=\"$1\"\npassword=\"$2\"\necho \"login attempt for user=$user\" >> /var/log/login.log\nperform_login \"$user\" \"$password\"\n"
+        }
+      ]
+    }
+  ]
+}

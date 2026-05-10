@@ -1,0 +1,35 @@
+{
+  "predicate": "trap_cleanup_on_tempfile",
+  "cases": [
+    {
+      "name": "warns_on_mktemp_without_trap",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/build.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\ntmp=$(mktemp -d)\ncp -r src/ \"$tmp/\"\nrun_build \"$tmp\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_mktemp_with_exit_trap",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/build.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\ntmp=$(mktemp -d)\ntrap 'rm -rf -- \"$tmp\"' EXIT\ncp -r src/ \"$tmp/\"\nrun_build \"$tmp\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_script_without_tempfiles",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/run.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\necho \"hello\"\n"
+        }
+      ]
+    }
+  ]
+}

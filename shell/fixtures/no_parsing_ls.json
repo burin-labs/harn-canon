@@ -1,0 +1,45 @@
+{
+  "predicate": "no_parsing_ls",
+  "cases": [
+    {
+      "name": "blocks_for_in_dollar_ls",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/cleanup.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nfor f in $(ls /var/log); do\n  rm -- \"/var/log/$f\"\ndone\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_backtick_ls",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "scripts/legacy.sh",
+          "text": "#!/bin/sh\nfor f in `ls /tmp`; do\n  echo \"$f\"\ndone\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_glob_iteration",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/cleanup.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nshopt -s nullglob\nfor f in /var/log/*; do\n  rm -- \"$f\"\ndone\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_find_print0",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/cleanup.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\nfind /var/log -type f -print0 | xargs -0 rm --\n"
+        }
+      ]
+    }
+  ]
+}

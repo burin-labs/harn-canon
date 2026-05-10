@@ -1,0 +1,25 @@
+{
+  "predicate": "no_blanket_shellcheck_disable",
+  "cases": [
+    {
+      "name": "warns_on_disable_all",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "scripts/legacy.sh",
+          "text": "#!/usr/bin/env bash\n# shellcheck disable=all\nset -euo pipefail\nrun_legacy_thing\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_specific_disable_codes",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "scripts/legacy.sh",
+          "text": "#!/usr/bin/env bash\nset -euo pipefail\n# shellcheck disable=SC2086,SC2046\nrun_legacy_thing $args\n"
+        }
+      ]
+    }
+  ]
+}
