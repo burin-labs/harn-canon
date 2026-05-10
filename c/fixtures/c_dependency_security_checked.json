@@ -1,0 +1,33 @@
+{
+  "predicate": "c_dependency_security_checked",
+  "cases": [
+    {
+      "name": "blocks_dependency_change_without_vuln_check",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "conanfile.txt",
+          "text": "[requires]\nopenssl/3.2.0\nlibcurl/8.5.0\nzlib/1.3\n\n[generators]\nCMakeDeps\nCMakeToolchain\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_dependency_change_with_dependabot_and_advisory_pipeline",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "conanfile.txt",
+          "text": "[requires]\nopenssl/3.2.0\nlibcurl/8.5.0\nzlib/1.3\n\n[generators]\nCMakeDeps\nCMakeToolchain\n"
+        },
+        {
+          "path": ".github/dependabot.yml",
+          "text": "version: 2\nupdates:\n  - package-ecosystem: \"github-actions\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n  - package-ecosystem: \"docker\"\n    directory: \"/\"\n    schedule:\n      interval: \"weekly\"\n"
+        },
+        {
+          "path": ".github/workflows/cve-scan.yml",
+          "text": "name: cve-scan\non: [push, pull_request]\njobs:\n  scan:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v6\n      - name: Run OSV scanner over native deps\n        uses: google/osv-scanner-action@v2\n        with:\n          scan-args: --lockfile=conanfile.txt --format=table\n"
+        }
+      ]
+    }
+  ]
+}

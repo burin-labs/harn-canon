@@ -1,0 +1,55 @@
+{
+  "predicate": "no_format_string_from_variable",
+  "cases": [
+    {
+      "name": "blocks_printf_with_variable_format",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/log.c",
+          "text": "#include <stdio.h>\n\nvoid emit(const char *msg) {\n\tprintf(msg);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_fprintf_with_variable_format",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/log.c",
+          "text": "#include <stdio.h>\n\nvoid emit(FILE *out, const char *msg) {\n\tfprintf(out, msg);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_snprintf_with_variable_format",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/log.c",
+          "text": "#include <stdio.h>\n\nvoid emit(char *buf, size_t cap, const char *fmt) {\n\tsnprintf(buf, cap, fmt);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_literal_format_with_variable_arg",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/log.c",
+          "text": "#include <stdio.h>\n\nvoid emit(FILE *out, const char *msg) {\n\tfprintf(out, \"%s\\n\", msg);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_snprintf_with_literal_format",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/log.c",
+          "text": "#include <stdio.h>\n\nint emit(char *buf, size_t cap, int code) {\n\treturn snprintf(buf, cap, \"code=%d\", code);\n}\n"
+        }
+      ]
+    }
+  ]
+}

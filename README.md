@@ -31,6 +31,7 @@ See the Harn Flow design docs for the full predicate language spec.
 
 ## Packs
 
+- [C](./c/) — v0 draft predicates for plain C source and headers covering memory, string-handling, format-string, and tempfile footguns.
 - [C#](./csharp/) — v0 draft predicates for plain C# and .NET library or application code.
 - [CSS](./css/) — v0 draft predicates for CSS, Sass, and Less stylesheets covering cascade hygiene, internationalization, and accessibility.
 - [Dart](./dart/) — v0 draft predicates for Dart application, package, and Flutter source covering null safety, public-API hygiene, async correctness, and widget immutability.

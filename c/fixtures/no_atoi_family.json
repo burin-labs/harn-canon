@@ -1,0 +1,25 @@
+{
+  "predicate": "no_atoi_family",
+  "cases": [
+    {
+      "name": "warns_on_atoi",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/parse.c",
+          "text": "#include <stdlib.h>\n\nint port_from(const char *raw) {\n\treturn atoi(raw);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_strtol_with_error_check",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/parse.c",
+          "text": "#include <errno.h>\n#include <limits.h>\n#include <stdlib.h>\n\nint port_from(const char *raw, int *out) {\n\tchar *end = NULL;\n\terrno = 0;\n\tlong v = strtol(raw, &end, 10);\n\tif (errno != 0 || end == raw || *end != '\\0' || v < 0 || v > 65535) {\n\t\treturn -1;\n\t}\n\t*out = (int)v;\n\treturn 0;\n}\n"
+        }
+      ]
+    }
+  ]
+}

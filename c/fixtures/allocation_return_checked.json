@@ -1,0 +1,25 @@
+{
+  "predicate": "allocation_return_checked",
+  "cases": [
+    {
+      "name": "blocks_unchecked_malloc_dereference",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/store.c",
+          "text": "#include <stdlib.h>\n#include <string.h>\n\nchar *make_copy(const char *src, size_t n) {\n\tchar *buf = malloc(n + 1);\n\tmemcpy(buf, src, n);\n\tbuf[n] = '\\0';\n\treturn buf;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_null_check_then_use",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/store.c",
+          "text": "#include <stdlib.h>\n#include <string.h>\n\nchar *make_copy(const char *src, size_t n) {\n\tchar *buf = malloc(n + 1);\n\tif (buf == NULL) {\n\t\treturn NULL;\n\t}\n\tmemcpy(buf, src, n);\n\tbuf[n] = '\\0';\n\treturn buf;\n}\n"
+        }
+      ]
+    }
+  ]
+}

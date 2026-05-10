@@ -1,0 +1,35 @@
+{
+  "predicate": "no_unsafe_tmpfile",
+  "cases": [
+    {
+      "name": "blocks_mktemp",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/tmp.c",
+          "text": "#include <stdlib.h>\n\nchar *make_path(char *template) {\n\treturn mktemp(template);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_tmpnam",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/tmp.c",
+          "text": "#include <stdio.h>\n\nchar *make_path(char *out) {\n\treturn tmpnam(out);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_mkstemp",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/tmp.c",
+          "text": "#include <stdlib.h>\n\nint open_tmp(char *template) {\n\treturn mkstemp(template);\n}\n"
+        }
+      ]
+    }
+  ]
+}

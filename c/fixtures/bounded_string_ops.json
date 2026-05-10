@@ -1,0 +1,25 @@
+{
+  "predicate": "bounded_string_ops",
+  "cases": [
+    {
+      "name": "warns_on_strcpy",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/format.c",
+          "text": "#include <string.h>\n\nvoid copy_name(char *dst, const char *src) {\n\tstrcpy(dst, src);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_snprintf_with_size",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/format.c",
+          "text": "#include <stdio.h>\n\nint format_id(char *buf, size_t cap, int id) {\n\treturn snprintf(buf, cap, \"id=%d\", id);\n}\n"
+        }
+      ]
+    }
+  ]
+}

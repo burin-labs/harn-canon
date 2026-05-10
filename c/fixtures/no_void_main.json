@@ -1,0 +1,25 @@
+{
+  "predicate": "no_void_main",
+  "cases": [
+    {
+      "name": "blocks_void_main",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/main.c",
+          "text": "#include <stdio.h>\n\nvoid main(void) {\n\tputs(\"hi\");\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_int_main",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/main.c",
+          "text": "#include <stdio.h>\n\nint main(int argc, char *argv[]) {\n\t(void)argc; (void)argv;\n\tputs(\"hi\");\n\treturn 0;\n}\n"
+        }
+      ]
+    }
+  ]
+}
