@@ -1,0 +1,35 @@
+{
+  "predicate": "no_top_level_mutable_state",
+  "cases": [
+    {
+      "name": "warns_on_top_level_var",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/cache.dart",
+          "text": "var cachedToken = '';\n\nString token() => cachedToken;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_top_level_final",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/cache.dart",
+          "text": "final String defaultRegion = 'us-east-1';\n\nString region() => defaultRegion;\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_top_level_const",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/cache.dart",
+          "text": "const int maxRetries = 3;\n\nint retries() => maxRetries;\n"
+        }
+      ]
+    }
+  ]
+}

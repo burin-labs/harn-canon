@@ -1,0 +1,35 @@
+{
+  "predicate": "no_null_safety_opt_out",
+  "cases": [
+    {
+      "name": "blocks_legacy_dart_2_9_marker",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/src/legacy_io.dart",
+          "text": "// @dart=2.9\n\nimport 'dart:io';\n\nString readConfig() => File('config').readAsStringSync();\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_no_marker_under_dart_3",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/legacy_io.dart",
+          "text": "import 'dart:io';\n\nString readConfig() => File('config').readAsStringSync();\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_modern_dart_3_marker",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/legacy_io.dart",
+          "text": "// @dart=3.4\n\nimport 'dart:io';\n\nString readConfig() => File('config').readAsStringSync();\n"
+        }
+      ]
+    }
+  ]
+}

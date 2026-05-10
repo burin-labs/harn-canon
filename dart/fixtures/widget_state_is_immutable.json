@@ -1,0 +1,35 @@
+{
+  "predicate": "widget_state_is_immutable",
+  "cases": [
+    {
+      "name": "blocks_stateless_widget_with_mutable_field",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/src/counter_label.dart",
+          "text": "import 'package:flutter/widgets.dart';\n\nclass CounterLabel extends StatelessWidget {\n  CounterLabel({super.key, required this.initial});\n\n  int count;\n\n  @override\n  Widget build(BuildContext context) {\n    count += 1;\n    return Text('$count');\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_stateless_widget_with_final_fields",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/counter_label.dart",
+          "text": "import 'package:flutter/widgets.dart';\n\nclass CounterLabel extends StatelessWidget {\n  const CounterLabel({super.key, required this.count});\n\n  final int count;\n\n  @override\n  Widget build(BuildContext context) {\n    return Text('$count');\n  }\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_state_in_stateful_widget_state_object",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/counter_label.dart",
+          "text": "import 'package:flutter/widgets.dart';\n\nclass CounterLabel extends StatefulWidget {\n  const CounterLabel({super.key});\n\n  @override\n  State<CounterLabel> createState() => _CounterLabelState();\n}\n\nclass _CounterLabelState extends State<CounterLabel> {\n  int _count = 0;\n\n  @override\n  Widget build(BuildContext context) {\n    return Text('${_count++}');\n  }\n}\n"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "predicate": "no_print_in_production",
+  "cases": [
+    {
+      "name": "warns_on_print_in_production",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "void placeOrder(Order order) {\n  print('placing order ${order.id}');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "warns_on_debug_print_in_production",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "import 'package:flutter/foundation.dart';\n\nvoid placeOrder(Order order) {\n  debugPrint('placing order ${order.id}');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_developer_log",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "import 'dart:developer' as developer;\n\nvoid placeOrder(Order order) {\n  developer.log('placing order ${order.id}', name: 'orders');\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_print_in_test",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "test/order_service_test.dart",
+          "text": "void main() {\n  print('starting order tests');\n}\n"
+        }
+      ]
+    }
+  ]
+}

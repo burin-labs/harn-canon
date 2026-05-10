@@ -33,6 +33,7 @@ See the Harn Flow design docs for the full predicate language spec.
 
 - [C#](./csharp/) — v0 draft predicates for plain C# and .NET library or application code.
 - [CSS](./css/) — v0 draft predicates for CSS, Sass, and Less stylesheets covering cascade hygiene, internationalization, and accessibility.
+- [Dart](./dart/) — v0 draft predicates for Dart application, package, and Flutter source covering null safety, public-API hygiene, async correctness, and widget immutability.
 - [Dockerfile](./dockerfile/) — v0 draft predicates for `Dockerfile` and `Containerfile` build recipes.
 - [Elixir](./elixir/) — v0 draft predicates for Elixir application and library code on the BEAM.
 - [Go](./go/) — v0 draft predicates for Go modules, command packages, and reusable libraries.

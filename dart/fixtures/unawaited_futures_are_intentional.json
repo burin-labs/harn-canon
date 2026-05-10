@@ -1,0 +1,35 @@
+{
+  "predicate": "unawaited_futures_are_intentional",
+  "cases": [
+    {
+      "name": "blocks_discarded_future_inside_async",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "import 'dart:async';\n\nclass OrderService {\n  Future<void> place(Order order) async {\n    persist(order);\n    await notify(order);\n  }\n\n  Future<void> persist(Order order) async {}\n  Future<void> notify(Order order) async {}\n}\n\nclass Order {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_unawaited_marker",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "import 'dart:async';\n\nclass OrderService {\n  Future<void> place(Order order) async {\n    unawaited(persist(order));\n    await notify(order);\n  }\n\n  Future<void> persist(Order order) async {}\n  Future<void> notify(Order order) async {}\n}\n\nclass Order {}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_awaited_call",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "lib/src/order_service.dart",
+          "text": "import 'dart:async';\n\nclass OrderService {\n  Future<void> place(Order order) async {\n    await persist(order);\n    await notify(order);\n  }\n\n  Future<void> persist(Order order) async {}\n  Future<void> notify(Order order) async {}\n}\n\nclass Order {}\n"
+        }
+      ]
+    }
+  ]
+}
