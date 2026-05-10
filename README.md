@@ -43,6 +43,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.
 - [Swift](./swift/) — v0 draft predicates for Swift application and UI code.
 - [TypeScript](./typescript/) — v0 draft predicates for TypeScript and TSX code.
+- [XML](./xml/) — v0 draft predicates for XML payloads, XSD schemas, XSLT stylesheets, and related XML-shaped formats.
 
 ## Status
 

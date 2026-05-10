@@ -1,0 +1,25 @@
+{
+  "predicate": "xslt_no_external_documents",
+  "cases": [
+    {
+      "name": "blocks_xsl_import_from_remote_url",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "transforms/render.xslt",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xsl:stylesheet version=\"3.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n  <xsl:import href=\"https://example.com/transforms/base.xslt\"/>\n  <xsl:template match=\"/\">\n    <out/>\n  </xsl:template>\n</xsl:stylesheet>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_relative_xsl_import",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "transforms/render.xslt",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<xsl:stylesheet version=\"3.0\" xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\">\n  <xsl:import href=\"base.xslt\"/>\n  <xsl:template match=\"/\">\n    <out/>\n  </xsl:template>\n</xsl:stylesheet>\n"
+        }
+      ]
+    }
+  ]
+}

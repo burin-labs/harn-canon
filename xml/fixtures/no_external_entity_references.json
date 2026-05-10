@@ -1,0 +1,25 @@
+{
+  "predicate": "no_external_entity_references",
+  "cases": [
+    {
+      "name": "blocks_external_system_entity",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "fixtures/payload.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE foo [\n  <!ENTITY xxe SYSTEM \"file:///etc/passwd\">\n]>\n<foo>&xxe;</foo>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_inline_internal_entity_free_payload",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "fixtures/payload.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<foo xmlns=\"https://example.com/foo/v1\">\n  <bar>baz</bar>\n</foo>\n"
+        }
+      ]
+    }
+  ]
+}

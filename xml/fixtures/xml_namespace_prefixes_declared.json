@@ -1,0 +1,25 @@
+{
+  "predicate": "xml_namespace_prefixes_declared",
+  "cases": [
+    {
+      "name": "warns_when_prefixes_used_without_xmlns_bindings",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "config/order.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ord:order>\n  <ord:line item=\"book\" qty=\"1\"/>\n</ord:order>\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_when_xmlns_prefix_declared",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/order.xml",
+          "text": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<ord:order xmlns:ord=\"https://example.com/orders/v1\">\n  <ord:line item=\"book\" qty=\"1\"/>\n</ord:order>\n"
+        }
+      ]
+    }
+  ]
+}
