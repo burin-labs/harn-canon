@@ -7,34 +7,18 @@ on:
   merge_group:
 
 jobs:
-  evidence-links:
-    name: Evidence link check (placeholder)
+  canon-validation:
+    name: Canon structure and fixture validation
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Placeholder
-        run: echo "Evidence-link validator will land once invariants.harn files exist."
-
-  fmt:
-    name: Predicate fmt (placeholder)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Placeholder
-        run: echo "harn fmt --check will run once predicate language ships."
-
-  fixture-replay:
-    name: Fixture replay (placeholder)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Placeholder
-        run: echo "Fixture allow/block replay will run once the Harn Flow runtime ships."
+      - name: Validate canon packs
+        run: python3 scripts/validate_canon.py
 
   ci-status:
     name: CI status
     if: always()
-    needs: [evidence-links, fmt, fixture-replay]
+    needs: [canon-validation]
     runs-on: ubuntu-latest
     steps:
       - name: Check for failures
