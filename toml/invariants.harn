@@ -9,6 +9,11 @@ let _EVIDENCE_INLINE_TABLE_COMMA = [
   "https://github.com/toml-lang/toml/blob/1.0.0/toml.md",
 ]
 
+let _EVIDENCE_BOOLEAN_LITERALS = [
+  "https://toml.io/en/v1.0.0#boolean",
+  "https://github.com/toml-lang/toml/blob/1.0.0/toml.md#boolean",
+]
+
 let _EVIDENCE_KEY_NAMING = [
   "https://toml.io/en/v1.0.0#keys",
   "https://doc.rust-lang.org/cargo/reference/manifest.html",
@@ -25,6 +30,12 @@ let _EVIDENCE_SECRETS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
   "https://cwe.mitre.org/data/definitions/798.html",
+]
+
+let _EVIDENCE_PACKAGE_LICENSE = [
+  "https://doc.rust-lang.org/cargo/reference/manifest.html#the-license-and-license-file-fields",
+  "https://packaging.python.org/en/latest/specifications/pyproject-toml/#license",
+  "https://packaging.python.org/en/latest/specifications/pyproject-toml/#license-files",
 ]
 
 fn toml_files(slice) {
@@ -99,6 +110,19 @@ pub fn no_trailing_comma_in_inline_table(slice, _ctx, _repo_at_base) {
 
 @invariant
 @deterministic
+@archivist(evidence: _EVIDENCE_BOOLEAN_LITERALS, confidence: 0.86, source_date: "2026-05-15")
+/** Blocks uppercase or titlecase boolean literals; TOML booleans are lowercase true and false. */
+pub fn boolean_literals_are_lowercase(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(toml_files(slice), r"(?m)=[ \t]*(?:True|False|TRUE|FALSE)\b", "m")
+  return block_on_findings(
+    "boolean_literals_are_lowercase",
+    "Use lowercase true or false; TOML booleans are case-sensitive.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
 @archivist(evidence: _EVIDENCE_KEY_NAMING, confidence: 0.66, source_date: "2026-05-09")
 /** Warns on bare keys that contain uppercase letters; prefer snake_case or kebab-case. */
 pub fn key_naming_convention(slice, _ctx, _repo_at_base) {
@@ -146,4 +170,21 @@ pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
     )
   }
   return allow("secrets_not_hardcoded_in_toml")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_PACKAGE_LICENSE, confidence: 0.6, source_date: "2026-05-15")
+/** Warns when publishable Cargo or Python package metadata omits license information. */
+pub fn package_metadata_declares_license(slice, ctx, _repo_at_base) {
+  let rubric = "Warn only when a changed Cargo.toml [package] or pyproject.toml [project] clearly describes a publishable package and omits license metadata (license, license-file, or license-files). Allow private workspaces, tool-only configs, and package metadata that inherits license information from a workspace."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: toml_files(slice)})
+  if judgement.verdict == "Warn" || judgement.verdict == "Block" {
+    return warn(
+      "package_metadata_declares_license",
+      "Add license metadata, or mark the package private if it is not intended for publication.",
+      judgement.findings,
+    )
+  }
+  return allow("package_metadata_declares_license")
 }

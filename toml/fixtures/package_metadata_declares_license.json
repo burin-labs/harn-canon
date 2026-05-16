@@ -1,0 +1,35 @@
+{
+  "predicate": "package_metadata_declares_license",
+  "cases": [
+    {
+      "name": "warns_on_publishable_cargo_package_without_license",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"widget-core\"\nversion = \"0.1.0\"\nedition = \"2021\"\ndescription = \"Reusable widget primitives\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_cargo_package_with_license",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[package]\nname = \"widget-core\"\nversion = \"0.1.0\"\nedition = \"2021\"\nlicense = \"MIT OR Apache-2.0\"\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_private_workspace_without_package_metadata",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "Cargo.toml",
+          "text": "[workspace]\nmembers = [\"crates/*\"]\n"
+        }
+      ]
+    }
+  ]
+}

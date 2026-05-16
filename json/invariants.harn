@@ -8,6 +8,11 @@ let _EVIDENCE_NO_COMMENTS = [
   "https://code.visualstudio.com/docs/languages/json#_json-with-comments",
 ]
 
+let _EVIDENCE_DOUBLE_QUOTED_STRINGS = [
+  "https://www.rfc-editor.org/rfc/rfc8259#section-7",
+  "https://www.json.org/json-en.html",
+]
+
 let _EVIDENCE_BOM = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-8.1",
   "https://datatracker.ietf.org/doc/html/rfc8259#section-8.1",
@@ -125,6 +130,23 @@ pub fn no_comments_in_json(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "no_comments_in_json",
     "Remove the comment; rename the file to .jsonc or .json5 if comments are required.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DOUBLE_QUOTED_STRINGS, confidence: 0.84, source_date: "2026-05-15")
+/** Blocks single-quoted strings in strict .json files; JSON strings must use double quotation marks. */
+pub fn strings_use_double_quotes(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(
+    strict_json_files(slice),
+    r"(?m)(?:^|[\{\[,:])\s*'[^'\n]*'",
+    "m",
+  )
+  return block_on_findings(
+    "strings_use_double_quotes",
+    "Use double quotes for JSON object keys and string values; single quotes are JSON5, not strict JSON.",
     findings,
   )
 }

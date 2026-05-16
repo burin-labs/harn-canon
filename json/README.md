@@ -15,6 +15,7 @@ This pack covers strict JSON content quality before format-specific packs (npm `
 |---|---|---|---|
 | `no_trailing_commas` | deterministic | Block | Strict `.json` must follow RFC 8259, which forbids trailing commas. |
 | `no_comments_in_json` | deterministic | Block | Strict `.json` must not contain `//` or `/*` comment markers; rename to `.jsonc` or `.json5` if comments are required. |
+| `strings_use_double_quotes` | deterministic | Block | Strict `.json` object keys and string values must use double quotation marks, not single quotes. |
 | `no_bom_prefix` | deterministic | Warn | JSON files must not begin with a UTF-8 byte order mark. |
 | `no_nan_or_infinity_literals` | deterministic | Block | `NaN`, `Infinity`, and `-Infinity` are not valid JSON numbers. |
 | `no_hardcoded_secrets` | semantic | Block | Credentials, tokens, private keys, and production connection strings must not live in committed JSON values. |
@@ -23,7 +24,7 @@ This pack covers strict JSON content quality before format-specific packs (npm `
 
 ## Evidence
 
-Evidence scanned on 2026-05-09.
+Evidence scanned on 2026-05-09 and refreshed on 2026-05-15 for new predicates.
 
 - IETF RFC 8259 — JSON grammar (numbers, objects, strings), the explicit "no comments" stance, and the byte-order-mark prohibition.
 - json.org canonical syntax reference.
@@ -36,6 +37,7 @@ Evidence scanned on 2026-05-09.
 ## Known False Positives
 
 - Regex predicates are intentionally conservative and file-scoped. A literal `,]`, `//`, `/*`, `NaN`, or `Infinity` substring inside a JSON string value can trip the corresponding predicate until value-aware matching lands.
+- `strings_use_double_quotes` may flag a string value that itself contains a JSON-looking snippet with single quotes, because v0 scans raw file text rather than parsed string boundaries.
 - `no_trailing_commas` and `no_comments_in_json` apply only to `.json`; `.jsonc`, `.json5`, and the JSONC-by-convention paths listed above are exempt. Project-specific JSONC formats not on that list (for example, `tslint.json`) will need an explicit allowlist later.
 - `no_bom_prefix` triggers any time the file's first three bytes are the UTF-8 BOM, even when downstream tooling silently strips it. The verdict is `Warn` because the file usually still works but eventually breaks a parser somewhere.
 - `respects_declared_schema` only fires when a `$schema` reference is present and the violation is concretely visible in the slice; it is not a full JSON Schema validator.

@@ -1,0 +1,45 @@
+{
+  "predicate": "strings_use_double_quotes",
+  "cases": [
+    {
+      "name": "blocks_single_quoted_key",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  'port': 8080\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_single_quoted_value",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"mode\": 'production'\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_apostrophe_inside_double_quoted_string",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.json",
+          "text": "{\n  \"owner\": \"team's service\",\n  \"mode\": \"production\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_json5_single_quotes_outside_strict_json",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config/app.json5",
+          "text": "{\n  'mode': 'production',\n}\n"
+        }
+      ]
+    }
+  ]
+}

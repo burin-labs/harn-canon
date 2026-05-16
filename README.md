@@ -50,11 +50,13 @@ See the Harn Flow design docs for the full predicate language spec.
 - [Lua](./lua/) — v0 draft predicates for general-purpose Lua application and library code targeting Lua 5.2+ and LuaJIT.
 - [Markdown](./markdown/) — v0 draft predicates for prose Markdown files used for documentation, READMEs, and design notes.
 - [PHP](./php/) — v0 draft predicates for plain PHP application and library code.
+- [Protocol Buffers](./protobuf/) — v0 draft predicates for `.proto` files covering syntax versioning, package hygiene, field numbering, and compatibility.
 - [Python](./python/) — v0 draft predicates for Python application and library code.
 - [R](./r/) — v0 draft predicates for R analysis scripts, R Markdown / Quarto documents, and R packages.
 - [Ruby](./ruby/) — v0 draft predicates for Ruby application and library code.
 - [Rust](./rust/) — v0 draft predicates for Rust application and library code.
 - [Scala](./scala/) — v0 draft predicates for Scala 2 and Scala 3 source covering null safety, immutability, effect-system hygiene, and pattern-match exhaustiveness.
+- [Shell](./shell/) — v0 draft predicates for POSIX shell and Bash scripts covering strict mode, cleanup traps, eval hazards, and ShellCheck discipline.
 - [SQL](./sql/) — v0 draft predicates for schema, migration, and query safety.
 - [Swift](./swift/) — v0 draft predicates for Swift application and UI code.
 - [Terraform](./terraform/) — v0 draft predicates for Terraform configurations across AWS, Azure, and GCP providers.
@@ -62,6 +64,7 @@ See the Harn Flow design docs for the full predicate language spec.
 - [TypeScript](./typescript/) — v0 draft predicates for TypeScript and TSX code.
 - [XML](./xml/) — v0 draft predicates for XML payloads, XSD schemas, XSLT stylesheets, and related XML-shaped formats.
 - [YAML](./yaml/) — v0 draft predicates for plain YAML configuration covering parser footguns and unsafe deserialization tags.
+- [Zig](./zig/) — v0 draft predicates for Zig application and library code covering error handling, allocator lifetimes, build metadata, and explicit low-level operations.
 
 ## Status
 

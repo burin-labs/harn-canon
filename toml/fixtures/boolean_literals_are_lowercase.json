@@ -1,0 +1,35 @@
+{
+  "predicate": "boolean_literals_are_lowercase",
+  "cases": [
+    {
+      "name": "blocks_titlecase_boolean",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "enabled = True\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_uppercase_boolean",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "enabled = FALSE\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_lowercase_boolean_and_strings",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "config.toml",
+          "text": "enabled = true\nlabel = \"True\"\n"
+        }
+      ]
+    }
+  ]
+}
