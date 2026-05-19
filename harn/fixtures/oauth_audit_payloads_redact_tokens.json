@@ -1,0 +1,25 @@
+{
+  "predicate": "oauth_audit_payloads_redact_tokens",
+  "cases": [
+    {
+      "name": "blocks_oauth_secret_in_audit_payload",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "auth/dynreg.harn",
+          "text": "import { register_client } from \"std/oauth/dynamic_registration\"\n\nfn register(store, metadata) {\n  let registered = register_client(store, metadata)\n  emit_audit(\"oauth.dynreg.audit\", \"client_registered\", {client_id: registered.client_id, client_secret: registered.client_secret})\n  return registered.client_id\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_redacted_oauth_audit_shape",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "auth/dynreg.harn",
+          "text": "import { register_client } from \"std/oauth/dynamic_registration\"\n\nfn register(store, metadata) {\n  let registered = register_client(store, metadata)\n  emit_audit(\"oauth.dynreg.audit\", \"client_registered\", {client_id: registered.client_id, has_client_secret: registered.client_secret != nil})\n  return registered.client_id\n}\n"
+        }
+      ]
+    }
+  ]
+}

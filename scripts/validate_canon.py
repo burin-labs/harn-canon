@@ -185,6 +185,14 @@ def validate_readme_coverage(errors):
             errors.append(f"README.md: missing pack link for {pack}/")
 
 
+def validate_pack_readme_coverage(pack_dir, predicate_names, errors):
+    readme_path = pack_dir / "README.md"
+    readme = readme_path.read_text(encoding="utf-8")
+    missing = sorted(name for name in predicate_names if name not in readme)
+    if missing:
+        errors.append(f"{readme_path.relative_to(ROOT)}: missing predicate coverage for {', '.join(missing)}")
+
+
 def main():
     errors = []
     expected = set(EXPECTED_PACKS)
@@ -225,6 +233,7 @@ def main():
             )
 
         validate_evidence(pack, entries, evidence_defs, errors)
+        validate_pack_readme_coverage(pack_dir, set(names), errors)
         total_predicates += len(entries)
         total_fixtures += validate_fixtures(pack_dir, set(names), errors)
 

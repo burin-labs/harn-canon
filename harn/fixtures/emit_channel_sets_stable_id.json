@@ -1,0 +1,25 @@
+{
+  "predicate": "emit_channel_sets_stable_id",
+  "cases": [
+    {
+      "name": "warns_emit_without_idempotency_id",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "agent/channels.harn",
+          "text": "fn publish(summary) {\n  return emit_channel(\"review.ready\", {summary: summary})\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_emit_with_stable_id",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "agent/channels.harn",
+          "text": "fn publish(pr_id, summary) {\n  return emit_channel(\"review.ready\", {summary: summary}, {id: \"review-ready-${pr_id}\"})\n}\n"
+        }
+      ]
+    }
+  ]
+}
