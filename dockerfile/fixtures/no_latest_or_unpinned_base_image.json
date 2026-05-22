@@ -22,6 +22,16 @@
       ]
     },
     {
+      "name": "blocks_missing_tag_with_from_flag",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM --platform=$BUILDPLATFORM golang AS build\nWORKDIR /src\nCOPY . .\nRUN go build ./cmd/server\n"
+        }
+      ]
+    },
+    {
       "name": "allows_pinned_tag",
       "expect": "Allow",
       "files": [

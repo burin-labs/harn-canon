@@ -39,10 +39,11 @@ Evidence scanned on 2026-05-09.
 ## Known False Positives
 
 - Regex predicates do not parse Dockerfiles. Inline comments, `\` line continuations across many lines, heredocs, and multi-stage `FROM ... AS build` aliases can confuse deterministic checks.
-- `no_latest_or_unpinned_base_image` allows digest pins (`@sha256:...`) and any explicit non-`latest` tag, and exempts `FROM scratch`. It does not catch `FROM --platform=$BUILDPLATFORM image` (no tag) because the leading `--platform` flag suppresses the unpinned match. Pin freshness still belongs in dependency management.
-- `apt_get_no_install_recommends` requires the `--no-install-recommends` flag on the same physical line as `apt-get install`; multi-line `RUN` blocks that put the flag on a continuation line will warn until a Dockerfile parser lands.
-- `apt_get_no_install_recommends` and `apt_get_clean_lists` are file-scoped and Debian/Ubuntu-specific. Alpine (`apk`), Red Hat (`dnf`/`microdnf`), and distroless images are not flagged; future packs should add per-distro predicates.
-- `prefer_copy_over_add` warns on every local-path `ADD`, including the legitimate "auto-extract local tarball" case. It does not warn on `ADD --chown=...` style flag forms because the leading `--` suppresses the match. Treat the warning as a prompt to confirm extraction is intended.
+- `no_latest_or_unpinned_base_image` allows digest pins (`@sha256:...`) and any explicit non-`latest` tag, and exempts `FROM scratch`. It handles common `FROM --flag=value image` forms, but full reference parsing still belongs in a Dockerfile parser. Pin freshness stays in dependency management.
+- `apt_get_no_install_recommends` checks each `RUN` instruction and allows the flag on continuation lines. Heredocs or generated shell fragments inside `RUN` can still confuse the regex until a Dockerfile parser lands.
+- `apt_get_no_install_recommends` and `apt_get_clean_lists` are Debian/Ubuntu-specific. Alpine (`apk`), Red Hat (`dnf`/`microdnf`), and distroless images are not flagged; future packs should add per-distro predicates.
+- `apt_get_clean_lists` checks that `/var/lib/apt/lists` cleanup happens in the same `RUN` instruction as `apt-get install`; it does not prove every package manager cache path was removed.
+- `prefer_copy_over_add` warns on every local-path `ADD`, including the legitimate "auto-extract local tarball" case. Common `ADD --flag=value src dest` forms are treated the same as unflagged local sources. Treat the warning as a prompt to confirm extraction is intended.
 - `non_root_user_set` cannot read base-image metadata, so it warns even when the base image (e.g., `node:*-alpine`, `nginxinc/nginx-unprivileged`) already sets a non-root `USER`. Multi-stage builds whose final stage drops privileges in a later `USER` directive are correctly allowed because the file as a whole contains a non-root `USER`. A repo-level allow can suppress this once the predicate runtime supports suppressions.
 - `no_secrets_in_env_or_arg` is keyword-based. `ARG` declarations without a default value (e.g., `ARG NPM_TOKEN`) and `ENV` values that reference shell or BuildKit substitutions (e.g., `ENV PASSWORD=$BUILD_PASSWORD`) are intentionally allowed because they expect runtime injection.
 - `use_exec_form_for_cmd_entrypoint` warns on the shell form across the file, including stages where shell expansion is genuinely required. Prefer wrapping the command in an explicit `bash -lc` exec-form invocation.
@@ -56,8 +57,8 @@ Each fixture in `fixtures/` contains one blocked or warned example and one allow
 {
   "predicate": "name",
   "cases": [
-    {"expect": "Block", "files": [{"path": "Dockerfile", "text": "..."}]},
-    {"expect": "Allow", "files": [{"path": "Dockerfile", "text": "..."}]}
+    {"name": "blocks_example", "expect": "Block", "files": [{"path": "Dockerfile", "text": "..."}]},
+    {"name": "allows_example", "expect": "Allow", "files": [{"path": "Dockerfile", "text": "..."}]}
   ]
 }
 ```

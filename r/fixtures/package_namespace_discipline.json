@@ -32,7 +32,7 @@
       ]
     },
     {
-      "name": "allows_importFrom_roxygen",
+      "name": "allows_import_from_roxygen",
       "expect": "Allow",
       "files": [
         {

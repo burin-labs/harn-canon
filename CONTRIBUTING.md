@@ -7,6 +7,7 @@ This repo reviews seed invariants carefully. These predicates become the default
 - **One language or stack per PR.** Don't bundle TypeScript + React + Next.js in the same change; split them.
 - **5–10 `@deterministic` predicates + 2–3 `@semantic` predicates** is the target bundle for a v0 pack. Less is fine; more should be split.
 - **Include fixtures.** Every predicate needs at least one fixture slice it blocks and one it allows. CI runs these.
+- Fixture cases need stable `snake_case` names, an `expect` value of `Allow`, `Warn`, or `Block`, and normalized relative file paths.
 
 ## Evidence bar
 

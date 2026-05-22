@@ -113,8 +113,8 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn no_latest_or_unpinned_base_image(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     dockerfile_files(slice),
-    { text -> regex_match(r"(?mi)^\s*FROM\s+[^\s#]+:latest(\s|$)", text, "m") != nil
-      || regex_match(r"(?mi)^\s*FROM\s+(?!--)(?!scratch\b)[^\s#:@]+(\s+AS\s+\S+)?\s*$", text, "m") != nil },
+    { text -> regex_match(r"(?mi)^\s*FROM\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)[^\s#]+:latest(\s|$)", text, "m") != nil
+      || regex_match(r"(?mi)^\s*FROM\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)(?!scratch\b)[^\s#:@]+(\s+AS\s+\S+)?\s*$", text, "m") != nil },
   )
   return block_on_findings(
     "no_latest_or_unpinned_base_image",
@@ -128,10 +128,9 @@ pub fn no_latest_or_unpinned_base_image(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_APT_RECOMMENDS, confidence: 0.74, source_date: "2026-05-09")
 /** Warns on apt-get install invocations that omit --no-install-recommends. */
 pub fn apt_get_no_install_recommends(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  let findings = scan_files(
     dockerfile_files(slice),
-    { text -> regex_match(r"apt-get\s+install\b", text, "s") != nil
-      && regex_match(r"apt-get\s+install\b[^\n]*--no-install-recommends", text, "s") == nil },
+    r"(?ims)^\s*RUN\b(?=(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\bapt-get\s+install\b)(?!(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*--no-install-recommends).+",
   )
   return warn_on_findings(
     "apt_get_no_install_recommends",
@@ -145,10 +144,9 @@ pub fn apt_get_no_install_recommends(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_APT_CLEAN, confidence: 0.78, source_date: "2026-05-09")
 /** Warns when apt-get install runs without removing /var/lib/apt/lists in the same layer. */
 pub fn apt_get_clean_lists(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  let findings = scan_files(
     dockerfile_files(slice),
-    { text -> regex_match(r"apt-get\s+install\b", text, "s") != nil
-      && regex_match(r"rm\s+-rf\s+/var/lib/apt/lists", text, "s") == nil },
+    r"(?ims)^\s*RUN\b(?=(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\bapt-get\s+install\b)(?!(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\brm\s+-rf\s+/var/lib/apt/lists).+",
   )
   return warn_on_findings(
     "apt_get_clean_lists",
@@ -164,7 +162,7 @@ pub fn apt_get_clean_lists(slice, _ctx, _repo_at_base) {
 pub fn prefer_copy_over_add(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     dockerfile_files(slice),
-    r"(?mi)^\s*ADD\s+(?!--)(?!https?://)(?!git@)(?!git://)\S+",
+    r"(?mi)^\s*ADD\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)(?!https?://)(?!git@)(?!git://)\S+",
   )
   return warn_on_findings(
     "prefer_copy_over_add",
