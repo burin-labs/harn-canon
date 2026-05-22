@@ -12,6 +12,16 @@
       ]
     },
     {
+      "name": "blocks_bare_promise_when_file_also_awaits_other_promise",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/save.ts",
+          "text": "async function run() {\n  await saveUserAsync();\n  saveAuditAsync();\n}\n"
+        }
+      ]
+    },
+    {
       "name": "allows_awaited_promise",
       "expect": "Allow",
       "files": [

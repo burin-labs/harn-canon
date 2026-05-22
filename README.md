@@ -15,7 +15,7 @@ Predicate files use Harn attributes to carry evidence:
 ```harn
 let _EVIDENCE_FLOATING_PROMISES = [
   "https://typescript-eslint.io/rules/no-floating-promises/",
-  "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+  "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch",
 ]
 
 @invariant

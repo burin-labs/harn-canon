@@ -12,6 +12,26 @@
       ]
     },
     {
+      "name": "blocks_bare_suppression_even_when_file_has_described_expect_error",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/interop.ts",
+          "text": "// @ts-expect-error: upstream package omits the overload until v3 ships\nlegacyCall(42);\n// @ts-ignore\nlegacyCall(99);\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_short_expect_error_description",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/interop.ts",
+          "text": "// @ts-expect-error: bad\nlegacyCall(42);\n"
+        }
+      ]
+    },
+    {
       "name": "allows_described_expect_error",
       "expect": "Allow",
       "files": [

@@ -12,6 +12,16 @@
       ]
     },
     {
+      "name": "blocks_inline_bare_except_body",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/service.py",
+          "text": "def load_user(repo, user_id):\n    try:\n        return repo.get(user_id)\n    except: return None\n"
+        }
+      ]
+    },
+    {
       "name": "allows_specific_exception",
       "expect": "Allow",
       "files": [
