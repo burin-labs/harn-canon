@@ -4,7 +4,7 @@ This pack covers plain C source and header files for hosted application and libr
 
 ## Stack Assumptions
 
-- C source files use `.c`; C headers use `.h`. Files containing only C++ (`.cc`, `.cpp`, `.cxx`, `.hpp`) are out of scope for this pack — see a future C++ pack for those.
+- C source files use `.c`; C headers use `.h`. Files containing only C++ (`.cc`, `.cpp`, `.cxx`, `.hpp`) are out of scope for this pack; use the C++ pack for those.
 - Production paths exclude any path under `test/`, `tests/`, `unittest/`, `unittests/`, and any file matching `*_test.c`, `*_tests.c`, or `test_main.c`.
 - Generated C files marked with a top-level `Code generated ... DO NOT EDIT` or `Auto-generated ... DO NOT EDIT` comment are ignored by deterministic source predicates.
 - Deterministic predicates use file-text regex scans because Harn Flow does not yet expose a stable C AST or preprocessor query API.
