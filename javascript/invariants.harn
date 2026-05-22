@@ -97,23 +97,6 @@ fn scan_files(files, pattern) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
-  var findings = []
-  for file in files {
-    if predicate(file.text) {
-      findings = findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn scan_files_without(files, include_pattern, exclude_pattern) {
-  return scan_files_if(
-    files,
-    { text -> regex_match(include_pattern, text, "s") != nil && regex_match(exclude_pattern, text, "s") == nil },
-  )
-}
-
 fn allow(rule) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
@@ -147,10 +130,9 @@ fn warn_on_findings(rule, remediation, findings) {
  * Blocks obvious Promise-returning calls that are started as bare statements without await, return, void, or catch.
  */
 pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_without(
+  let findings = scan_files(
     javascript_files(slice),
     r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
-    r"\b(await|return|void)\s+[A-Za-z_$]|\.\s*catch\s*\(",
   )
   return block_on_findings(
     "no_floating_promises",

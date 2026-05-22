@@ -146,10 +146,9 @@ fn warn_on_findings(rule, remediation, findings) {
  * Blocks Promise-returning calls that are started as bare statements without await, return, void, or catch.
  */
 pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_without(
+  let findings = scan_files(
     typescript_files(slice),
     r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
-    r"\b(await|return|void)\s+[A-Za-z_$]|\.\s*catch\s*\(",
   )
   return block_on_findings(
     "no_floating_promises",
@@ -225,10 +224,9 @@ pub fn exhaustive_switch(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TS_COMMENTS, confidence: 0.84, source_date: "2026-04-26")
 /** Blocks TypeScript suppression comments that omit a meaningful description. */
 pub fn ts_comment_suppressions_have_description(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_without(
+  let findings = scan_files(
     typescript_files(slice),
-    r"@ts-(ignore|expect-error|nocheck)",
-    r"@ts-(ignore|expect-error):\s*.{10,}",
+    r"(?m)@ts-ignore\b|@ts-nocheck\b|@ts-expect-error\s*(?::\s*[^\n]{0,9})?$",
   )
   return block_on_findings(
     "ts_comment_suppressions_have_description",

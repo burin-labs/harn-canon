@@ -122,7 +122,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_BARE_EXCEPT, confidence: 0.92, source_date: "2026-04-30")
 /** Blocks bare except clauses that catch BaseException. */
 pub fn no_bare_except(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(python_files(slice), r"(?m)^\s*except\s*:\s*(#.*)?$", "m")
+  let findings = scan_files(python_files(slice), r"(?m)^\s*except\s*:", "m")
   return block_on_findings(
     "no_bare_except",
     "Catch a specific exception class, or Exception if system-exiting exceptions must propagate.",
@@ -186,7 +186,7 @@ pub fn no_mutable_default_arg(slice, _ctx, _repo_at_base) {
 pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     python_files(slice),
-    r"(?m)^(?![^\n]*\bwith\s+open\s*\()[^\n]*[^._A-Za-z0-9]open\s*\(",
+    r"(?m)^(?![^\n]*\bwith\s+open\s*\()[^\n]*(^|[^._A-Za-z0-9])open\s*\(",
     "m",
   )
   return warn_on_findings(

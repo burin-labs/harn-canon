@@ -37,7 +37,7 @@ Evidence scanned on 2026-04-26.
 
 ## Known False Positives
 
-- Regex predicates are intentionally conservative and file-scoped. A file containing both an offending pattern and an allowed pattern may be allowed until AST-level matching lands.
+- Regex predicates are intentionally conservative. A few remain file-scoped where structured matching needs AST-level support.
 - `no_floating_promises` only blocks obvious async surfaces such as `fetch`, `Promise.*`, `new Promise`, or `*Async` calls until TypeScript type information is available.
 - `strict_null_checks_required` currently blocks changed `tsconfig.json` files that turn strictness off. The intended runtime form should resolve the effective tsconfig for each touched TypeScript file.
 - `exhaustive_switch` warns on non-union switches because source text alone cannot distinguish union/enumeration switches from scalar switches.

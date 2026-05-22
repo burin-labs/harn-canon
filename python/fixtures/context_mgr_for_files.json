@@ -12,6 +12,16 @@
       ]
     },
     {
+      "name": "warns_module_level_open_call",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "src/bootstrap.py",
+          "text": "open(\"settings.json\", encoding=\"utf-8\").read()\n"
+        }
+      ]
+    },
+    {
       "name": "allows_with_open",
       "expect": "Allow",
       "files": [

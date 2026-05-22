@@ -12,6 +12,16 @@
       ]
     },
     {
+      "name": "blocks_bare_fetch_when_file_also_handles_other_promise",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/save.js",
+          "text": "export async function save() {\n  await fetch('/api/session');\n  fetch('/api/audit', { method: 'POST' });\n}\n"
+        }
+      ]
+    },
+    {
       "name": "allows_returned_fetch",
       "expect": "Allow",
       "files": [

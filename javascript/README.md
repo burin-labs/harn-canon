@@ -36,7 +36,7 @@ Evidence scanned on 2026-05-08.
 
 ## Known False Positives
 
-- Regex predicates are intentionally conservative and file-scoped. A file containing both an offending pattern and an allowed pattern may be allowed until AST-level matching lands.
+- Regex predicates are intentionally conservative and line-oriented until AST-level matching lands.
 - `no_floating_promises` only blocks obvious async surfaces such as `fetch`, `Promise.*`, `new Promise`, or `*Async` calls until promise-aware JavaScript analysis is available.
 - `strict_equality` is source-text based and does not inspect comments, strings, or project-specific `== null` conventions.
 - `no_implicit_globals` warns on top-level function declarations even inside CommonJS modules because source text alone cannot reliably distinguish browser script execution from module execution.
