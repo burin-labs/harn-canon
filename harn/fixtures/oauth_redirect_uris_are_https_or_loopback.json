@@ -1,0 +1,25 @@
+{
+  "predicate": "oauth_redirect_uris_are_https_or_loopback",
+  "cases": [
+    {
+      "name": "blocks_plain_http_web_redirect_uri",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "auth/metadata.harn",
+          "text": "import { client_metadata } from \"std/oauth/dynamic_registration\"\n\nlet metadata = client_metadata({redirect_uris: [\"http://app.example/callback\"]})\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_https_and_loopback_redirect_uris",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "auth/metadata.harn",
+          "text": "import { client_metadata } from \"std/oauth/dynamic_registration\"\n\nlet metadata = client_metadata({redirect_uris: [\"https://app.example/callback\", \"http://127.0.0.1:3987/callback\"]})\n"
+        }
+      ]
+    }
+  ]
+}

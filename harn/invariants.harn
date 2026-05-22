@@ -42,6 +42,23 @@ let _EVIDENCE_ITERATION = [
   "https://harnlang.com/builtins.html#list-methods",
 ]
 
+let _EVIDENCE_CHANNEL_IDEMPOTENCY = [
+  "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
+  "https://harnlang.com/builtins.html",
+]
+
+let _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION = [
+  "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
+  "https://www.rfc-editor.org/rfc/rfc7591.html#section-5.1",
+  "https://www.rfc-editor.org/rfc/rfc8252.html#section-7.3",
+]
+
+let _EVIDENCE_OAUTH_REDACTION = [
+  "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
+  "https://www.rfc-editor.org/rfc/rfc7591.html#section-3.2.1",
+  "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#data-to-exclude",
+]
+
 let _EVIDENCE_PROMPT_SECRETS = [
   "https://genai.owasp.org/llmrisk/llm07-insecure-plugin-design/",
   "https://openai.com/index/prompt-injections/",
@@ -137,9 +154,9 @@ pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
   let findings = scan_if(
     slice,
     { text -> regex_match(r"llm_call\s*\(", text, "s") != nil
-    && (contains(text, "output_schema:") || contains(text, "response_schema:")
-    || contains(text, "schema:"))
-    && !contains(text, "schema_retries:") },
+      && (contains(text, "output_schema:") || contains(text, "response_schema:")
+      || contains(text, "schema:"))
+      && !contains(text, "schema_retries:") },
   )
   return block_on_findings(
     "llm_call_schema_sets_schema_retries",
@@ -199,9 +216,9 @@ pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
   let findings = scan_if(
     slice,
     { text -> (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
-    && contains(text, "properties:")
-    && contains(text, "required:")
-    && !contains(text, "additional_properties:") },
+      && contains(text, "properties:")
+      && contains(text, "required:")
+      && !contains(text, "additional_properties:") },
   )
   return warn_on_findings(
     "schema_objects_reject_unknown_properties",
@@ -254,6 +271,37 @@ pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_CHANNEL_IDEMPOTENCY, confidence: 0.72, source_date: "2026-05-19")
+/** Warns when durable channel emits omit a stable idempotency id. */
+pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
+  let findings = scan_if(
+    slice,
+    { text -> regex_match(r"emit_channel\s*\(", text, "s") != nil
+      && (regex_match(r"emit_channel\s*\([^)]*,\s*\{(?:(?!\bid\s*:)[^}])*\}\s*\)", text, "s") != nil
+      || regex_match(r"emit_channel\s*\([^)]*,\s*[^,)]*\)", text, "s") != nil) },
+  )
+  return warn_on_findings(
+    "emit_channel_sets_stable_id",
+    "Pass a stable id in emit_channel opts so retries and replay dedupe the event.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION, confidence: 0.78, source_date: "2026-05-19")
+/** Blocks obvious non-loopback HTTP redirect URIs in OAuth dynamic registration metadata. */
+pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
+  return block_on_match(
+    slice,
+    "oauth_redirect_uris_are_https_or_loopback",
+    r"redirect_uris?\s*:\s*\[[^\]]*\x22http://(?!127\.0\.0\.1|localhost|\[::1\])",
+    "Use HTTPS redirect URIs, except RFC 8252 loopback callbacks for native apps.",
+  )
+}
+
+@invariant
 @semantic
 @archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
 /** Blocks prompts that embed secrets or sensitive customer data. */
@@ -268,6 +316,23 @@ pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
     )
   }
   return allow("llm_prompts_do_not_embed_secrets")
+}
+
+@invariant
+@semantic
+@archivist(evidence: _EVIDENCE_OAUTH_REDACTION, confidence: 0.68, source_date: "2026-05-19")
+/** Blocks OAuth client secrets and tokens from audit, transcript, log, or span payloads. */
+pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
+  let rubric = "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
+  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  if judgement.verdict == "Block" {
+    return block(
+      "oauth_audit_payloads_redact_tokens",
+      "Redact OAuth credentials in observability payloads; record only presence, counts, or stable ids.",
+      judgement.findings,
+    )
+  }
+  return allow("oauth_audit_payloads_redact_tokens")
 }
 
 @invariant

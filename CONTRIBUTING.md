@@ -12,7 +12,7 @@ Thanks for contributing seed invariants! This repo intentionally moves slowly an
 
 Every `@archivist(...)` attribute must include:
 
-- `evidence = [urls]` — at least two independent sources, no older than **18 months**. Prefer official language/framework/tool docs over blogs. Dead-link check runs in CI.
+- `evidence: _EVIDENCE_*` — a pack-local evidence constant with at least two independent URLs, no older than **18 months**. Prefer official language/framework/tool docs over blogs. Dead-link check runs in CI.
 - `confidence` — `0.0..1.0`, calibrated against the predicate's false-positive rate on fixtures.
 - `source_date` — ISO date of the evidence scan.
 

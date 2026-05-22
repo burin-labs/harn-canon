@@ -1,8 +1,6 @@
 # harn-canon
 
-Seed **invariant** libraries for [Harn Flow](https://github.com/burin-labs/harn) — the agent-native shipping substrate built into the [Harn language](https://github.com/burin-labs/harn).
-
-> A repo's *canon* is the living body of best practices it expects changes to respect. The Archivist persona authors the canon. The Ship Captain persona enforces it.
+Seed **invariant** libraries for [Harn Flow](https://github.com/burin-labs/harn). Each pack defines review predicates, evidence, and fixtures that projects can opt into by language or stack.
 
 ## What lives here
 
@@ -15,15 +13,16 @@ Per-language and per-stack **starter predicate packs** that any project can opt 
 Predicate files use Harn attributes to carry evidence:
 
 ```harn
+let _EVIDENCE_FLOATING_PROMISES = [
+  "https://typescript-eslint.io/rules/no-floating-promises/",
+  "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise",
+]
+
 @invariant
 @deterministic
-@archivist(
-  evidence = ["https://typescript-eslint.io/rules/no-floating-promises/"],
-  confidence = 0.9,
-  source_date = "2026-04-24",
-)
-fn no_floating_promises(slice: Slice, ctx: Context, repo_at_base: Repo) -> InvariantResult {
-  // …
+@archivist(evidence: _EVIDENCE_FLOATING_PROMISES, confidence: 0.9, source_date: "2026-04-24")
+pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
+  // Predicate body omitted.
 }
 ```
 
@@ -68,7 +67,7 @@ See the Harn Flow design docs for the full predicate language spec.
 
 ## Status
 
-🚧 **Early — design-first.** The predicate language, `InvariantResult` type, and runtime harness are still being specified in `burin-labs/harn`. This repo exists now to:
+**Early - design-first.** The predicate language, `InvariantResult` type, and runtime harness are still being specified in `burin-labs/harn`. This repo exists now to:
 
 1. Reserve the namespace and let contributors start drafting seed predicates.
 2. Collect evidence and discussion per-language independently of the core substrate schedule.
