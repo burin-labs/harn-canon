@@ -5,7 +5,7 @@ This pack covers Harn scripts, Flow workflows, and agent-facing Harn modules. It
 ## Stack Assumptions
 
 - Files use the `.harn` extension and current Harn syntax.
-- The Flow predicate runtime provides `Slice`, `Context`, `Repo`, and `ctx.semantic_judge(...)` as described by the Harn Flow umbrella.
+- The Flow predicate runtime provides `Slice`, `Context`, `Repo`, and `ctx.semantic_judge(...)` through Harn.
 - Deterministic predicates run over changed Harn source text. They prefer conservative warnings when regex matching can produce false positives.
 - Semantic predicates are strict-gate candidates only when the judge can cite a concrete changed span.
 

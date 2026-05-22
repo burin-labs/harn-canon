@@ -1,6 +1,6 @@
 # Contributing to harn-canon
 
-Thanks for contributing seed invariants! This repo intentionally moves slowly and reviews evidence carefully — the predicates here become the *defaults* shipped to every Harn Flow user opting into a stack, so quality matters more than quantity.
+This repo reviews seed invariants carefully. These predicates become the defaults for Harn Flow projects that opt into a stack, so evidence and fixtures matter more than volume.
 
 ## Scope per PR
 
@@ -12,25 +12,34 @@ Thanks for contributing seed invariants! This repo intentionally moves slowly an
 
 Every `@archivist(...)` attribute must include:
 
-- `evidence: _EVIDENCE_*` — a pack-local evidence constant with at least two independent URLs, no older than **18 months**. Prefer official language/framework/tool docs over blogs. Dead-link check runs in CI.
-- `confidence` — `0.0..1.0`, calibrated against the predicate's false-positive rate on fixtures.
-- `source_date` — ISO date of the evidence scan.
+- `evidence: _EVIDENCE_*` - a pack-local evidence constant with at least two independent URLs, no older than **18 months**. Prefer official language/framework/tool docs over blogs.
+- `confidence` - `0.0..1.0`, calibrated against the predicate's false-positive rate on fixtures.
+- `source_date` - ISO date of the evidence scan.
 
 If you can't meet the evidence bar, file an issue instead and we'll discuss whether to accept a lower-confidence predicate behind a `warn`-only verdict.
 
 ## Style
 
-- Use the existing `harn` formatter (`harn fmt`). Pre-commit hook in this repo enforces it once the toolchain lands.
+- Use the existing `harn` formatter (`harn fmt`) on changed Harn files when the current formatter can parse them.
 - Predicate function names use `snake_case` and describe the rule, not the fix: `no_floating_promises`, not `require_await`.
-- Remediation text in `InvariantResult` must be plain English, ≤200 chars, and actionable.
+- Remediation text must be plain English, ≤200 chars, and actionable.
 
 ## Review flow
 
-All PRs go through the merge queue. Required checks: fmt, lint, evidence-link validation, fixture replay. Approvals: at least one CODEOWNERS reviewer.
+Run `python3 scripts/validate_canon.py` before opening a PR. CI runs the same validator and checks:
+
+- expected pack directories
+- root README pack links
+- predicate counts and duplicate names
+- evidence count and freshness
+- fixture shape and allow/block coverage
+- pack README coverage for every predicate
+
+Approvals come from CODEOWNERS.
 
 ## Proposing a new language / stack
 
-Open an issue with the `area/stack` label and a brief rationale (who uses it, what the killer 5 predicates would be, evidence sources you've already scoped). Get a 👍 from a maintainer before starting — this avoids overlapping drafts.
+Open an issue with the `area/stack` label and a brief rationale: who uses it, the first predicates to ship, and evidence sources already scoped. Wait for maintainer agreement before starting so drafts do not overlap.
 
 ## Licensing
 

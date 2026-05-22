@@ -4,7 +4,7 @@ Seed **invariant** libraries for [Harn Flow](https://github.com/burin-labs/harn)
 
 ## What lives here
 
-Per-language and per-stack **starter predicate packs** that any project can opt into. Each pack is a directory containing:
+Per-language and per-stack predicate packs. Each pack is a directory containing:
 
 - `invariants.harn` — Harn functions annotated with `@invariant` and either `@deterministic` (pure, 50 ms budget) or `@semantic` (one cheap LLM judge call, 2 s budget, evidence pre-baked at authoring time).
 - `README.md` — purpose, stack assumptions, evidence sources, coverage examples, known false positives.
@@ -26,7 +26,7 @@ pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
 }
 ```
 
-See the Harn Flow design docs for the full predicate language spec.
+The predicate runtime lives in the [Harn](https://github.com/burin-labs/harn) repo.
 
 ## Packs
 
@@ -67,11 +67,9 @@ See the Harn Flow design docs for the full predicate language spec.
 
 ## Status
 
-**Early - design-first.** The predicate language, `InvariantResult` type, and runtime harness are still being specified in `burin-labs/harn`. This repo exists now to:
+**Early - design-first.** All v0 seed packs are present. The runtime is still evolving in `burin-labs/harn`, so this repo keeps the pack corpus evidence-rich and fixture-backed.
 
-1. Reserve the namespace and let contributors start drafting seed predicates.
-2. Collect evidence and discussion per-language independently of the core substrate schedule.
-3. Surface a clear contribution path: pick a language, draft 5–10 deterministic + 2–3 semantic predicates, open a PR.
+Use this repo to review pack shape, evidence, and fixture coverage independently of runtime work in Harn.
 
 ## Contributing
 

@@ -50,7 +50,7 @@ Evidence scanned on 2026-05-10.
 ## Design Notes
 
 - `const_by_default` is omitted: the Zig compiler already emits a hard error on `var` declarations that are never reassigned. A predicate would be redundant with the toolchain.
-- `error_union_propagation` as written in the parent issue is partly handled by the compiler (which rejects calls to fallible functions whose result is discarded outside an explicit `_ = ...` slot). The remaining hand-rolled escape — `catch {}` and `catch unreachable` — is covered by `no_silent_error_swallow` and `no_catch_unreachable_in_prod`.
+- `error_union_propagation` is partly handled by the compiler, which rejects discarded fallible results outside an explicit `_ = ...` slot. The remaining hand-rolled escapes, `catch {}` and `catch unreachable`, are covered by `no_silent_error_swallow` and `no_catch_unreachable_in_prod`.
 - `build.zig.zon` predicates intentionally use `.hash`-presence as a supply-chain proxy. The Zig package manager uses the hash as the source of truth, so a missing hash is a security issue, not a style nit.
 
 ## Fixtures
