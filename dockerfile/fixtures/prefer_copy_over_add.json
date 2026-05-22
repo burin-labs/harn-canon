@@ -22,6 +22,16 @@
       ]
     },
     {
+      "name": "warns_on_local_path_add_with_flags",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM python:3.12.7-slim\nRUN useradd --system --uid 1000 app\nWORKDIR /app\nADD --chown=app:app src/ /app/\nUSER app\nCMD [\"python\", \"-m\", \"app\"]\n"
+        }
+      ]
+    },
+    {
       "name": "allows_add_for_remote_url",
       "expect": "Allow",
       "files": [

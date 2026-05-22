@@ -20,6 +20,16 @@
           "text": "FROM debian:12.7-slim\nRUN apt-get update \\\n  && apt-get install -y --no-install-recommends curl ca-certificates \\\n  && rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
         }
       ]
+    },
+    {
+      "name": "warns_when_lists_cleaned_in_later_layer",
+      "expect": "Warn",
+      "files": [
+        {
+          "path": "Dockerfile",
+          "text": "FROM debian:12.7-slim\nRUN apt-get update \\\n  && apt-get install -y --no-install-recommends curl ca-certificates\nRUN rm -rf /var/lib/apt/lists/*\nUSER 1000\nCMD [\"/usr/bin/curl\", \"--version\"]\n"
+        }
+      ]
     }
   ]
 }

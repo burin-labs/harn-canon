@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import calendar
+from collections import Counter
 import datetime as dt
 import json
 import re
@@ -50,6 +51,9 @@ MAX_DETERMINISTIC = 10
 MIN_SEMANTIC = 2
 MAX_SEMANTIC = 3
 VALID_EXPECTS = {"Allow", "Warn", "Block"}
+FIXTURE_KEYS = {"predicate", "cases"}
+CASE_KEYS = {"name", "expect", "files"}
+FILE_KEYS = {"path", "text"}
 
 INVARIANT_RE = re.compile(
     r"@invariant\s*"
@@ -64,6 +68,7 @@ INVARIANT_RE = re.compile(
 )
 EVIDENCE_RE = re.compile(r"let\s+(_EVIDENCE_[A-Za-z0-9_]+)\s*=\s*\[(.*?)\]", re.S)
 URL_RE = re.compile(r'"(https?://[^"]+)"')
+FIXTURE_CASE_NAME_RE = re.compile(r"[a-z][a-z0-9_]*\Z")
 
 
 def shifted_months(day, months):
@@ -72,6 +77,25 @@ def shifted_months(day, months):
     month = zero_based_month + 1
     capped_day = min(day.day, calendar.monthrange(year, month)[1])
     return dt.date(year, month, capped_day)
+
+
+def duplicate_values(values):
+    return sorted(value for value, count in Counter(values).items() if count > 1)
+
+
+def validate_allowed_keys(rel_path, location, value, allowed, errors):
+    unknown = sorted(set(value) - allowed)
+    if unknown:
+        errors.append(f"{rel_path}: {location} has unknown keys: {', '.join(unknown)}")
+
+
+def is_normalized_relative_path(value):
+    parts = value.split("/")
+    return (
+        not value.startswith("/")
+        and "\\" not in value
+        and all(part not in {"", ".", ".."} for part in parts)
+    )
 
 
 def parse_invariants(path, errors):
@@ -143,6 +167,10 @@ def validate_fixtures(pack_dir, predicate_names, errors):
             errors.append(f"{rel_path}: invalid JSON: {exc}")
             continue
 
+        if not isinstance(fixture, dict):
+            errors.append(f"{rel_path}: fixture must be an object")
+            continue
+
         if fixture.get("predicate") != fixture_path.stem:
             errors.append(f"{rel_path}: predicate must match fixture file name")
 
@@ -150,9 +178,24 @@ def validate_fixtures(pack_dir, predicate_names, errors):
         if not isinstance(cases, list) or not cases:
             errors.append(f"{rel_path}: cases must be a non-empty list")
             continue
+        validate_allowed_keys(rel_path, "fixture", fixture, FIXTURE_KEYS, errors)
 
         expects = set()
+        case_names = []
         for index, case in enumerate(cases):
+            if not isinstance(case, dict):
+                errors.append(f"{rel_path}: case {index} must be an object")
+                continue
+            validate_allowed_keys(rel_path, f"case {index}", case, CASE_KEYS, errors)
+
+            case_name = case.get("name")
+            if not isinstance(case_name, str) or not case_name:
+                errors.append(f"{rel_path}: case {index} needs a name")
+            elif FIXTURE_CASE_NAME_RE.fullmatch(case_name) is None:
+                errors.append(f"{rel_path}: case {index} name must be snake_case")
+            else:
+                case_names.append(case_name)
+
             expect = case.get("expect")
             if expect not in VALID_EXPECTS:
                 errors.append(f"{rel_path}: case {index} has invalid expect {expect!r}")
@@ -165,10 +208,30 @@ def validate_fixtures(pack_dir, predicate_names, errors):
                 continue
 
             for file_index, file_fixture in enumerate(files):
-                if not isinstance(file_fixture.get("path"), str) or not file_fixture["path"]:
+                if not isinstance(file_fixture, dict):
+                    errors.append(f"{rel_path}: case {index} file {file_index} must be an object")
+                    continue
+                validate_allowed_keys(
+                    rel_path,
+                    f"case {index} file {file_index}",
+                    file_fixture,
+                    FILE_KEYS,
+                    errors,
+                )
+
+                file_path = file_fixture.get("path")
+                if not isinstance(file_path, str) or not file_path:
                     errors.append(f"{rel_path}: case {index} file {file_index} needs a path")
+                elif not is_normalized_relative_path(file_path):
+                    errors.append(
+                        f"{rel_path}: case {index} file {file_index} path must be normalized and relative"
+                    )
                 if not isinstance(file_fixture.get("text"), str):
                     errors.append(f"{rel_path}: case {index} file {file_index} needs text")
+
+        duplicate_case_names = duplicate_values(case_names)
+        if duplicate_case_names:
+            errors.append(f"{rel_path}: duplicate case names: {', '.join(duplicate_case_names)}")
 
         if "Allow" not in expects:
             errors.append(f"{rel_path}: fixture must include at least one Allow case")
@@ -217,7 +280,7 @@ def main():
 
         entries, evidence_defs = parse_invariants(invariants_path, errors)
         names = [entry["name"] for entry in entries]
-        duplicate_names = sorted({name for name in names if names.count(name) > 1})
+        duplicate_names = duplicate_values(names)
         if duplicate_names:
             errors.append(f"{pack}: duplicate predicate names: {', '.join(duplicate_names)}")
 

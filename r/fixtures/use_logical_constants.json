@@ -2,7 +2,7 @@
   "predicate": "use_logical_constants",
   "cases": [
     {
-      "name": "warns_on_T_as_default",
+      "name": "warns_on_t_as_default",
       "expect": "Warn",
       "files": [
         {
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "name": "warns_on_F_in_comparison",
+      "name": "warns_on_f_in_comparison",
       "expect": "Warn",
       "files": [
         {
@@ -22,7 +22,7 @@
       ]
     },
     {
-      "name": "allows_TRUE_FALSE",
+      "name": "allows_true_false",
       "expect": "Allow",
       "files": [
         {
