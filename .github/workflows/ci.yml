@@ -6,6 +6,9 @@ on:
   pull_request:
   merge_group:
 
+permissions:
+  contents: read
+
 jobs:
   canon-validation:
     name: Canon structure and fixture validation
@@ -14,6 +17,97 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Validate canon packs
         run: python3 scripts/validate_canon.py
+
+      - name: Reject side-effect builtins in predicates
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Predicate packs are TRUSTED CODE executed on consumer machines by
+          # `harn lint`. PRs may not introduce calls to side-effect builtins.
+          # See CONTRIBUTING.md "Trust model" for the rationale and the full
+          # forbidden list. The pattern requires `<name>\s*\(` so regex
+          # literals that just mention these names (e.g. the parallel-io
+          # predicate's own scan_without regex) are not false-positives.
+          if grep -nrE '\b(command_json|http_get|http_post|process_exec|secret_get|store_set|store_get)\s*\(' --include='*.harn' .; then
+            echo "::error::Predicate packs may not call side-effect builtins. See CONTRIBUTING.md \"Trust model\"." >&2
+            exit 1
+          fi
+          echo "No side-effect builtin calls in predicate packs."
+
+      - name: Install pinned Harn
+        shell: bash
+        env:
+          HARN_VERSION: "0.8.34"
+        run: |
+          set -euo pipefail
+          target="x86_64-unknown-linux-gnu"
+          tag="v${HARN_VERSION}"
+          asset_name="harn-${target}.tar.gz"
+          asset_url="https://github.com/burin-labs/harn/releases/download/${tag}/${asset_name}"
+          sums_url="https://github.com/burin-labs/harn/releases/download/${tag}/SHA256SUMS"
+          tmpdir="$(mktemp -d)"
+          curl -fsSL "${asset_url}" -o "${tmpdir}/harn.tar.gz"
+          curl -fsSL "${sums_url}" -o "${tmpdir}/SHA256SUMS"
+          expected_sum="$(awk -v name="${asset_name}" '$2 == name { print $1 }' "${tmpdir}/SHA256SUMS")"
+          if [ -z "${expected_sum}" ]; then
+            echo "::error::${asset_name} not listed in SHA256SUMS for ${tag}" >&2
+            exit 1
+          fi
+          actual_sum="$(sha256sum "${tmpdir}/harn.tar.gz" | awk '{ print $1 }')"
+          if [ "${actual_sum}" != "${expected_sum}" ]; then
+            echo "::error::sha256 mismatch for ${asset_name}: expected ${expected_sum}, got ${actual_sum}" >&2
+            exit 1
+          fi
+          tar -xzf "${tmpdir}/harn.tar.gz" -C "${tmpdir}"
+          mkdir -p "${HOME}/.local/bin"
+          install -m 755 "${tmpdir}/harn" "${HOME}/.local/bin/harn"
+          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
+
+      - name: Harn check + lint predicate packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          harn --version
+          # Known pre-existing parse failures (raw-string `\"` / `r'...'`
+          # syntax). These predicate packs ship today via validate_canon (a
+          # text-regex pass, not the Harn parser) but never actually parse.
+          # Tracked as a follow-up fix; until then we allow these files to
+          # fail so the new gate can land and catch *new* PRs that introduce
+          # unlintable Harn code. Remove entries as files are fixed; the
+          # eventual goal is an empty skip list.
+          declare -A KNOWN_BROKEN=(
+            ["./protobuf/invariants.harn"]=1
+            ["./terraform/invariants.harn"]=1
+            ["./zig/invariants.harn"]=1
+            ["./html/invariants.harn"]=1
+            ["./lua/invariants.harn"]=1
+            ["./xml/invariants.harn"]=1
+            ["./graphql/invariants.harn"]=1
+          )
+          failed=0
+          while IFS= read -r -d '' invariants; do
+            echo "==> ${invariants}"
+            check_ok=1
+            lint_ok=1
+            harn check "${invariants}" || check_ok=0
+            harn lint "${invariants}" || lint_ok=0
+            if [ "${check_ok}" -eq 0 ] || [ "${lint_ok}" -eq 0 ]; then
+              if [ -n "${KNOWN_BROKEN[${invariants}]:-}" ]; then
+                echo "::warning file=${invariants}::known pre-existing parse failure; tracked for follow-up"
+              else
+                if [ "${check_ok}" -eq 0 ]; then
+                  echo "::error file=${invariants}::harn check failed" >&2
+                fi
+                if [ "${lint_ok}" -eq 0 ]; then
+                  echo "::error file=${invariants}::harn lint failed" >&2
+                fi
+                failed=1
+              fi
+            fi
+          done < <(find . -name 'invariants.harn' -type f -not -path './.git/*' -print0)
+          if [ "${failed}" -ne 0 ]; then
+            exit 1
+          fi
 
   ci-status:
     name: CI status

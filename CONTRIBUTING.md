@@ -25,6 +25,37 @@ If you can't meet the evidence bar, file an issue instead and we'll discuss whet
 - Predicate function names use `snake_case` and describe the rule, not the fix: `no_floating_promises`, not `require_await`.
 - Remediation text must be plain English, ≤200 chars, and actionable.
 
+## Trust model
+
+**Predicate packs in this repo are trusted code that runs on consumer machines.**
+
+When a downstream project runs `harn lint`, every predicate in the pack it
+imports executes inside the linter. A malicious predicate can do anything
+Harn can do — exfiltrate environment, write files, spawn processes, hit the
+network. So PRs here are reviewed with that blast radius in mind.
+
+Hard rules:
+
+- Predicates may **not** call any side-effect builtin:
+  `command_json`, `http_get`, `http_post`, `process_exec`, `secret_get`,
+  `store_set`, `store_get`. CI greps for these and rejects PRs that
+  introduce calls to them. (Mentioning the name inside a regex literal
+  is fine — the grep requires a `(` after the name to catch only calls.)
+- Predicates **should** be pure functions of the slice they receive: they
+  pattern-match Harn source text and emit verdicts. No file I/O, no clock,
+  no env access.
+- `parallel each` / `parallel settle` is allowed inside meta-predicates that
+  describe these patterns in their `scan_without` regex, but the predicate
+  itself must not perform IO at the top level.
+- If you genuinely need to read a config file or a workspace setting,
+  propose a typed `ctx` extension in a separate PR against
+  [`burin-labs/harn`](https://github.com/burin-labs/harn) rather than
+  side-stepping the rule here.
+
+CI enforces the side-effect ban on every `*.harn` file in the repo. It also
+runs `harn check` and `harn lint` on every `invariants.harn` so PRs that
+add syntactically-malicious or unlintable Harn code fail before merge.
+
 ## Review flow
 
 Run `python3 scripts/validate_canon.py` before opening a PR. CI runs the same validator and checks:
@@ -35,6 +66,8 @@ Run `python3 scripts/validate_canon.py` before opening a PR. CI runs the same va
 - evidence count and freshness
 - fixture shape and allow/block coverage
 - pack README coverage for every predicate
+- side-effect builtin ban (see "Trust model" above)
+- `harn check` + `harn lint` pass on each `invariants.harn`
 
 Approvals come from CODEOWNERS.
 
