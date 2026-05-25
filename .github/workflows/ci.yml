@@ -68,22 +68,6 @@ jobs:
         run: |
           set -euo pipefail
           harn --version
-          # Known pre-existing parse failures (raw-string `\"` / `r'...'`
-          # syntax). These predicate packs ship today via validate_canon (a
-          # text-regex pass, not the Harn parser) but never actually parse.
-          # Tracked as a follow-up fix; until then we allow these files to
-          # fail so the new gate can land and catch *new* PRs that introduce
-          # unlintable Harn code. Remove entries as files are fixed; the
-          # eventual goal is an empty skip list.
-          declare -A KNOWN_BROKEN=(
-            ["./protobuf/invariants.harn"]=1
-            ["./terraform/invariants.harn"]=1
-            ["./zig/invariants.harn"]=1
-            ["./html/invariants.harn"]=1
-            ["./lua/invariants.harn"]=1
-            ["./xml/invariants.harn"]=1
-            ["./graphql/invariants.harn"]=1
-          )
           failed=0
           while IFS= read -r -d '' invariants; do
             echo "==> ${invariants}"
@@ -92,17 +76,13 @@ jobs:
             harn check "${invariants}" || check_ok=0
             harn lint "${invariants}" || lint_ok=0
             if [ "${check_ok}" -eq 0 ] || [ "${lint_ok}" -eq 0 ]; then
-              if [ -n "${KNOWN_BROKEN[${invariants}]:-}" ]; then
-                echo "::warning file=${invariants}::known pre-existing parse failure; tracked for follow-up"
-              else
-                if [ "${check_ok}" -eq 0 ]; then
-                  echo "::error file=${invariants}::harn check failed" >&2
-                fi
-                if [ "${lint_ok}" -eq 0 ]; then
-                  echo "::error file=${invariants}::harn lint failed" >&2
-                fi
-                failed=1
+              if [ "${check_ok}" -eq 0 ]; then
+                echo "::error file=${invariants}::harn check failed" >&2
               fi
+              if [ "${lint_ok}" -eq 0 ]; then
+                echo "::error file=${invariants}::harn lint failed" >&2
+              fi
+              failed=1
             fi
           done < <(find . -name 'invariants.harn' -type f -not -path './.git/*' -print0)
           if [ "${failed}" -ne 0 ]; then

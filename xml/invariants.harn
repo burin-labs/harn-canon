@@ -155,7 +155,7 @@ pub fn no_external_entity_references(slice, _ctx, _repo_at_base) {
 pub fn xml_declares_utf8(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     xml_files(slice),
-    { file -> regex_match(r"^\s*<\?xml\b[^?]*encoding\s*=\s*[\"']utf-8[\"'][^?]*\?>", file.text, "is")
+    { file -> regex_match("^\\s*<\\?xml\\b[^?]*encoding\\s*=\\s*[\"']utf-8[\"'][^?]*\\?>", file.text, "is")
       == nil },
   )
   return warn_on_findings(
@@ -207,7 +207,7 @@ pub fn xsd_has_target_namespace(slice, _ctx, _repo_at_base) {
 pub fn xslt_no_external_documents(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     xslt_files(slice),
-    r"<\s*xsl:(include|import)\b[^>]*\bhref\s*=\s*[\"'](https?|ftp|file)://|\bdocument\s*\(\s*[\"'](https?|ftp|file)://",
+    "<\\s*xsl:(include|import)\\b[^>]*\\bhref\\s*=\\s*[\"'](https?|ftp|file)://|\\bdocument\\s*\\(\\s*[\"'](https?|ftp|file)://",
     "is",
   )
   return block_on_findings(

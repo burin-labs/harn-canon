@@ -118,8 +118,8 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match(r"(?m)^\s*syntax\s*=\s*\"proto[23]\"\s*;", file.text, "m") == nil
-      && regex_match(r"(?m)^\s*edition\s*=\s*\"\d{4}\"\s*;", file.text, "m") == nil },
+    { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto[23]\"\\s*;", file.text, "m") == nil
+      && regex_match("(?m)^\\s*edition\\s*=\\s*\"\\d{4}\"\\s*;", file.text, "m") == nil },
   )
   return block_on_findings(
     "explicit_syntax_version",
@@ -151,7 +151,7 @@ pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
 pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match(r"(?m)^\s*syntax\s*=\s*\"proto3\"\s*;", file.text, "m") != nil
+    { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto3\"\\s*;", file.text, "m") != nil
       && regex_match(r"(?m)^\s*required\s+[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*\d+", file.text, "m")
       != nil },
   )

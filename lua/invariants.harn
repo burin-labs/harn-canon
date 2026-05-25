@@ -186,7 +186,7 @@ pub fn no_loadstring_or_loadfile(slice, _ctx, _repo_at_base) {
   let findings = scan_files_without(
     lua_files(slice),
     r"(?m)(^|[^A-Za-z0-9_.:])(loadstring|load|loadfile|dofile)\s*\(",
-    r"(?m)(^|[^A-Za-z0-9_.:])(loadstring|load|loadfile|dofile)\s*\(\s*(['\"]|\[\[|\[=)",
+    "(?m)(^|[^A-Za-z0-9_.:])(loadstring|load|loadfile|dofile)\\s*\\(\\s*(['\"]|\\[\\[|\\[=)",
   )
   return block_on_findings(
     "no_loadstring_or_loadfile",
@@ -220,7 +220,7 @@ pub fn no_unsafe_os_command(slice, _ctx, _repo_at_base) {
   let findings = scan_files_without(
     lua_files(slice),
     r"\b(os\.execute|io\.popen)\s*\(",
-    r"\b(os\.execute|io\.popen)\s*\(\s*(['\"]|\[\[|\[=)",
+    "\\b(os\\.execute|io\\.popen)\\s*\\(\\s*(['\"]|\\[\\[|\\[=)",
   )
   return block_on_findings(
     "no_unsafe_os_command",
@@ -252,7 +252,7 @@ pub fn module_returns_value(slice, _ctx, _repo_at_base) {
 pub fn require_assigned_to_local(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     production_lua_files(slice),
-    r"(?m)^[ \t]*require\s*[\(\"'\[]",
+    "(?m)^[ \\t]*require\\s*[\\(\"'\\[]",
     "m",
   )
   return warn_on_findings(

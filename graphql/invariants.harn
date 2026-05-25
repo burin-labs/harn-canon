@@ -164,7 +164,7 @@ pub fn descriptions_on_public_types(slice, _ctx, _repo_at_base) {
       "m",
     )
       != nil
-      && regex_match(r"\"\"\"|^\s*\"[^\"]+\"", file.text, "m") == nil },
+      && regex_match("\"\"\"|^\\s*\"[^\"]+\"", file.text, "m") == nil },
   )
   return warn_on_findings(
     "descriptions_on_public_types",
