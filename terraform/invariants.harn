@@ -118,7 +118,7 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match(r'(?m)^\s*resource\s+"(aws_|azurerm_|google_)', text, "m") != nil
+    { text -> regex_match("(?m)^\\s*resource\\s+\"(aws_|azurerm_|google_)", text, "m") != nil
       && (regex_match(r"(?i)\bowner\b", text, "s") == nil
       || regex_match(r"(?i)\b(env|environment)\b", text, "s") == nil
       || regex_match(r"(?i)\b(costcenter|cost[_-]?center)\b", text, "s") == nil) },
@@ -137,7 +137,7 @@ pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
 pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match(r'(?m)^\s*variable\s+"[^"]+"\s*\{', text, "m") != nil
+    { text -> regex_match("(?m)^\\s*variable\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
       && regex_match(r"(?m)^\s*type\s*=", text, "m") == nil },
   )
   return warn_on_findings(
@@ -156,7 +156,7 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
   for file in production_tf_files(slice) {
     if !contains(file.path, "/modules/")
       && regex_match(r"required_providers\s*\{", file.text, "s") != nil
-      && regex_match(r'(?m)^\s*backend\s+"[^"]+"\s*\{', file.text, "m") == nil {
+      && regex_match("(?m)^\\s*backend\\s+\"[^\"]+\"\\s*\\{", file.text, "m") == nil {
       findings = findings.push({path: file.path})
     }
   }
@@ -174,11 +174,11 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
 pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match(r'(?m)^\s*module\s+"[^"]+"\s*\{', text, "m") != nil
-      && regex_match(r'source\s*=\s*"[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+){2,3}"', text, "s")
+    { text -> regex_match("(?m)^\\s*module\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
+      && regex_match("source\\s*=\\s*\"[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+){2,3}\"", text, "s")
       != nil
       && regex_match(
-      r'source\s*=\s*"(?:\./|\.\./|git::|s3::|gcs::|hg::|github\.com/|bitbucket\.org/|gitlab\.com/|https?://)',
+      "source\\s*=\\s*\"(?:\\./|\\.\\./|git::|s3::|gcs::|hg::|github\\.com/|bitbucket\\.org/|gitlab\\.com/|https?://)",
       text,
       "s",
     )
@@ -217,7 +217,7 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match(
-      r'(?im)^\s*output\s+"[A-Za-z0-9_-]*(?:password|secret|token|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*"\s*\{',
+      "(?im)^\\s*output\\s+\"[A-Za-z0-9_-]*(?:password|secret|token|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*\"\\s*\\{",
       text,
       "m",
     )

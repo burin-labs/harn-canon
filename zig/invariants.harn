@@ -232,7 +232,7 @@ pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
 pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     build_zon_files(slice),
-    r'\.\{(?:(?!\.hash)[^{}])*\.url\s*=\s*"[^"]+"(?:(?!\.hash)[^{}])*\}',
+    "\\.\\{(?:(?!\\.hash)[^{}])*\\.url\\s*=\\s*\"[^\"]+\"(?:(?!\\.hash)[^{}])*\\}",
   )
   return block_on_findings(
     "build_zon_dependency_hash_pinned",

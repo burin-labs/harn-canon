@@ -145,7 +145,7 @@ pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
 pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     html_files(slice),
-    r"(?i)<[a-z][a-z0-9-]*\b[^>]*\son[a-z]+\s*=\s*[\"']",
+    "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\son[a-z]+\\s*=\\s*[\"']",
     "s",
   )
   return block_on_findings(
@@ -162,7 +162,7 @@ pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
 pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     html_files(slice),
-    r"(?i)<[a-z][a-z0-9-]*\b[^>]*\sstyle\s*=\s*[\"']",
+    "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\sstyle\\s*=\\s*[\"']",
     "s",
   )
   return warn_on_findings(
@@ -179,7 +179,7 @@ pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
 pub fn prefer_semantic_landmarks(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     html_files(slice),
-    r"(?i)<div\b[^>]*\b(?:class|id)\s*=\s*[\"'][^\"']*\b(?:nav|navbar|navigation|header|main-?content|main|footer|sidebar|article|aside)\b[^\"']*[\"']",
+    "(?i)<div\\b[^>]*\\b(?:class|id)\\s*=\\s*[\"'][^\"']*\\b(?:nav|navbar|navigation|header|main-?content|main|footer|sidebar|article|aside)\\b[^\"']*[\"']",
     "s",
   )
   return warn_on_findings(
@@ -196,7 +196,7 @@ pub fn prefer_semantic_landmarks(slice, _ctx, _repo_at_base) {
 pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     html_files(slice),
-    r"(?i)<a\b(?![^>]*\brel\s*=\s*[\"'][^\"']*\b(?:noopener|noreferrer)\b)[^>]*\btarget\s*=\s*[\"']?_blank[\"']?",
+    "(?i)<a\\b(?![^>]*\\brel\\s*=\\s*[\"'][^\"']*\\b(?:noopener|noreferrer)\\b)[^>]*\\btarget\\s*=\\s*[\"']?_blank[\"']?",
     "s",
   )
   return block_on_findings(
