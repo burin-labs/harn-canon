@@ -37,7 +37,7 @@ jobs:
       - name: Install pinned Harn
         shell: bash
         env:
-          HARN_VERSION: "0.8.34"
+          HARN_VERSION: "0.8.43"
         run: |
           set -euo pipefail
           target="x86_64-unknown-linux-gnu"
