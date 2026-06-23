@@ -58,6 +58,18 @@ let _EVIDENCE_ENDIANNESS = [
   "https://ziglang.org/documentation/master/#byteSwap",
 ]
 
+let _EVIDENCE_JSON_PARSE_FROM_SLICE = [
+  "https://github.com/ziglang/zig/blob/master/lib/std/json.zig",
+  "https://zig.guide/standard-library/json/",
+]
+
+let _EVIDENCE_ARRAYLIST_UNMANAGED = [
+  "https://ziglang.org/download/0.16.0/release-notes.html#Migration-to-Unmanaged-Containers",
+  "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
+]
+
+let _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", "https://zig.guide/language-basics/defer/"]
+
 fn is_zig_path(path) {
   return path.ends_with(".zig")
 }
@@ -88,6 +100,16 @@ fn scan_files(files, pattern) {
   var findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
+      findings = findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+fn scan_files_with_flags(files, pattern, flags) {
+  var findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
     }
   }
@@ -135,10 +157,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_ERROR_SWALLOW, confidence: 0.84, source_date: "2026-05-10")
 /** Blocks empty catch blocks that silently swallow error unions. */
 pub fn no_silent_error_swallow(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    zig_files(slice),
-    r"catch(\s*\{\s*\}|\s*\|[^|\n]*\|\s*\{\s*\})",
-  )
+  let findings = scan_files(zig_files(slice), r"catch(\s*\{\s*\}|\s*\|[^|\n]*\|\s*\{\s*\})")
   return block_on_findings(
     "no_silent_error_swallow",
     "Handle the error explicitly: log it, propagate with try, or capture and convert it before continuing.",
@@ -151,10 +170,7 @@ pub fn no_silent_error_swallow(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CATCH_UNREACHABLE, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on `catch unreachable` in production source. */
 pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_zig_files(slice),
-    r"catch\b[^;{]*\bunreachable\b",
-  )
+  let findings = scan_files(production_zig_files(slice), r"catch\b[^;{]*\bunreachable\b")
   return warn_on_findings(
     "no_catch_unreachable_in_prod",
     "Replace `catch unreachable` with explicit error handling, or restructure so the call cannot fail and document the invariant at the call site.",
@@ -167,10 +183,7 @@ pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_CASTS, confidence: 0.6, source_date: "2026-05-10")
 /** Warns on unchecked or reinterpreting cast builtins that lack an inline justification comment. */
 pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    zig_files(slice),
-    r"(?m)^(?!.*//).*@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(",
-  )
+  let findings = scan_files(zig_files(slice), r"(?m)^(?!.*//).*@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(")
   return warn_on_findings(
     "unsafe_cast_has_justification",
     "Add an inline `//` comment on the cast line explaining why it is sound: bounds, alignment guarantee, representation invariant, or upstream check.",
@@ -194,7 +207,9 @@ pub fn no_panic_in_production(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_TESTING_ALLOC, confidence: 0.66, source_date: "2026-05-10")
-/** Warns when test files use `page_allocator` or `c_allocator` instead of `std.testing.allocator`. */
+/**
+ * Warns when test files use `page_allocator` or `c_allocator` instead of `std.testing.allocator`.
+ */
 pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     zig_files(slice),
@@ -242,6 +257,47 @@ pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_JSON_PARSE_FROM_SLICE, confidence: 0.8, source_date: "2026-06-23")
+/**
+ * Blocks the removed std.json.Parser API in favor of the current parseFromSlice or Scanner APIs.
+ */
+pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(zig_files(slice), r"\bstd\.json\.Parser\b")
+  return block_on_findings(
+    "no_std_json_parser_api",
+    "Replace `std.json.Parser` with `std.json.parseFromSlice(T, allocator, bytes, .{})` for typed parsing, or use `std.json.Scanner` for token-level parsing.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_ARRAYLIST_UNMANAGED, confidence: 0.78, source_date: "2026-06-23")
+/** Blocks the old managed std.ArrayList(T).init(allocator) spelling in current Zig code. */
+pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(zig_files(slice), r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(")
+  return block_on_findings(
+    "arraylist_uses_unmanaged_api",
+    "Initialize current `std.ArrayList(T)` values with `.empty`; pass the allocator to methods such as `append`, `toOwnedSlice`, and `deinit`.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DEFER_BLOCK, confidence: 0.82, source_date: "2026-06-23")
+/** Blocks `defer { ... };` closers; a Zig defer block closes with `}` only. */
+pub fn defer_block_closes_without_semicolon(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_with_flags(zig_files(slice), r"(?m)^\s*defer\s*\{\s*$[\s\S]*?^\s*\};\s*$", "ms")
+  return block_on_findings(
+    "defer_block_closes_without_semicolon",
+    "Close `defer { ... }` with `}` only. The extra semicolon after the block is a Zig syntax error.",
+    findings,
+  )
+}
+
+@invariant
 @semantic
 @archivist(evidence: _EVIDENCE_ALLOCATOR_LIFETIME, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks heap allocations whose result is not freed, transferred, or guarded by defer/errdefer. */
@@ -278,7 +334,9 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @invariant
 @semantic
 @archivist(evidence: _EVIDENCE_ENDIANNESS, confidence: 0.6, source_date: "2026-05-10")
-/** Warns when multi-byte integer I/O across a serialization boundary does not name an endianness. */
+/**
+ * Warns when multi-byte integer I/O across a serialization boundary does not name an endianness.
+ */
 pub fn integer_endianness_explicit(slice, ctx, _repo_at_base) {
   let rubric = "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
   let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})

@@ -1,10 +1,10 @@
 # Zig Seed Predicate Pack
 
-This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Zig is a young, rapidly evolving language; v0 focuses on the highest-signal review issues that survive across the recent stable releases (0.13.x and 0.14.x): silent error-handling shortcuts, unjustified unsafe casts, `@panic` in library paths, test-time leak detection, and supply-chain hygiene in the package manifest.
+This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Zig is a young, rapidly evolving language; v0 focuses on the highest-signal review issues that survive across the recent stable releases and current 0.16 toolchains: silent error-handling shortcuts, stale standard-library API shapes, unjustified unsafe casts, `@panic` in library paths, test-time leak detection, and supply-chain hygiene in the package manifest.
 
 ## Stack Assumptions
 
-- Source predicates target Zig 0.13.x and 0.14.x. Older releases predate `build.zig.zon` and the modern cast/error builtins; the predicates here are not expected to be useful below 0.12.
+- Source predicates target Zig 0.15.x and 0.16.x. Older releases predate `build.zig.zon` and the modern cast/error/container APIs; the predicates here are not expected to be useful below 0.12.
 - Production paths exclude `_test.zig` and `test_*.zig` files plus `tests/`, `test/`, `testdata/`, `examples/`, and `example/` directories. Test-block heuristics rely on the convention that test declarations appear at the top level of a file.
 - `build.zig.zon` predicates filter on the literal filename. Generated lock files and vendored caches are not in scope for v0.
 - Deterministic predicates operate on changed source text. Zig has no published stable AST query API yet, so regex-based matching is intentionally conservative — the pack errs toward false negatives rather than false positives.
@@ -21,6 +21,9 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 | `tests_use_testing_allocator` | deterministic | Warn | Test files that allocate via `page_allocator` or `c_allocator` skip leak detection; default to `std.testing.allocator`. |
 | `build_zon_min_zig_version_set` | deterministic | Warn | `build.zig.zon` should set `.minimum_zig_version` so toolchain assumptions stay machine-readable. |
 | `build_zon_dependency_hash_pinned` | deterministic | Block | URL-based dependency entries in `build.zig.zon` must declare a `.hash` so package fetches are content-verified. |
+| `no_std_json_parser_api` | deterministic | Block | Current Zig code should use `std.json.parseFromSlice` or `std.json.Scanner`, not the removed `std.json.Parser` type. |
+| `arraylist_uses_unmanaged_api` | deterministic | Block | Current `std.ArrayList(T)` values initialize with `.empty`; allocator-bearing calls happen on methods. |
+| `defer_block_closes_without_semicolon` | deterministic | Block | `defer { ... }` closes with `}` only; `};` after the block is a syntax error. |
 | `allocator_lifetime_hygiene` | semantic | Block | Heap allocations need a matching `defer`/`errdefer` free or a documented ownership transfer. |
 | `no_hardcoded_secrets` | semantic | Block | Credentials, tokens, and private keys must not be embedded as string literals in Zig source. |
 | `integer_endianness_explicit` | semantic | Warn | Multi-byte integer I/O across a serialization boundary should name the endianness rather than relying on host byte order. |
@@ -34,6 +37,9 @@ Evidence scanned on 2026-05-10.
 - Zig source `doc/build.zig.zon.md` for the manifest schema, including `.minimum_zig_version` (advisory) and the `.hash` requirement on URL-based dependencies.
 - Zig Build System tutorial (`ziglang.org/learn/build-system`) for package-manager workflow guidance.
 - The Zig Guide community handbook (`zig.guide`) for error-handling and allocator idioms.
+- Zig 0.16.0 release notes for the migration to unmanaged containers.
+- Zig standard library JSON source and current zig.guide JSON examples for `std.json.parseFromSlice`.
+- Zig language reference and zig.guide examples for `defer` semantics and block-form usage.
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
 
 ## Known False Positives and Negatives
@@ -45,6 +51,9 @@ Evidence scanned on 2026-05-10.
 - `no_panic_in_production` does not distinguish CLI `main()` from library code. Top-level binaries that legitimately panic on unrecoverable startup failures should suppress the warning per call site.
 - `tests_use_testing_allocator` keys on the literal identifiers `page_allocator` and `c_allocator`. Aliased re-exports (`const A = std.heap.page_allocator;` re-exported under another name) will be missed.
 - `build_zon_dependency_hash_pinned` only flags URL-based entries that lack a hash; entries using `.path = ...` are skipped, matching the manifest schema.
+- `no_std_json_parser_api` is a token scan. A prose comment or string literal mentioning `std.json.Parser` will be blocked until the pack can use AST facts.
+- `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
+- `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.
 
 ## Design Notes
