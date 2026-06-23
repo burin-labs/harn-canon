@@ -1,0 +1,25 @@
+{
+  "predicate": "defer_block_closes_without_semicolon",
+  "cases": [
+    {
+      "name": "blocks_defer_block_with_semicolon_closer",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\npub fn write() void {\n    defer {\n        std.debug.print(\"done\", .{});\n    };\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_defer_block_without_semicolon_closer",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\npub fn write() void {\n    defer {\n        std.debug.print(\"done\", .{});\n    }\n}\n"
+        }
+      ]
+    }
+  ]
+}

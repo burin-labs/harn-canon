@@ -1,0 +1,25 @@
+{
+  "predicate": "no_std_json_parser_api",
+  "cases": [
+    {
+      "name": "blocks_removed_std_json_parser",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\npub fn parse(bytes: []const u8) !void {\n    var parser = std.json.Parser.init(std.testing.allocator, false);\n    defer parser.deinit();\n    _ = try parser.parse(bytes);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_parse_from_slice",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Schema = struct { name: []const u8 };\n\npub fn parse(allocator: std.mem.Allocator, bytes: []const u8) !Schema {\n    const parsed = try std.json.parseFromSlice(Schema, allocator, bytes, .{});\n    defer parsed.deinit();\n    return parsed.value;\n}\n"
+        }
+      ]
+    }
+  ]
+}
