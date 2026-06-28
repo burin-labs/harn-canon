@@ -63,6 +63,12 @@ let _EVIDENCE_JSON_PARSE_FROM_SLICE = [
   "https://zig.guide/standard-library/json/",
 ]
 
+let _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
+  "https://github.com/ziglang/zig/blob/master/lib/std/json/static.zig",
+  "https://github.com/ziglang/zig/blob/master/lib/std/json/hashmap.zig",
+  "https://zig.guide/standard-library/json/",
+]
+
 let _EVIDENCE_ARRAYLIST_UNMANAGED = [
   "https://ziglang.org/download/0.16.0/release-notes.html#Migration-to-Unmanaged-Containers",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
@@ -267,6 +273,29 @@ pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "no_std_json_parser_api",
     "Replace `std.json.Parser` with `std.json.parseFromSlice(T, allocator, bytes, .{})` for typed parsing, or use `std.json.Scanner` for token-level parsing.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP, confidence: 0.74, source_date: "2026-06-23")
+/** Blocks manual deinit of std.json.ArrayHashMap fields owned by a Parsed(T) value. */
+pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    zig_files(slice),
+    { file -> regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
+      && regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s") != nil
+      && regex_match(
+      r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
+      file.text,
+      "s",
+    )
+      != nil },
+  )
+  return block_on_findings(
+    "parsed_json_arrayhashmap_has_single_owner",
+    "Do not manually deinit `std.json.ArrayHashMap` fields under `parsed.value`; call `parsed.deinit()` exactly once so the JSON parser's ownership stays single-owner.",
     findings,
   )
 }
