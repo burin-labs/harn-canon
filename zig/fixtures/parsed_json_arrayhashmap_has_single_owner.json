@@ -1,0 +1,25 @@
+{
+  "predicate": "parsed_json_arrayhashmap_has_single_owner",
+  "cases": [
+    {
+      "name": "blocks_manual_deinit_of_parsed_json_arrayhashmap",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Schema = struct {\n    items: std.json.ArrayHashMap(Item),\n};\n\nconst Item = struct { name: []const u8 };\n\npub fn parse(allocator: std.mem.Allocator, bytes: []const u8) !usize {\n    const parsed = try std.json.parseFromSlice(Schema, allocator, bytes, .{ .allocate = .alloc_always });\n    defer parsed.value.items.map.deinit(allocator);\n    defer parsed.deinit();\n    return parsed.value.items.map.count();\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_parsed_owner_deinit_once",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Schema = struct {\n    items: std.json.ArrayHashMap(Item),\n};\n\nconst Item = struct { name: []const u8 };\n\npub fn parse(allocator: std.mem.Allocator, bytes: []const u8) !usize {\n    const parsed = try std.json.parseFromSlice(Schema, allocator, bytes, .{ .allocate = .alloc_always });\n    defer parsed.deinit();\n    return parsed.value.items.map.count();\n}\n"
+        }
+      ]
+    }
+  ]
+}
