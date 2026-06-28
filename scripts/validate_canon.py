@@ -8,43 +8,19 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+PACK_MANIFEST_PATH = ROOT / "canon-packs.json"
 
-EXPECTED_PACKS = (
-    "c",
-    "cpp",
-    "csharp",
-    "css",
-    "dart",
-    "dockerfile",
-    "elixir",
-    "go",
-    "graphql",
-    "harn",
-    "haskell",
-    "html",
-    "java",
-    "javascript",
-    "json",
-    "kotlin",
-    "lua",
-    "markdown",
-    "php",
-    "protobuf",
-    "python",
-    "r",
-    "ruby",
-    "rust",
-    "scala",
-    "shell",
-    "sql",
-    "swift",
-    "terraform",
-    "toml",
-    "typescript",
-    "xml",
-    "yaml",
-    "zig",
-)
+
+def load_pack_manifest():
+    manifest = json.loads(PACK_MANIFEST_PATH.read_text(encoding="utf-8"))
+    packs = manifest.get("packs", [])
+    if manifest.get("schema_version") != 1 or not isinstance(packs, list):
+        raise ValueError("canon-packs.json must use schema_version 1 with a packs list")
+    return packs
+
+
+PACK_MANIFEST = load_pack_manifest()
+EXPECTED_PACKS = tuple(pack["id"] for pack in PACK_MANIFEST)
 
 MIN_DETERMINISTIC = 5
 MAX_DETERMINISTIC = 12
@@ -248,6 +224,35 @@ def validate_readme_coverage(errors):
             errors.append(f"README.md: missing pack link for {pack}/")
 
 
+def validate_manifest(errors):
+    seen = set()
+    for index, pack in enumerate(PACK_MANIFEST):
+        if not isinstance(pack, dict):
+            errors.append(f"canon-packs.json: pack {index} must be an object")
+            continue
+        pack_id = pack.get("id")
+        if not isinstance(pack_id, str) or not pack_id:
+            errors.append(f"canon-packs.json: pack {index} needs a non-empty id")
+            continue
+        if pack_id in seen:
+            errors.append(f"canon-packs.json: duplicate pack id {pack_id}")
+        seen.add(pack_id)
+        expected_invariants = f"{pack_id}/invariants.harn"
+        expected_fixtures = f"{pack_id}/fixtures"
+        if pack.get("invariants") != expected_invariants:
+            errors.append(
+                f"canon-packs.json: {pack_id} invariants must be {expected_invariants}"
+            )
+        if pack.get("fixtures") != expected_fixtures:
+            errors.append(f"canon-packs.json: {pack_id} fixtures must be {expected_fixtures}")
+        if not isinstance(pack.get("title"), str) or not pack["title"].strip():
+            errors.append(f"canon-packs.json: {pack_id} needs a non-empty title")
+        if not (ROOT / expected_invariants).is_file():
+            errors.append(f"canon-packs.json: {expected_invariants} does not exist")
+        if not (ROOT / expected_fixtures).is_dir():
+            errors.append(f"canon-packs.json: {expected_fixtures} does not exist")
+
+
 def validate_pack_readme_coverage(pack_dir, predicate_names, errors):
     readme_path = pack_dir / "README.md"
     readme = readme_path.read_text(encoding="utf-8")
@@ -266,6 +271,7 @@ def main():
     for pack in sorted(actual - expected):
         errors.append(f"{pack}: pack directory is not listed in EXPECTED_PACKS")
 
+    validate_manifest(errors)
     validate_readme_coverage(errors)
 
     total_predicates = 0

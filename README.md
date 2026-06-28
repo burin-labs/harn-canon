@@ -10,6 +10,9 @@ Per-language and per-stack predicate packs. Each pack is a directory containing:
 - `README.md` — purpose, stack assumptions, evidence sources, coverage examples, known false positives.
 - `fixtures/` — small atom/slice fixtures the predicates are expected to allow or block, used by CI.
 
+`canon-packs.json` is the canonical pack manifest for tools that need stable
+pack discovery without scraping the repository layout.
+
 Predicate files use Harn attributes to carry evidence:
 
 ```harn
