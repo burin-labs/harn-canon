@@ -148,11 +148,7 @@ pub fn no_important_without_comment(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ID_SELECTORS, confidence: 0.72, source_date: "2026-05-09")
 /** Warns when stylesheets use `#id` selectors instead of class selectors. */
 pub fn no_id_selectors(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_css_files(slice),
-    r"#(?!\{)[A-Za-z_][A-Za-z0-9_-]*[^;{}]*?\{",
-    "s",
-  )
+  let findings = scan_files(production_css_files(slice), r"(^|[, \t])#[A-Za-z_][A-Za-z0-9_-]*[^;{}]*?\{", "m")
   return warn_on_findings(
     "no_id_selectors",
     "Prefer class or attribute selectors so component styles compose; ids spike specificity and resist overrides.",
@@ -197,13 +193,11 @@ pub fn no_zero_with_unit(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_RELATIVE_FONT_SIZE, confidence: 0.7, source_date: "2026-05-09")
-/** Warns when `font-size` uses absolute units (`px`, `pt`) that ignore user font-size preferences. */
+/**
+ * Warns when `font-size` uses absolute units (`px`, `pt`) that ignore user font-size preferences.
+ */
 pub fn font_size_uses_relative_units(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_css_files(slice),
-    r"\bfont-size\s*:\s*[+-]?\d+(?:\.\d+)?\s*(?:px|pt)\b",
-    "s",
-  )
+  let findings = scan_files(production_css_files(slice), r"\bfont-size\s*:\s*[+-]?\d+(?:\.\d+)?\s*(?:px|pt)\b", "s")
   return warn_on_findings(
     "font_size_uses_relative_units",
     "Use relative units (`rem`, `em`, `%`) for font-size so users who set a larger default text size are respected (WCAG 1.4.4).",

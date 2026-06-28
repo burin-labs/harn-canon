@@ -70,6 +70,28 @@ fn scan_files(files, pattern) {
   return findings
 }
 
+fn run_instruction_blocks(text) {
+  var blocks = []
+  var current = ""
+  for line in text.lines() {
+    if regex_match(r"(?i)^\s*RUN\b", line, "") != nil {
+      if current != "" {
+        blocks = blocks.push(current)
+      }
+      current = line
+    } else if current != "" && current.ends_with("\\") {
+      current = current + "\n" + line
+    } else if current != "" {
+      blocks = blocks.push(current)
+      current = ""
+    }
+  }
+  if current != "" {
+    blocks = blocks.push(current)
+  }
+  return blocks
+}
+
 fn scan_files_if(files, predicate) {
   var findings = []
   for file in files {
@@ -111,11 +133,21 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_FROM_TAG, confidence: 0.88, source_date: "2026-05-09")
 /** Blocks FROM directives that float on :latest or omit a tag and digest. */
 pub fn no_latest_or_unpinned_base_image(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
-    dockerfile_files(slice),
-    { text -> regex_match(r"(?mi)^\s*FROM\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)[^\s#]+:latest(\s|$)", text, "m") != nil
-      || regex_match(r"(?mi)^\s*FROM\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)(?!scratch\b)[^\s#:@]+(\s+AS\s+\S+)?\s*$", text, "m") != nil },
-  )
+  var findings = []
+  for file in dockerfile_files(slice) {
+    for line in file.text.lines() {
+      let from_line = regex_match(r"(?i)^\s*FROM\s+", line, "") != nil
+      let latest = regex_match(r"(?i)^\s*FROM\s+(--[A-Za-z0-9_-]+(=\S+)?\s+)*[^\s#]+:latest(\s|$)", line, "")
+        != nil
+      let unpinned = from_line
+        && !contains(line, ":")
+        && !contains(line, "@")
+        && regex_match(r"(?i)\bscratch\b", line, "") == nil
+      if latest || unpinned {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return block_on_findings(
     "no_latest_or_unpinned_base_image",
     "Pin every FROM to an explicit tag (preferably a digest) so rebuilds are reproducible.",
@@ -128,10 +160,14 @@ pub fn no_latest_or_unpinned_base_image(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_APT_RECOMMENDS, confidence: 0.74, source_date: "2026-05-09")
 /** Warns on apt-get install invocations that omit --no-install-recommends. */
 pub fn apt_get_no_install_recommends(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    dockerfile_files(slice),
-    r"(?ims)^\s*RUN\b(?=(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\bapt-get\s+install\b)(?!(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*--no-install-recommends).+",
-  )
+  var findings = []
+  for file in dockerfile_files(slice) {
+    for block in run_instruction_blocks(file.text) {
+      if contains(block, "apt-get install") && !contains(block, "--no-install-recommends") {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "apt_get_no_install_recommends",
     "Pass --no-install-recommends to apt-get install so images do not pull optional dependencies.",
@@ -144,10 +180,14 @@ pub fn apt_get_no_install_recommends(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_APT_CLEAN, confidence: 0.78, source_date: "2026-05-09")
 /** Warns when apt-get install runs without removing /var/lib/apt/lists in the same layer. */
 pub fn apt_get_clean_lists(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    dockerfile_files(slice),
-    r"(?ims)^\s*RUN\b(?=(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\bapt-get\s+install\b)(?!(?:(?!^\s*(?:ADD|ARG|CMD|COPY|ENTRYPOINT|ENV|EXPOSE|FROM|HEALTHCHECK|LABEL|ONBUILD|RUN|SHELL|STOPSIGNAL|USER|VOLUME|WORKDIR)\b).)*\brm\s+-rf\s+/var/lib/apt/lists).+",
-  )
+  var findings = []
+  for file in dockerfile_files(slice) {
+    for block in run_instruction_blocks(file.text) {
+      if contains(block, "apt-get install") && !contains(block, "rm -rf /var/lib/apt/lists") {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "apt_get_clean_lists",
     "Remove /var/lib/apt/lists/* in the same RUN as apt-get install so the layer stays small.",
@@ -158,12 +198,22 @@ pub fn apt_get_clean_lists(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_ADD_VS_COPY, confidence: 0.8, source_date: "2026-05-09")
-/** Warns on ADD with local paths; COPY is preferred unless extracting an archive or fetching a URL. */
+/**
+ * Warns on ADD with local paths; COPY is preferred unless extracting an archive or fetching a URL.
+ */
 pub fn prefer_copy_over_add(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    dockerfile_files(slice),
-    r"(?mi)^\s*ADD\s+(?:--[A-Za-z0-9_-]+(?:=\S+)?\s+)*(?!--)(?!https?://)(?!git@)(?!git://)\S+",
-  )
+  var findings = []
+  for file in dockerfile_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(r"(?i)^\s*ADD\s+", line, "") != nil
+        && !contains(line, "http://")
+        && !contains(line, "https://")
+        && !contains(line, "git@")
+        && !contains(line, "git://") {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "prefer_copy_over_add",
     "Use COPY for local files; reserve ADD for remote URLs or auto-extracted archives so semantics stay predictable.",
@@ -194,7 +244,8 @@ pub fn no_curl_pipe_shell(slice, _ctx, _repo_at_base) {
 pub fn non_root_user_set(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     dockerfile_files(slice),
-    { text -> regex_match(r"(?mi)^\s*USER\s+(?!root\b)(?!0\b)\S+", text, "m") == nil },
+    { text -> regex_match(r"(?mi)^\s*USER\s+\S+", text, "m") == nil
+      || regex_match(r"(?mi)^\s*USER\s+(root|0)\b", text, "m") != nil },
   )
   return warn_on_findings(
     "non_root_user_set",
@@ -224,10 +275,15 @@ pub fn no_secrets_in_env_or_arg(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EXEC_FORM, confidence: 0.7, source_date: "2026-05-09")
 /** Warns when CMD or ENTRYPOINT use the shell form, which loses signal forwarding. */
 pub fn use_exec_form_for_cmd_entrypoint(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    dockerfile_files(slice),
-    r"(?mi)^\s*(CMD|ENTRYPOINT)\s+(?!\[)\S",
-  )
+  var findings = []
+  for file in dockerfile_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\S", line, "") != nil
+        && regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[", line, "") == nil {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "use_exec_form_for_cmd_entrypoint",
     "Prefer the JSON exec form like CMD [\"bin\", \"--flag\"] so the process receives signals directly.",

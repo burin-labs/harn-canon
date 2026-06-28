@@ -189,7 +189,15 @@ pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_CASTS, confidence: 0.6, source_date: "2026-05-10")
 /** Warns on unchecked or reinterpreting cast builtins that lack an inline justification comment. */
 pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(zig_files(slice), r"(?m)^(?!.*//).*@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(")
+  var findings = []
+  for file in zig_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(r"@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(", line, "") != nil
+        && regex_match(r"//", line, "") == nil {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "unsafe_cast_has_justification",
     "Add an inline `//` comment on the cast line explaining why it is sound: bounds, alignment guarantee, representation invariant, or upstream check.",
@@ -251,9 +259,10 @@ pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BUILD_ZON_HASH, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks build.zig.zon dependency entries that declare `.url` without a `.hash`. */
 pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  let findings = scan_files_if(
     build_zon_files(slice),
-    "\\.\\{(?:(?!\\.hash)[^{}])*\\.url\\s*=\\s*\"[^\"]+\"(?:(?!\\.hash)[^{}])*\\}",
+    { file -> regex_match(r"\.url\s*=", file.text, "s") != nil
+      && regex_match(r"\.hash\s*=", file.text, "s") == nil },
   )
   return block_on_findings(
     "build_zon_dependency_hash_pinned",

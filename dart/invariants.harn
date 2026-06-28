@@ -1,7 +1,4 @@
-let _EVIDENCE_NULL_SAFETY = [
-  "https://dart.dev/null-safety",
-  "https://dart.dev/language/versioning",
-]
+let _EVIDENCE_NULL_SAFETY = ["https://dart.dev/null-safety", "https://dart.dev/language/versioning"]
 
 let _EVIDENCE_NULL_ASSERTION = [
   "https://dart.dev/null-safety/understanding-null-safety",
@@ -18,15 +15,9 @@ let _EVIDENCE_PRINT = [
   "https://api.dart.dev/stable/dart-developer/log.html",
 ]
 
-let _EVIDENCE_MUTABILITY = [
-  "https://dart.dev/tools/linter-rules/prefer_final_fields",
-  "https://dart.dev/effective-dart/usage",
-]
+let _EVIDENCE_MUTABILITY = ["https://dart.dev/tools/linter-rules/prefer_final_fields", "https://dart.dev/effective-dart/usage"]
 
-let _EVIDENCE_LINT_IGNORES = [
-  "https://dart.dev/tools/analysis",
-  "https://dart.dev/tools/linter-rules",
-]
+let _EVIDENCE_LINT_IGNORES = ["https://dart.dev/tools/analysis", "https://dart.dev/tools/linter-rules"]
 
 let _EVIDENCE_CONST_WIDGETS = [
   "https://dart.dev/tools/linter-rules/prefer_const_constructors_in_immutables",
@@ -88,14 +79,16 @@ fn is_example_path(path) {
 
 fn production_dart_files(slice) {
   return dart_files(slice)
-    .filter({ file -> !is_test_path(file.path)
+    .filter(
+    { file -> !is_test_path(file.path)
       && !is_generated_path(file.path)
       && !is_example_path(file.path) },
-    )
+  )
 }
 
 fn lib_dart_files(slice) {
-  return production_dart_files(slice).filter({ file -> contains(file.path, "/lib/") })
+  return production_dart_files(slice)
+    .filter({ file -> contains(file.path, "/lib/") || file.path.starts_with("lib/") })
 }
 
 fn scan_files(files, pattern, flags) {
@@ -151,7 +144,7 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     production_dart_files(slice),
-    r"(?m)^\s*//\s*@dart\s*=\s*2\.([0-9]|1[01])(?!\d)",
+    r"(?m)^\s*//\s*@dart\s*=\s*2\.([0-9]|1[01])([^0-9]|$)",
     "m",
   )
   return block_on_findings(
@@ -166,11 +159,7 @@ pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NULL_ASSERTION, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks the postfix null assertion operator in production Dart sources. */
 pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_dart_files(slice),
-    r"[A-Za-z_0-9\)\]]!(?=[\s\.\[\)\]\}\,;])",
-    "s",
-  )
+  let findings = scan_files(production_dart_files(slice), r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]", "s")
   return block_on_findings(
     "no_force_null_assertion",
     "Replace expr! with explicit null handling: if-null (??), pattern matching, ArgumentError, or a typed non-null contract.",
@@ -232,7 +221,8 @@ pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
 pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_dart_files(slice),
-    { file -> regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m") != nil
+    { file -> regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m")
+      != nil
       || regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*type\s*=\s*[a-z]+", file.text, "m") != nil },
   )
   return warn_on_findings(
@@ -269,11 +259,7 @@ pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RELATIVE_LIB_IMPORTS, confidence: 0.82, source_date: "2026-05-10")
 /** Warns on parent-relative imports inside lib/ Dart sources. */
 pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    lib_dart_files(slice),
-    r"(?m)^\s*import\s+['\x22]\.\.[\\/]",
-    "m",
-  )
+  let findings = scan_files(lib_dart_files(slice), r"\.\.[/]", "m")
   return warn_on_findings(
     "no_relative_lib_imports",
     "Inside lib/, import sibling libraries with a package: URI or a same-directory relative path; do not climb out of lib/.",
