@@ -80,17 +80,6 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
-  var findings = []
-  for file in files {
-    if predicate(file) {
-      findings = findings
-        .push({path: file.path})
-    }
-  }
-  return findings
-}
-
 fn allow(rule) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
@@ -135,13 +124,16 @@ pub fn no_bare_except(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TYPE_HINTS, confidence: 0.7, source_date: "2026-04-30")
 /** Warns on public top-level functions without parameter or return annotations. */
 pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
-  let missing_return = r"(?m)^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\([^)]*\)\s*:"
-  let missing_params = r"(?m)^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\((?![^)]*:)[^)]*[A-Za-z_][^)]*\)\s*->"
-  let findings = scan_files_if(
-    python_files(slice),
-    { file -> regex_match(missing_return, file.text, "m") != nil
-      || regex_match(missing_params, file.text, "m") != nil },
-  )
+  var findings = []
+  for file in python_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(r"^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\(", line, "") != nil
+        && (regex_match(r"->", line, "") == nil
+        || regex_match(r"\([^)]*:[^)]*\)", line, "") == nil) {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "type_hints_on_pub_fn",
     "Add parameter and return annotations to public top-level functions.",
@@ -184,11 +176,15 @@ pub fn no_mutable_default_arg(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FILE_HANDLES, confidence: 0.72, source_date: "2026-04-30")
 /** Warns when builtin open() appears outside a with statement. */
 pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    python_files(slice),
-    r"(?m)^(?![^\n]*\bwith\s+open\s*\()[^\n]*(^|[^._A-Za-z0-9])open\s*\(",
-    "m",
-  )
+  var findings = []
+  for file in python_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(r"(^|[^._A-Za-z0-9])open\s*\(", line, "") != nil
+        && regex_match(r"\bwith\s+open\s*\(", line, "") == nil {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "context_mgr_for_files",
     "Use with open(...) or Path.open(...) so file handles are closed promptly.",

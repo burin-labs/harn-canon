@@ -103,7 +103,8 @@ fn production_csharp_files(slice) {
 fn library_csharp_files(slice) {
   return production_csharp_files(slice)
     .filter(
-    { file -> contains(file.path, "/src/") && !is_ui_path(file.path) },
+    { file -> (contains(file.path, "/src/") || file.path.starts_with("src/"))
+      && !is_ui_path(file.path) },
   )
 }
 
@@ -182,11 +183,20 @@ pub fn nullable_reference_types_enabled(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ASYNC_NAMING, confidence: 0.7, source_date: "2026-05-08")
 /** Warns when async Task-returning methods do not use an Async suffix. */
 pub fn async_method_naming(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    csharp_files(slice),
-    r"(?m)\b(public|internal|protected|private)?\s*(static\s+)?async\s+(Task|ValueTask)(<[^>\n]+>)?\s+(?![A-Za-z_][A-Za-z0-9_]*Async\b)[A-Za-z_][A-Za-z0-9_]*\s*\(",
-    "m",
-  )
+  var findings = []
+  for file in csharp_files(slice) {
+    for line in file.text.lines() {
+      if regex_match(
+        r"\b(public|internal|protected|private)?\s*(static\s+)?async\s+(Task|ValueTask)(<[^>\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*\s*\(",
+        line,
+        "",
+      )
+        != nil
+        && regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*Async\s*\(", line, "") == nil {
+        findings = findings.push({path: file.path})
+      }
+    }
+  }
   return warn_on_findings(
     "async_method_naming",
     "Rename async Task-returning methods with an Async suffix unless they implement a fixed contract.",
@@ -252,7 +262,7 @@ pub fn no_unused_privates(slice, _ctx, _repo_at_base) {
 pub fn no_throw_ex_resets_stack(slice, _ctx, _repo_at_base) {
   let findings = scan_files(
     csharp_files(slice),
-    r"catch\s*\([^)]*\b([A-Za-z_][A-Za-z0-9_]*)\s*\)\s*\{[^}]*\bthrow\s+\1\s*;",
+    r"catch\s*\([^)]*\b[A-Za-z_][A-Za-z0-9_]*\s*\)\s*\{[^}]*\bthrow\s+[A-Za-z_][A-Za-z0-9_]*\s*;",
     "s",
   )
   return block_on_findings(
@@ -267,11 +277,23 @@ pub fn no_throw_ex_resets_stack(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_VALUETASK, confidence: 0.66, source_date: "2026-05-08")
 /** Warns when a ValueTask local is awaited or read more than once in one method body. */
 pub fn no_valuetask_reuse(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    csharp_files(slice),
-    r"ValueTask(<[^>\n]+>)?\s+([A-Za-z_][A-Za-z0-9_]*)\s*=.*\b(await\s+\2|\2\.Result)\b.*\b(await\s+\2|\2\.Result)\b",
-    "s",
-  )
+  var findings = []
+  for file in csharp_files(slice) {
+    var value_task_local = false
+    var reads = 0
+    for line in file.text.lines() {
+      if regex_match(r"\bValueTask(<[^>\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*\s*=", line, "") != nil {
+        value_task_local = true
+      }
+      if regex_match(r"\bawait\s+[A-Za-z_][A-Za-z0-9_]*\s*;", line, "") != nil
+        || regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.Result\b", line, "") != nil {
+        reads = reads + 1
+      }
+    }
+    if value_task_local && reads > 1 {
+      findings = findings.push({path: file.path})
+    }
+  }
   return warn_on_findings(
     "no_valuetask_reuse",
     "Await each ValueTask once, or convert to Task with AsTask() before multiple awaits.",

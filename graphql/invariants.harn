@@ -18,10 +18,7 @@ let _EVIDENCE_MUTATION_INPUT = [
   "https://relay.dev/docs/guides/graphql-server-specification/#mutations",
 ]
 
-let _EVIDENCE_PAGINATION = [
-  "https://relay.dev/graphql/connections.htm",
-  "https://graphql.org/learn/pagination/",
-]
+let _EVIDENCE_PAGINATION = ["https://relay.dev/graphql/connections.htm", "https://graphql.org/learn/pagination/"]
 
 let _EVIDENCE_BREAKING = [
   "https://www.apollographql.com/docs/graphos/platform/schema-management/checks/",
@@ -39,7 +36,8 @@ let _EVIDENCE_DEPTH_LIMIT = [
 ]
 
 fn schema_files(slice) {
-  return slice.files.filter(
+  return slice.files
+    .filter(
     { file -> file.path.ends_with(".graphql")
       || file.path.ends_with(".graphqls")
       || file.path.ends_with(".gql") },
@@ -57,7 +55,8 @@ fn production_schema_files(slice) {
 }
 
 fn server_config_files(slice) {
-  return slice.files.filter(
+  return slice.files
+    .filter(
     { file -> file.path.ends_with(".ts")
       || file.path.ends_with(".tsx")
       || file.path.ends_with(".js")
@@ -122,11 +121,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_NAMING, confidence: 0.84, source_date: "2026-05-09")
 /** Blocks GraphQL enum values that are not UPPER_SNAKE_CASE. */
 pub fn enum_values_upper_snake_case(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_schema_files(slice),
-    r"\benum\s+\w+\s*\{[^}]*?(?m:^\s*[a-z])",
-    "s",
-  )
+  let findings = scan_files(production_schema_files(slice), r"\benum\s+\w+\s*\{[^}]*?(?m:^\s*[a-z])", "s")
   return block_on_findings(
     "enum_values_upper_snake_case",
     "Rename enum values to UPPER_SNAKE_CASE per the Apollo and graphql-eslint convention.",
@@ -158,11 +153,7 @@ pub fn no_double_underscore_names(slice, _ctx, _repo_at_base) {
 pub fn descriptions_on_public_types(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_schema_files(slice),
-    { file -> regex_match(
-      r"^\s*(?:type|interface|input|enum|union)\s+[A-Z]\w*",
-      file.text,
-      "m",
-    )
+    { file -> regex_match(r"^\s*(?:type|interface|input|enum|union)\s+[A-Z]\w*", file.text, "m")
       != nil
       && regex_match("\"\"\"|^\\s*\"[^\"]+\"", file.text, "m") == nil },
   )
@@ -178,10 +169,10 @@ pub fn descriptions_on_public_types(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MUTATION_INPUT, confidence: 0.7, source_date: "2026-05-09")
 /** Warns when Mutation fields take arguments other than a single input object. */
 pub fn mutation_uses_input_type(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  let findings = scan_files_if(
     production_schema_files(slice),
-    r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\(\s*(?!input\s*:)[^)]+\)",
-    "s",
+    { file -> regex_match(r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\([^)]*\)", file.text, "s") != nil
+      && regex_match(r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\(\s*input\s*:", file.text, "s") == nil },
   )
   return warn_on_findings(
     "mutation_uses_input_type",
