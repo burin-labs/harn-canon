@@ -1,0 +1,47 @@
+{
+  "predicate": "no_duplicate_declarations",
+  "cases": [
+    {
+      "name": "blocks_duplicate_receiver_method_in_same_package",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "internal/engine/engine.go",
+          "text": "package engine\n\nimport \"context\"\n\ntype Engine struct{}\n\nfunc (e *Engine) ListProjects(ctx context.Context) ([]string, error) {\n\treturn nil, nil\n}\n"
+        },
+        {
+          "path": "internal/engine/engine_status.go",
+          "text": "package engine\n\nimport \"context\"\n\nfunc (e *Engine) ListProjects(ctx context.Context) ([]string, error) {\n\treturn []string{}, nil\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_duplicate_package_function_in_same_package",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "pkg/client/status.go",
+          "text": "package client\n\nfunc NewStatus() string {\n\treturn \"ok\"\n}\n"
+        },
+        {
+          "path": "pkg/client/status_extra.go",
+          "text": "package client\n\nfunc NewStatus() string {\n\treturn \"ready\"\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_same_name_in_different_packages",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "pkg/client/status.go",
+          "text": "package client\n\nfunc NewStatus() string {\n\treturn \"ok\"\n}\n"
+        },
+        {
+          "path": "internal/daemon/status.go",
+          "text": "package daemon\n\nfunc NewStatus() string {\n\treturn \"ready\"\n}\n"
+        }
+      ]
+    }
+  ]
+}

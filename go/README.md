@@ -1,6 +1,6 @@
 # Go Seed Predicate Pack
 
-This pack covers Go modules, command packages, and reusable libraries. It targets high-signal review issues that changed source slices can catch cheaply: ignored errors, context propagation mistakes, library panics, overly broad exported APIs, lossy error wrapping, HTTP response leaks, weak randomness, goroutine lifetime leaks, and dependency vulnerability review.
+This pack covers Go modules, command packages, and reusable libraries. It targets high-signal review issues that changed source slices can catch cheaply: ignored errors, context propagation mistakes, library panics, overly broad exported APIs, lossy error wrapping, duplicate declarations, HTTP response leaks, weak randomness, goroutine lifetime leaks, and dependency vulnerability review.
 
 ## Stack Assumptions
 
@@ -9,7 +9,7 @@ This pack covers Go modules, command packages, and reusable libraries. It target
 - Generated Go files with the standard `// Code generated ... DO NOT EDIT.` marker are ignored by deterministic source predicates.
 - Deterministic predicates use file-text scans until Harn Flow exposes a stable Go AST query API.
 - Semantic predicates make one cheap judge call over changed Go/module files and use only evidence captured at authoring time.
-- Advisory rules return `Warn` when idiomatic exceptions are common. Blocking rules are reserved for ignored errors, library panics, likely response-body leaks, security-sensitive randomness, goroutine leaks, and missing dependency-vulnerability evidence.
+- Advisory rules return `Warn` when idiomatic exceptions are common. Blocking rules are reserved for ignored errors, library panics, duplicate declarations, likely response-body leaks, security-sensitive randomness, goroutine leaks, and missing dependency-vulnerability evidence.
 
 ## Predicate Coverage
 
@@ -22,6 +22,7 @@ This pack covers Go modules, command packages, and reusable libraries. It target
 | `no_empty_interface_in_api` | deterministic | Warn | Exported APIs should avoid `interface{}` and `any` when concrete types, type parameters, or small interfaces fit. |
 | `wrap_errors_with_percent_w` | deterministic | Warn | Error context should preserve unwrap chains when callers may use `errors.Is` or `errors.As`. |
 | `error_strings_not_capitalized` | deterministic | Warn | Error strings should compose cleanly when callers add context. |
+| `no_duplicate_declarations` | deterministic | Block | Package-level functions and receiver methods should have one declaration per package. |
 | `http_response_body_closed` | deterministic | Block | Successful HTTP responses must have their bodies closed to release resources. |
 | `no_math_rand_for_keys` | deterministic | Block | Security-sensitive keys, tokens, nonces, and secrets require `crypto/rand`, not `math/rand`. |
 | `goroutine_leak_guard` | semantic | Block | Long-lived goroutines need credible cancellation, shutdown, or bounded-lifetime evidence. |
@@ -29,9 +30,9 @@ This pack covers Go modules, command packages, and reusable libraries. It target
 
 ## Evidence
 
-Evidence scanned on 2026-05-08.
+Most evidence was scanned on 2026-05-08. The Go language spec declaration and method-declaration evidence was scanned on 2026-06-28.
 
-- Go docs and tutorials: Effective Go, Go error handling tutorial, Go 1.13 errors blog, package docs for `context`, `errors`, `fmt`, `io`, `net/http`, `crypto/rand`, and `math/rand`.
+- Go docs and tutorials: Effective Go, Go error handling tutorial, Go 1.13 errors blog, Go language spec declaration and method-declaration rules, and package docs for `context`, `errors`, `fmt`, `io`, `net/http`, `crypto/rand`, and `math/rand`.
 - Go Wiki: Code Review Comments for contexts, interfaces, panic guidance, crypto randomness, and error strings.
 - Go Blog: pipeline cancellation patterns for goroutine shutdown.
 - Staticcheck docs: correctness checks that include ignored-result and suspicious-code signals.
@@ -44,6 +45,7 @@ Evidence scanned on 2026-05-08.
 - `no_ignored_errors` intentionally catches obvious `_ = call()` and `value, _ := call()` shapes, but it cannot prove the discarded result has type `error`.
 - `context_first_arg` and `no_empty_interface_in_api` are advisory because generated bindings and required interface signatures may force non-idiomatic signatures.
 - `no_panic_in_library` ignores `package main` and tests, but it can still catch panics used for internal invariants. Prefer returning errors or documenting the public panic contract once suppressions exist.
+- `no_duplicate_declarations` is line-based and uses the file directory as the package key. It is aimed at agent edit churn that adds the same function or method twice; it may miss unusual multi-line signatures or flag rare mixed-package directories until an AST-backed predicate is available.
 - `http_response_body_closed` is conservative and file-scoped. It can miss helper-based close patterns or flag files that close through a different response variable.
 - `no_math_rand_for_keys` is keyword-based. Non-security simulations with token-like names may need a local allow once the predicate runtime supports suppressions.
 - Semantic predicates depend on the judge recognizing concrete changed spans. They should stay high-threshold and cite exact goroutine or dependency changes before blocking.
