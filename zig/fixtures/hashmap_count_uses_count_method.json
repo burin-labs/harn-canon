@@ -1,0 +1,35 @@
+{
+  "predicate": "hashmap_count_uses_count_method",
+  "cases": [
+    {
+      "name": "blocks_std_hashmap_size_field",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/index.zig",
+          "text": "const std = @import(\"std\");\n\npub fn countUsers(allocator: std.mem.Allocator) !usize {\n    var user_map = std.StringHashMap(u32).init(allocator);\n    defer user_map.deinit();\n    try user_map.put(\"ada\", 1);\n    return user_map.size;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_parsed_json_arrayhashmap_size_field",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Schema = struct {\n    items: std.json.ArrayHashMap(Item),\n};\n\nconst Item = struct { name: []const u8 };\n\npub fn parse(allocator: std.mem.Allocator, bytes: []const u8) !usize {\n    const parsed = try std.json.parseFromSlice(Schema, allocator, bytes, .{ .allocate = .alloc_always });\n    defer parsed.deinit();\n    return parsed.value.items.map.size;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_count_method_on_hashmap",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/index.zig",
+          "text": "const std = @import(\"std\");\n\npub fn countUsers(allocator: std.mem.Allocator) !usize {\n    var user_map = std.StringHashMap(u32).init(allocator);\n    defer user_map.deinit();\n    try user_map.put(\"ada\", 1);\n    return user_map.count();\n}\n"
+        }
+      ]
+    }
+  ]
+}
