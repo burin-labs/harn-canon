@@ -66,6 +66,8 @@ let _EVIDENCE_JSON_PARSE_FROM_SLICE = [
 let _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
   "https://github.com/ziglang/zig/blob/master/lib/std/json/static.zig",
   "https://github.com/ziglang/zig/blob/master/lib/std/json/hashmap.zig",
+  "https://github.com/ziglang/zig/blob/master/lib/std/array_hash_map.zig",
+  "https://ziglang.org/documentation/master/#Memory",
   "https://zig.guide/standard-library/json/",
 ]
 
@@ -294,23 +296,30 @@ pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
 
 @invariant
 @deterministic
-@archivist(evidence: _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP, confidence: 0.74, source_date: "2026-06-23")
-/** Blocks manual deinit of std.json.ArrayHashMap fields owned by a Parsed(T) value. */
+@archivist(evidence: _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP, confidence: 0.74, source_date: "2026-07-01")
+/**
+ * Blocks split ownership for std.json.ArrayHashMap: parsed values deinit through Parsed(T),
+ * and duplicated manual keys need an explicit key-free loop before map deinit.
+ */
 pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     zig_files(slice),
     { file -> regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
-      && regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s") != nil
+      && ((regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s") != nil
       && regex_match(
       r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
       file.text,
       "s",
     )
-      != nil },
+      != nil)
+      || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+      && regex_match(r"\.map\.put\s*\(", file.text, "s") != nil
+      && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
+      && regex_match(r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)", file.text, "s") == nil)) },
   )
   return block_on_findings(
     "parsed_json_arrayhashmap_has_single_owner",
-    "Do not manually deinit `std.json.ArrayHashMap` fields under `parsed.value`; call `parsed.deinit()` exactly once so the JSON parser's ownership stays single-owner.",
+    "Keep `std.json.ArrayHashMap` ownership single-owner: use `parsed.deinit()` for parsed values, and free every duplicated manual key before `map.deinit(allocator)`.",
     findings,
   )
 }
