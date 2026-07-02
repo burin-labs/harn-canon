@@ -238,7 +238,7 @@ pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_floating_promises)
 @archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks external data being trusted as domain data without runtime validation. */
 pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
@@ -255,7 +255,7 @@ pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_floating_promises)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in JavaScript source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -272,7 +272,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_floating_promises)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {

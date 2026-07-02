@@ -199,7 +199,7 @@ pub fn pagination_args_on_root_list_fields(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: enum_values_upper_snake_case)
 @archivist(evidence: _EVIDENCE_BREAKING, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks schema changes that break existing clients without an aliasing or migration path. */
 pub fn no_breaking_schema_change(slice, ctx, _repo_at_base) {
@@ -216,7 +216,7 @@ pub fn no_breaking_schema_change(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: enum_values_upper_snake_case)
 @archivist(evidence: _EVIDENCE_DEPRECATION, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks removal of public schema elements that were not first marked @deprecated. */
 pub fn deprecation_over_removal(slice, ctx, _repo_at_base) {
@@ -233,7 +233,7 @@ pub fn deprecation_over_removal(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: enum_values_upper_snake_case)
 @archivist(evidence: _EVIDENCE_DEPTH_LIMIT, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks new public GraphQL endpoints that lack a query depth or complexity limit. */
 pub fn query_depth_limit_enforced(slice, ctx, _repo_at_base) {

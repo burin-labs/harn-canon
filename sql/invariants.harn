@@ -226,7 +226,7 @@ pub fn destructive_drops_use_if_exists(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_select_star)
 @archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks dynamic SQL that interpolates untrusted input instead of binding parameters. */
 pub fn parameterized_queries_only(slice, ctx, _repo_at_base) {
@@ -243,7 +243,7 @@ pub fn parameterized_queries_only(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_select_star)
 @archivist(evidence: _EVIDENCE_FK_INDEX, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks new foreign-key references that lack a covering index on the referencing column. */
 pub fn index_on_fk(slice, ctx, _repo_at_base) {

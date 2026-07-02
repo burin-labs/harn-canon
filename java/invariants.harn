@@ -243,7 +243,7 @@ pub fn optional_returns_are_not_null(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_raw_collection_types)
 @archivist(evidence: _EVIDENCE_SQL, confidence: 0.66, source_date: "2026-05-08")
 /** Blocks JDBC SQL built from untrusted string concatenation without bind parameters. */
 pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
@@ -260,7 +260,7 @@ pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_raw_collection_types)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in Java source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {

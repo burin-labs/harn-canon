@@ -10,20 +10,11 @@ let _EVIDENCE_EXTERNAL_ENTITIES = [
   "https://www.w3.org/TR/xml/#sec-external-ent",
 ]
 
-let _EVIDENCE_UTF8 = [
-  "https://www.w3.org/TR/xml/#charencoding",
-  "https://datatracker.ietf.org/doc/html/rfc7303",
-]
+let _EVIDENCE_UTF8 = ["https://www.w3.org/TR/xml/#charencoding", "https://datatracker.ietf.org/doc/html/rfc7303"]
 
-let _EVIDENCE_NAMESPACES = [
-  "https://www.w3.org/TR/xml-names/",
-  "https://www.w3.org/TR/xml-names/#scoping",
-]
+let _EVIDENCE_NAMESPACES = ["https://www.w3.org/TR/xml-names/", "https://www.w3.org/TR/xml-names/#scoping"]
 
-let _EVIDENCE_XSD_TARGET_NAMESPACE = [
-  "https://www.w3.org/TR/xmlschema11-1/#sec-src-resolve",
-  "https://www.w3.org/TR/xmlschema-0/#NS",
-]
+let _EVIDENCE_XSD_TARGET_NAMESPACE = ["https://www.w3.org/TR/xmlschema11-1/#sec-src-resolve", "https://www.w3.org/TR/xmlschema-0/#NS"]
 
 let _EVIDENCE_XSLT_EXTERNAL = [
   "https://www.w3.org/TR/xslt-30/#dt-stable-uri-collection",
@@ -121,7 +112,9 @@ fn warn_on_findings(rule, remediation, findings) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_DOCTYPE_XXE, confidence: 0.92, source_date: "2026-05-09")
-/** Blocks inline DOCTYPE declarations in XML payload files; the entity subset is the primary XXE vector. */
+/**
+ * Blocks inline DOCTYPE declarations in XML payload files; the entity subset is the primary XXE vector.
+ */
 pub fn no_inline_doctype(slice, _ctx, _repo_at_base) {
   let findings = scan_files(xml_payload_files(slice), r"<!DOCTYPE\b", "is")
   return block_on_findings(
@@ -168,7 +161,9 @@ pub fn xml_declares_utf8(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_NAMESPACES, confidence: 0.66, source_date: "2026-05-09")
-/** Warns when XML uses prefixed element names but declares no xmlns:prefix bindings in the same file. */
+/**
+ * Warns when XML uses prefixed element names but declares no xmlns:prefix bindings in the same file.
+ */
 pub fn xml_namespace_prefixes_declared(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     xml_files(slice),
@@ -218,7 +213,7 @@ pub fn xslt_no_external_documents(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_inline_doctype)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks credentials, tokens, private keys, and production connection strings embedded in XML. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -235,9 +230,11 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_inline_doctype)
 @archivist(evidence: _EVIDENCE_SCHEMA_DOS, confidence: 0.62, source_date: "2026-05-09")
-/** Blocks XSD shapes that disable validation or invite quadratic blowup of attacker-controlled input. */
+/**
+ * Blocks XSD shapes that disable validation or invite quadratic blowup of attacker-controlled input.
+ */
 pub fn xsd_constrains_user_input(slice, ctx, _repo_at_base) {
   let rubric = "Block only when changed XSD intentionally weakens input validation on attacker-reachable fields, for example using xs:any or xs:anyType in place of a real type, omitting maxLength on free-form strings nested under unbounded sequences, or removing pattern/enumeration facets that previously constrained an externally posted value."
   let judgement = ctx.semantic_judge({rubric: rubric, files: xsd_files(slice)})

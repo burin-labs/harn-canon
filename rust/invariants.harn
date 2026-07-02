@@ -105,7 +105,8 @@ fn scan_prod(slice, pattern) {
 fn scan_without_prod(slice, include_pattern, exclude_pattern) {
   var findings = []
   for file in prod_rust_files(slice) {
-    if regex_match(include_pattern, file.text, "s") != nil && regex_match(exclude_pattern, file.text, "s") == nil {
+    if regex_match(include_pattern, file.text, "s") != nil
+      && regex_match(exclude_pattern, file.text, "s") == nil {
       findings = findings
         .push({path: file.path, pattern: include_pattern})
     }
@@ -174,11 +175,7 @@ pub fn must_use_message_on_pub_result_option(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_COMMENT, confidence: 0.78, source_date: "2026-04-26")
 /** Blocks unsafe blocks or impls without a preceding SAFETY comment. */
 pub fn unsafe_requires_safety_comment(slice, _ctx, _repo_at_base) {
-  let findings = scan_without_prod(
-    slice,
-    r"\bunsafe\s*(\{|impl\b)",
-    r"//\s*SAFETY:[^\n]*\n\s*unsafe\s*(\{|impl\b)",
-  )
+  let findings = scan_without_prod(slice, r"\bunsafe\s*(\{|impl\b)", r"//\s*SAFETY:[^\n]*\n\s*unsafe\s*(\{|impl\b)")
   return block_on_findings(
     "unsafe_requires_safety_comment",
     "Precede each unsafe block or unsafe impl with a // SAFETY: comment explaining the invariant.",
@@ -258,7 +255,7 @@ pub fn no_panic_in_result_fn(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_unwrap_in_prod)
 @archivist(evidence: _EVIDENCE_CARGO_ADVISORIES, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks dependency changes that lack advisory or cargo-deny/audit evidence. */
 pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
@@ -275,7 +272,7 @@ pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_unwrap_in_prod)
 @archivist(evidence: _EVIDENCE_FFI_SAFETY, confidence: 0.6, source_date: "2026-04-26")
 /** Blocks unsafe public FFI boundaries that omit safety contracts. */
 pub fn ffi_boundary_safety_contract(slice, ctx, _repo_at_base) {

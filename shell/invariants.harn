@@ -22,10 +22,7 @@ let _EVIDENCE_TRAP_CLEANUP = [
   "https://mywiki.wooledge.org/SignalTrap",
 ]
 
-let _EVIDENCE_SHELLCHECK_DIRECTIVE = [
-  "https://www.shellcheck.net/wiki/Directive",
-  "https://www.shellcheck.net/wiki/Ignore",
-]
+let _EVIDENCE_SHELLCHECK_DIRECTIVE = ["https://www.shellcheck.net/wiki/Directive", "https://www.shellcheck.net/wiki/Ignore"]
 
 let _EVIDENCE_SHELLCHECK = [
   "https://www.shellcheck.net/wiki/Home",
@@ -117,8 +114,10 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn set_euo_pipefail(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     executable_shell_files(slice),
-    { file -> regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*e[a-zA-Z]*\b|\berrexit\b)", file.text, "m") == nil
-      || regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*u[a-zA-Z]*\b|\bnounset\b)", file.text, "m") == nil
+    { file -> regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*e[a-zA-Z]*\b|\berrexit\b)", file.text, "m")
+      == nil
+      || regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*u[a-zA-Z]*\b|\bnounset\b)", file.text, "m")
+      == nil
       || regex_match(r"(?m)^\s*set\b[^#\n]*\bpipefail\b", file.text, "m") == nil },
   )
   return block_on_findings(
@@ -133,11 +132,7 @@ pub fn set_euo_pipefail(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PARSING_LS, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks parsing the output of ls in shell scripts. */
 pub fn no_parsing_ls(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    shell_files(slice),
-    r"(\$\(\s*ls\b|`\s*ls\b)",
-    "s",
-  )
+  let findings = scan_files(shell_files(slice), r"(\$\(\s*ls\b|`\s*ls\b)", "s")
   return block_on_findings(
     "no_parsing_ls",
     "Iterate with shell globs, arrays, or `find ... -print0 | xargs -0`; ls output is not safe to parse.",
@@ -150,11 +145,7 @@ pub fn no_parsing_ls(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EVAL, confidence: 0.74, source_date: "2026-05-09")
 /** Blocks eval calls whose argument contains a variable or command substitution. */
 pub fn no_eval_dynamic_input(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    shell_files(slice),
-    r"(?m)^[^#\n]*\beval\b\s+[^\n]*(\$|`)",
-    "m",
-  )
+  let findings = scan_files(shell_files(slice), r"(?m)^[^#\n]*\beval\b\s+[^\n]*(\$|`)", "m")
   return block_on_findings(
     "no_eval_dynamic_input",
     "Replace dynamic eval with explicit dispatch, arrays, or `printf -v`; eval on interpolated text is shell injection.",
@@ -184,11 +175,7 @@ pub fn trap_cleanup_on_tempfile(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SHELLCHECK_DIRECTIVE, confidence: 0.84, source_date: "2026-05-09")
 /** Warns on blanket ShellCheck disables that hide every diagnostic in a file. */
 pub fn no_blanket_shellcheck_disable(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    shell_files(slice),
-    r"(?m)^\s*#\s*shellcheck\s+disable\s*=\s*all\b",
-    "m",
-  )
+  let findings = scan_files(shell_files(slice), r"(?m)^\s*#\s*shellcheck\s+disable\s*=\s*all\b", "m")
   return warn_on_findings(
     "no_blanket_shellcheck_disable",
     "Disable specific SC codes with a comment explaining why, instead of `# shellcheck disable=all`.",
@@ -197,7 +184,7 @@ pub fn no_blanket_shellcheck_disable(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: set_euo_pipefail)
 @archivist(evidence: _EVIDENCE_SHELLCHECK, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks changed shell scripts that would fail ShellCheck under default configuration. */
 pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
@@ -214,7 +201,7 @@ pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: set_euo_pipefail)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in shell sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -231,7 +218,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: set_euo_pipefail)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks shell scripts that echo or print secrets and sensitive request data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {

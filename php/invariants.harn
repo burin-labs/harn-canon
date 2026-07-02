@@ -289,7 +289,7 @@ pub fn no_debug_dump_in_prod(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: declare_strict_types_enforced)
 @archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks SQL built by interpolating user-controlled values into the query text. */
 pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
@@ -306,7 +306,7 @@ pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: declare_strict_types_enforced)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials and high-risk secrets in PHP source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -323,7 +323,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: declare_strict_types_enforced)
 @archivist(evidence: _EVIDENCE_UNSERIALIZE, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks unserialize() calls on data that may originate from untrusted input. */
 pub fn unserialize_input_is_trusted(slice, ctx, _repo_at_base) {

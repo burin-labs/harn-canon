@@ -37,7 +37,7 @@ FILE_KEYS = {"path", "text"}
 
 INVARIANT_RE = re.compile(
     r"@invariant\s*"
-    r"@(?P<mode>deterministic|semantic)\s*"
+    r"@(?P<mode>deterministic|semantic)(?P<mode_args>\s*\([^)]*\))?\s*"
     r"@archivist\(\s*"
     r"evidence:\s*(?P<evidence>_EVIDENCE_[A-Za-z0-9_]+)\s*,\s*"
     r"confidence:\s*(?P<confidence>(?:0(?:\.\d+)?|1(?:\.0+)?))\s*,\s*"
@@ -48,6 +48,17 @@ INVARIANT_RE = re.compile(
 )
 EVIDENCE_RE = re.compile(r"let\s+(_EVIDENCE_[A-Za-z0-9_]+)\s*=\s*\[(.*?)\]", re.S)
 URL_RE = re.compile(r'"(https?://[^"]+)"')
+SEMANTIC_FALLBACK_RE = re.compile(
+    r"""
+    fallback\s*:\s*
+    (?:
+      "(?P<quoted>[A-Za-z_][A-Za-z0-9_]*)"
+      |
+      (?P<bare>[A-Za-z_][A-Za-z0-9_]*)
+    )
+    """,
+    re.X,
+)
 FIXTURE_CASE_NAME_RE = re.compile(r"[a-z][a-z0-9_]*\Z")
 
 
@@ -80,7 +91,18 @@ def is_normalized_relative_path(value):
 
 def parse_invariants(path, errors):
     text = path.read_text(encoding="utf-8")
-    entries = [match.groupdict() for match in INVARIANT_RE.finditer(text)]
+    entries = []
+    for match in INVARIANT_RE.finditer(text):
+        entry = match.groupdict()
+        mode_args = entry.get("mode_args") or ""
+        fallback_match = SEMANTIC_FALLBACK_RE.search(mode_args)
+        entry["fallback"] = (
+            fallback_match.group("quoted") or fallback_match.group("bare")
+            if fallback_match
+            else None
+        )
+        entries.append(entry)
+
     invariant_count = len(re.findall(r"@invariant\b", text))
     if invariant_count != len(entries):
         errors.append(
@@ -121,6 +143,30 @@ def validate_evidence(pack, entries, evidence_defs, errors):
             errors.append(f"{pack}: {predicate} source_date {source_date} is in the future")
         if source_date < cutoff:
             errors.append(f"{pack}: {predicate} source_date {source_date} is older than 18 months")
+
+
+def validate_semantic_fallbacks(pack, entries, errors):
+    deterministic_names = {entry["name"] for entry in entries if entry["mode"] == "deterministic"}
+    for entry in entries:
+        predicate = entry["name"]
+        fallback = entry.get("fallback")
+        if entry["mode"] == "deterministic":
+            if entry.get("mode_args"):
+                errors.append(
+                    f"{pack}: deterministic predicate {predicate} must not declare mode args"
+                )
+            continue
+
+        if fallback is None:
+            errors.append(
+                f"{pack}: semantic predicate {predicate} must declare "
+                "@semantic(fallback: deterministic_predicate)"
+            )
+        elif fallback not in deterministic_names:
+            errors.append(
+                f"{pack}: semantic predicate {predicate} fallback {fallback} is not a "
+                "deterministic predicate in the same pack"
+            )
 
 
 def validate_fixtures(pack_dir, predicate_names, errors):
@@ -308,6 +354,7 @@ def main():
                 f"{pack}: expected {MIN_SEMANTIC}-{MAX_SEMANTIC} semantic predicates, found {semantic}"
             )
 
+        validate_semantic_fallbacks(pack, entries, errors)
         validate_evidence(pack, entries, evidence_defs, errors)
         validate_pack_readme_coverage(pack_dir, set(names), errors)
         total_predicates += len(entries)

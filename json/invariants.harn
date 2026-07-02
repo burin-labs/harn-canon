@@ -1,17 +1,11 @@
-let _EVIDENCE_TRAILING_COMMAS = [
-  "https://www.rfc-editor.org/rfc/rfc8259#section-5",
-  "https://www.json.org/json-en.html",
-]
+let _EVIDENCE_TRAILING_COMMAS = ["https://www.rfc-editor.org/rfc/rfc8259#section-5", "https://www.json.org/json-en.html"]
 
 let _EVIDENCE_NO_COMMENTS = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-12",
   "https://code.visualstudio.com/docs/languages/json#_json-with-comments",
 ]
 
-let _EVIDENCE_DOUBLE_QUOTED_STRINGS = [
-  "https://www.rfc-editor.org/rfc/rfc8259#section-7",
-  "https://www.json.org/json-en.html",
-]
+let _EVIDENCE_DOUBLE_QUOTED_STRINGS = ["https://www.rfc-editor.org/rfc/rfc8259#section-7", "https://www.json.org/json-en.html"]
 
 let _EVIDENCE_BOM = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-8.1",
@@ -122,11 +116,7 @@ pub fn no_trailing_commas(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_COMMENTS, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks JSONC-style comment markers in strict .json files; .jsonc and .json5 are exempt. */
 pub fn no_comments_in_json(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    strict_json_files(slice),
-    r"(?m)((^\s*)|([\}\],]\s*))(//|/\*)",
-    "m",
-  )
+  let findings = scan_files(strict_json_files(slice), r"(?m)((^\s*)|([\}\],]\s*))(//|/\*)", "m")
   return block_on_findings(
     "no_comments_in_json",
     "Remove the comment; rename the file to .jsonc or .json5 if comments are required.",
@@ -137,13 +127,11 @@ pub fn no_comments_in_json(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_DOUBLE_QUOTED_STRINGS, confidence: 0.84, source_date: "2026-05-15")
-/** Blocks single-quoted strings in strict .json files; JSON strings must use double quotation marks. */
+/**
+ * Blocks single-quoted strings in strict .json files; JSON strings must use double quotation marks.
+ */
 pub fn strings_use_double_quotes(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    strict_json_files(slice),
-    r"(?m)(?:^|[\{\[,:])\s*'[^'\n]*'",
-    "m",
-  )
+  let findings = scan_files(strict_json_files(slice), r"(?m)(?:^|[\{\[,:])\s*'[^'\n]*'", "m")
   return block_on_findings(
     "strings_use_double_quotes",
     "Use double quotes for JSON object keys and string values; single quotes are JSON5, not strict JSON.",
@@ -169,11 +157,7 @@ pub fn no_bom_prefix(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NAN_INFINITY, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks NaN, Infinity, and -Infinity literals, which the JSON grammar does not define. */
 pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    all_json_files(slice),
-    r"(?m)[:\[,]\s*-?\s*(NaN|Infinity)\b",
-    "m",
-  )
+  let findings = scan_files(all_json_files(slice), r"(?m)[:\[,]\s*-?\s*(NaN|Infinity)\b", "m")
   return block_on_findings(
     "no_nan_or_infinity_literals",
     "Replace NaN or Infinity with null, a sentinel string, or a documented numeric bound.",
@@ -182,7 +166,7 @@ pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_trailing_commas)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-09")
 /** Blocks credentials, tokens, and private keys committed in JSON values. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -199,7 +183,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_trailing_commas)
 @archivist(evidence: _EVIDENCE_SCHEMA, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks JSON files that declare a $schema reference but introduce values that violate it. */
 pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
@@ -216,7 +200,7 @@ pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_trailing_commas)
 @archivist(evidence: _EVIDENCE_KEY_ORDER, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when config-shaped JSON edits gratuitously reorder unrelated keys. */
 pub fn stable_key_ordering(slice, ctx, _repo_at_base) {

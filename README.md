@@ -6,7 +6,11 @@ Seed **invariant** libraries for [Harn Flow](https://github.com/burin-labs/harn)
 
 Per-language and per-stack predicate packs. Each pack is a directory containing:
 
-- `invariants.harn` — Harn functions annotated with `@invariant` and either `@deterministic` (pure, 50 ms budget) or `@semantic` (one cheap LLM judge call, 2 s budget, evidence pre-baked at authoring time).
+- `invariants.harn` — Harn functions annotated with `@invariant` and either
+  `@deterministic` (pure, 50 ms budget) or
+  `@semantic(fallback: predicate_name)` (one cheap LLM judge call, 2 s budget,
+  evidence pre-baked at authoring time, plus a same-pack deterministic fallback
+  for replay/runtime discovery).
 - `README.md` — purpose, stack assumptions, evidence sources, coverage examples, known false positives.
 - `fixtures/` — small atom/slice fixtures the predicates are expected to allow or block, used by CI.
 

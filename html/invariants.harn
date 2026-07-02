@@ -223,7 +223,7 @@ pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: images_have_alt_text)
 @archivist(evidence: _EVIDENCE_FORM_LABELS, confidence: 0.66, source_date: "2026-05-09")
 /**
  * Blocks form controls that lack an accessible name from a label, aria-label, or aria-labelledby.
@@ -242,7 +242,7 @@ pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: images_have_alt_text)
 @archivist(evidence: _EVIDENCE_LINK_PURPOSE, confidence: 0.58, source_date: "2026-05-09")
 /**
  * Blocks generic anchor text such as "click here" or "read more" without disambiguating context.

@@ -203,7 +203,7 @@ pub fn no_dangerous_inline_html(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: code_fence_language_specified)
 @archivist(evidence: _EVIDENCE_BROKEN_LINKS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks changed Markdown that introduces relative links or anchors with no resolvable target. */
 pub fn no_broken_internal_links(slice, ctx, _repo_at_base) {
@@ -220,7 +220,7 @@ pub fn no_broken_internal_links(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: code_fence_language_specified)
 @archivist(evidence: _EVIDENCE_LINK_STYLE, confidence: 0.6, source_date: "2026-05-09")
 /**
  * Warns when a single document mixes inline, reference, and bare-URL link styles in ways that hurt readability.

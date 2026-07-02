@@ -419,7 +419,7 @@ pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_silent_error_swallow)
 @archivist(evidence: _EVIDENCE_ALLOCATOR_LIFETIME, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks heap allocations whose result is not freed, transferred, or guarded by defer/errdefer. */
 pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
@@ -436,7 +436,7 @@ pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_silent_error_swallow)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials, tokens, and private keys in Zig sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -453,7 +453,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_silent_error_swallow)
 @archivist(evidence: _EVIDENCE_ENDIANNESS, confidence: 0.6, source_date: "2026-05-10")
 /**
  * Warns when multi-byte integer I/O across a serialization boundary does not name an endianness.

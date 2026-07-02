@@ -307,7 +307,7 @@ pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: llm_call_schema_sets_schema_retries)
 @archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
 /** Blocks prompts that embed secrets or sensitive customer data. */
 pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
@@ -324,7 +324,7 @@ pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: llm_call_schema_sets_schema_retries)
 @archivist(evidence: _EVIDENCE_OAUTH_REDACTION, confidence: 0.68, source_date: "2026-05-19")
 /** Blocks OAuth client secrets and tokens from audit, transcript, log, or span payloads. */
 pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
@@ -341,7 +341,7 @@ pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: llm_call_schema_sets_schema_retries)
 @archivist(evidence: _EVIDENCE_ACP_SIDE_EFFECTS, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks ACP tool metadata that understates real side effects. */
 pub fn acp_tool_side_effects_are_honest(slice, ctx, _repo_at_base) {

@@ -275,7 +275,7 @@ pub fn no_broad_detekt_suppressions(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_bang_bang)
 @archivist(evidence: _EVIDENCE_NULL_SAFETY, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks public Kotlin APIs that expose Java platform types without a nullability contract. */
 pub fn no_platform_types_in_public_api(slice, ctx, _repo_at_base) {
@@ -292,7 +292,7 @@ pub fn no_platform_types_in_public_api(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_bang_bang)
 @archivist(evidence: _EVIDENCE_ANDROID_COROUTINES, confidence: 0.62, source_date: "2026-05-08")
 /** Blocks new async APIs that should be suspend-first. */
 pub fn suspend_for_async(slice, ctx, _repo_at_base) {
@@ -309,7 +309,7 @@ pub fn suspend_for_async(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_bang_bang)
 @archivist(evidence: _EVIDENCE_ANDROID_COROUTINES, confidence: 0.6, source_date: "2026-05-08")
 /** Blocks main-thread blocking work in Android or UI-adjacent Kotlin code. */
 pub fn no_main_thread_blocking_work(slice, ctx, _repo_at_base) {
