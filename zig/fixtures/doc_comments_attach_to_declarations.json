@@ -1,0 +1,45 @@
+{
+  "predicate": "doc_comments_attach_to_declarations",
+  "cases": [
+    {
+      "name": "blocks_doc_comment_before_return_statement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "pub fn consumed(bytes: []const u8) usize {\n    /// Return the byte count consumed by the parser.\n    return bytes.len;\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_doc_comment_before_try_statement",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const Parser = struct {\n    pub fn parse(self: *Parser, bytes: []const u8) !void {\n        /// Parse the input into the current document.\n        try self.parseBytes(bytes);\n    }\n\n    fn parseBytes(self: *Parser, bytes: []const u8) !void {\n        _ = self;\n        _ = bytes;\n    }\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_doc_comments_on_declarations_and_fields",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const Parser = struct {\n    /// Number of bytes consumed by the parser.\n    consumed: usize,\n\n    /// Parse bytes into the current document.\n    pub fn parse(bytes: []const u8) void {\n        // Implementation note, not generated API docs.\n        _ = bytes;\n    }\n};\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_doc_comments_on_enum_tags",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const Kind = enum {\n    /// String token.\n    string,\n    /// Number token.\n    number,\n};\n"
+        }
+      ]
+    }
+  ]
+}
