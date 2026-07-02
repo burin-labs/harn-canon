@@ -37,10 +37,13 @@ jobs:
 
       - name: Install pinned Harn
         shell: bash
-        env:
-          HARN_VERSION: "0.8.160"
         run: |
           set -euo pipefail
+          HARN_VERSION="$(tr -d '[:space:]' < .harn-version)"
+          if ! [[ "${HARN_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::.harn-version must contain a semantic version without the leading v" >&2
+            exit 1
+          fi
           target="x86_64-unknown-linux-gnu"
           tag="v${HARN_VERSION}"
           asset_name="harn-${target}.tar.gz"
