@@ -20,6 +20,36 @@
           "text": "const std = @import(\"std\");\n\nconst Schema = struct {\n    items: std.json.ArrayHashMap(Item),\n};\n\nconst Item = struct { name: []const u8 };\n\npub fn parse(allocator: std.mem.Allocator, bytes: []const u8) !usize {\n    const parsed = try std.json.parseFromSlice(Schema, allocator, bytes, .{ .allocate = .alloc_always });\n    defer parsed.deinit();\n    return parsed.value.items.map.count();\n}\n"
         }
       ]
+    },
+    {
+      "name": "blocks_duped_key_without_free_loop",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Item = struct { value: u32 };\n\npub fn build(allocator: std.mem.Allocator, raw: []const u8) !std.json.ArrayHashMap(Item) {\n    var items: std.json.ArrayHashMap(Item) = .{ .map = .empty };\n    errdefer items.map.deinit(allocator);\n\n    const key = try allocator.dupe(u8, raw);\n    try items.map.put(allocator, key, .{ .value = 1 });\n    return items;\n}\n\npub fn release(allocator: std.mem.Allocator, items: *std.json.ArrayHashMap(Item)) void {\n    items.map.deinit(allocator);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_key_free_loop_before_deinit",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Item = struct { value: u32 };\n\npub fn build(allocator: std.mem.Allocator, raw: []const u8) !std.json.ArrayHashMap(Item) {\n    var items: std.json.ArrayHashMap(Item) = .{ .map = .empty };\n    errdefer items.map.deinit(allocator);\n\n    const key = try allocator.dupe(u8, raw);\n    try items.map.put(allocator, key, .{ .value = 1 });\n    return items;\n}\n\npub fn release(allocator: std.mem.Allocator, items: *std.json.ArrayHashMap(Item)) void {\n    var iter = items.map.iterator();\n    while (iter.next()) |entry| {\n        allocator.free(entry.key_ptr.*);\n    }\n    items.map.deinit(allocator);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_borrowed_static_key",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Item = struct { value: u32 };\n\npub fn build(allocator: std.mem.Allocator) !std.json.ArrayHashMap(Item) {\n    var items: std.json.ArrayHashMap(Item) = .{ .map = .empty };\n    errdefer items.map.deinit(allocator);\n    try items.map.put(allocator, \"static-key\", .{ .value = 1 });\n    return items;\n}\n\npub fn release(allocator: std.mem.Allocator, items: *std.json.ArrayHashMap(Item)) void {\n    items.map.deinit(allocator);\n}\n"
+        }
+      ]
     }
   ]
 }

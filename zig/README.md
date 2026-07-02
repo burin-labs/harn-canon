@@ -22,7 +22,7 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 | `build_zon_min_zig_version_set` | deterministic | Warn | `build.zig.zon` should set `.minimum_zig_version` so toolchain assumptions stay machine-readable. |
 | `build_zon_dependency_hash_pinned` | deterministic | Block | URL-based dependency entries in `build.zig.zon` must declare a `.hash` so package fetches are content-verified. |
 | `no_std_json_parser_api` | deterministic | Block | Current Zig code should use `std.json.parseFromSlice` or `std.json.Scanner`, not the removed `std.json.Parser` type. |
-| `parsed_json_arrayhashmap_has_single_owner` | deterministic | Block | `std.json.ArrayHashMap` fields under a parsed JSON value should be cleaned up by `parsed.deinit()` only, not manual `.value...map.deinit(...)` calls. |
+| `parsed_json_arrayhashmap_has_single_owner` | deterministic | Block | `std.json.ArrayHashMap` ownership stays single-owner: parsed values deinit through `parsed.deinit()`, and duplicated manual keys need explicit key frees. |
 | `hashmap_count_uses_count_method` | deterministic | Block | Zig hash maps expose their element count through `.count()`; stale `.size` reads should not ship. |
 | `arraylist_uses_unmanaged_api` | deterministic | Block | Current `std.ArrayList(T)` values initialize with `.empty`; allocator-bearing calls happen on methods. |
 | `defer_block_closes_without_semicolon` | deterministic | Block | `defer { ... }` closes with `}` only; `};` after the block is a syntax error. |
@@ -41,7 +41,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, and 2026-07-01.
 - The Zig Guide community handbook (`zig.guide`) for error-handling and allocator idioms.
 - Zig 0.16.0 release notes for the migration to unmanaged containers.
 - Zig standard library JSON source and current zig.guide JSON examples for `std.json.parseFromSlice`.
-- Zig standard library JSON parser and `std.json.ArrayHashMap` sources for parsed-value ownership and cleanup.
+- Zig standard library JSON parser, JSON hashmap, array-hash-map sources, and memory docs for `std.json.ArrayHashMap` ownership and cleanup.
 - Zig standard library hash map and array hash map sources, plus current zig.guide hash map examples, for the public `.count()` API on map values.
 - Zig language reference and zig.guide examples for `defer` semantics and block-form usage.
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
@@ -56,7 +56,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, and 2026-07-01.
 - `tests_use_testing_allocator` keys on the literal identifiers `page_allocator` and `c_allocator`. Aliased re-exports (`const A = std.heap.page_allocator;` re-exported under another name) will be missed.
 - `build_zon_dependency_hash_pinned` only flags URL-based entries that lack a hash; entries using `.path = ...` are skipped, matching the manifest schema.
 - `no_std_json_parser_api` is a token scan. A prose comment or string literal mentioning `std.json.Parser` will be blocked until the pack can use AST facts.
-- `parsed_json_arrayhashmap_has_single_owner` requires `std.json.ArrayHashMap`, `std.json.parseFromSlice`, and a manual `.value...map.deinit(...)` in the same changed file. It can miss helper-based cleanup and can block unusual code that intentionally copies a parsed value into a new owner before deiniting it.
+- `parsed_json_arrayhashmap_has_single_owner` has two file-local checks. The parsed-value check requires `std.json.ArrayHashMap`, `std.json.parseFromSlice`, and a manual `.value...map.deinit(...)` in the same changed file. The manual-key check looks for `allocator.dupe` or `dupeZ`, insertion through `.map.put(...)`, and `.map.deinit(...)` without an entry loop that frees `entry.key_ptr.*` or `entry.key`. It can miss helper-based cleanup in another file and can block unusual code that intentionally copies a parsed value into a new owner or uses a custom key-cleanup helper.
 - `hashmap_count_uses_count_method` requires a recognized Zig hash map type in the file and then scans for likely map-shaped `.size` reads such as `map.size`, `user_map.size`, or `.items.map.size`. It can miss unusually named map variables and can false-positive on a non-map field named `size` in the same changed file.
 - `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
 - `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
