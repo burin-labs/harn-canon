@@ -23,6 +23,7 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 | `build_zon_dependency_hash_pinned` | deterministic | Block | URL-based dependency entries in `build.zig.zon` must declare a `.hash` so package fetches are content-verified. |
 | `no_std_json_parser_api` | deterministic | Block | Current Zig code should use `std.json.parseFromSlice` or `std.json.Scanner`, not the removed `std.json.Parser` type. |
 | `parsed_json_arrayhashmap_has_single_owner` | deterministic | Block | `std.json.ArrayHashMap` fields under a parsed JSON value should be cleaned up by `parsed.deinit()` only, not manual `.value...map.deinit(...)` calls. |
+| `hashmap_count_uses_count_method` | deterministic | Block | Zig hash maps expose their element count through `.count()`; stale `.size` reads should not ship. |
 | `arraylist_uses_unmanaged_api` | deterministic | Block | Current `std.ArrayList(T)` values initialize with `.empty`; allocator-bearing calls happen on methods. |
 | `defer_block_closes_without_semicolon` | deterministic | Block | `defer { ... }` closes with `}` only; `};` after the block is a syntax error. |
 | `allocator_lifetime_hygiene` | semantic | Block | Heap allocations need a matching `defer`/`errdefer` free or a documented ownership transfer. |
@@ -31,7 +32,7 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 
 ## Evidence
 
-Evidence scanned on 2026-05-10.
+Evidence scanned on 2026-05-10, 2026-06-23, and 2026-07-01.
 
 - Zig language reference (master) for `@truncate`, `@ptrCast`, `@alignCast`, `@bitCast`, `@intCast`, `@panic`, `unreachable`, error sets, `errdefer`, `Choosing-an-Allocator`, `Memory`, `byteSwap`, and the build system overview.
 - Zig standard library docs for `std.testing.allocator`, `std.mem.readInt`, `std.mem.writeInt`.
@@ -41,6 +42,7 @@ Evidence scanned on 2026-05-10.
 - Zig 0.16.0 release notes for the migration to unmanaged containers.
 - Zig standard library JSON source and current zig.guide JSON examples for `std.json.parseFromSlice`.
 - Zig standard library JSON parser and `std.json.ArrayHashMap` sources for parsed-value ownership and cleanup.
+- Zig standard library hash map and array hash map sources, plus current zig.guide hash map examples, for the public `.count()` API on map values.
 - Zig language reference and zig.guide examples for `defer` semantics and block-form usage.
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
 
@@ -55,6 +57,7 @@ Evidence scanned on 2026-05-10.
 - `build_zon_dependency_hash_pinned` only flags URL-based entries that lack a hash; entries using `.path = ...` are skipped, matching the manifest schema.
 - `no_std_json_parser_api` is a token scan. A prose comment or string literal mentioning `std.json.Parser` will be blocked until the pack can use AST facts.
 - `parsed_json_arrayhashmap_has_single_owner` requires `std.json.ArrayHashMap`, `std.json.parseFromSlice`, and a manual `.value...map.deinit(...)` in the same changed file. It can miss helper-based cleanup and can block unusual code that intentionally copies a parsed value into a new owner before deiniting it.
+- `hashmap_count_uses_count_method` requires a recognized Zig hash map type in the file and then scans for likely map-shaped `.size` reads such as `map.size`, `user_map.size`, or `.items.map.size`. It can miss unusually named map variables and can false-positive on a non-map field named `size` in the same changed file.
 - `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
 - `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.

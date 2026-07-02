@@ -69,6 +69,12 @@ let _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
   "https://zig.guide/standard-library/json/",
 ]
 
+let _EVIDENCE_HASHMAP_COUNT = [
+  "https://github.com/ziglang/zig/blob/master/lib/std/hash_map.zig",
+  "https://github.com/ziglang/zig/blob/master/lib/std/array_hash_map.zig",
+  "https://zig.guide/standard-library/hashmaps/",
+]
+
 let _EVIDENCE_ARRAYLIST_UNMANAGED = [
   "https://ziglang.org/download/0.16.0/release-notes.html#Migration-to-Unmanaged-Containers",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
@@ -305,6 +311,33 @@ pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "parsed_json_arrayhashmap_has_single_owner",
     "Do not manually deinit `std.json.ArrayHashMap` fields under `parsed.value`; call `parsed.deinit()` exactly once so the JSON parser's ownership stays single-owner.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_HASHMAP_COUNT, confidence: 0.68, source_date: "2026-07-01")
+/** Blocks stale `.size` reads on Zig hash maps; use the public `.count()` API. */
+pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_if(
+    zig_files(slice),
+    { file -> regex_match(
+      r"\bstd\.(?:AutoHashMap|AutoHashMapUnmanaged|HashMap|HashMapUnmanaged|StringHashMap|StringHashMapUnmanaged|ArrayHashMap|ArrayHashMapUnmanaged|StringArrayHashMap|StringArrayHashMapUnmanaged)\b|\bstd\.json\.ArrayHashMap\b",
+      file.text,
+      "s",
+    )
+      != nil
+      && regex_match(
+      r"\b(?:map|hash_map|lookup|table|items|entries|[A-Za-z_][A-Za-z0-9_]*_map)(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}\.size\b",
+      file.text,
+      "s",
+    )
+      != nil },
+  )
+  return block_on_findings(
+    "hashmap_count_uses_count_method",
+    "Use the hash map's public `.count()` method instead of reading a stale `.size` field.",
     findings,
   )
 }
