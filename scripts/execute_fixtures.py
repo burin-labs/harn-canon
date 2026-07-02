@@ -21,9 +21,18 @@ def load_fixture(pack_dir, predicate):
     return json.loads(fixture_path.read_text(encoding="utf-8"))
 
 
-def wrapper_source(pack, invariants_source, deterministic_entries):
+def wrapper_source(pack, deterministic_entries):
+    invariants_path = f"{pack}/invariants.harn"
     lines = [
-        invariants_source,
+        "fn flow_fixture_verdict(record) {",
+        '  let kind = to_string(record?.result?.verdict?.kind ?? record?.raw_result?.verdict ?? "")',
+        "  let normalized = kind.lower()",
+        '  if normalized == "allow" { return "Allow" }',
+        '  if normalized == "warn" { return "Warn" }',
+        '  if normalized == "block" { return "Block" }',
+        '  if normalized == "require_approval" { return "RequireApproval" }',
+        '  return kind == "" ? "Missing" : kind',
+        "}",
         "",
         "fn main(harness: Harness) {",
         "  var failures = []",
@@ -44,16 +53,27 @@ def wrapper_source(pack, invariants_source, deterministic_entries):
             lines.extend(
                 [
                     f"  let files_{counter} = json_parse(base64_decode({files_literal}))",
-                    f"  let result_{counter} = {predicate}({{files: files_{counter}}}, {{}}, nil)",
+                    f"  let eval_{counter} = flow_evaluate_invariants(",
+                    '    "",',
+                    f"    {{files: files_{counter}}},",
+                    "    {",
+                    f"      path: {harn_string_literal(invariants_path)},",
+                    f"      predicates: [{harn_string_literal(predicate)}],",
+                    "      budget_ms: 50,",
+                    "    },",
+                    "  )",
+                    f"  let records_{counter} = eval_{counter}.records ?? []",
+                    f"  let record_{counter} = if len(records_{counter}) > 0 {{ records_{counter}[0] }} else {{ nil }}",
+                    f"  let actual_{counter} = flow_fixture_verdict(record_{counter})",
                     "  executed = executed + 1",
-                    f'  if result_{counter}.verdict != "{expect}" {{',
+                    f"  if actual_{counter} != {harn_string_literal(expect)} {{",
                     "    failures = failures.push({",
                     f'      pack: "{pack}",',
                     f'      predicate: "{predicate}",',
-                    f'      case: "{case_name}",',
-                    f'      expect: "{expect}",',
-                    f"      actual: result_{counter}.verdict,",
-                    f"      result: result_{counter},",
+                    f"      case: {harn_string_literal(case_name)},",
+                    f"      expect: {harn_string_literal(expect)},",
+                    f"      actual: actual_{counter},",
+                    f"      result: record_{counter} ?? eval_{counter},",
                     "    })",
                     "  }",
                 ]
@@ -85,7 +105,7 @@ def run_pack(pack):
 
     deterministic = [entry for entry in entries if entry["mode"] == "deterministic"]
     skipped_semantic = sum(1 for entry in entries if entry["mode"] == "semantic")
-    source = wrapper_source(pack, invariants_path.read_text(encoding="utf-8"), deterministic)
+    source = wrapper_source(pack, deterministic)
 
     with tempfile.NamedTemporaryFile(
         "w",

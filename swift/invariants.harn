@@ -55,10 +55,10 @@ fn production_swift_files(slice) {
   return swift_files(slice)
     .filter(
     { file -> !contains(file.path, "/Tests/")
-    && !contains(file.path, "/TestSupport/")
-    && !file.path.ends_with("Tests.swift")
-    && !file.path.ends_with("Preview.swift")
-    && !file.path.ends_with("Previews.swift") },
+      && !contains(file.path, "/TestSupport/")
+      && !file.path.ends_with("Tests.swift")
+      && !file.path.ends_with("Preview.swift")
+      && !file.path.ends_with("Previews.swift") },
   )
 }
 
@@ -181,10 +181,10 @@ pub fn main_actor_on_ui_observable_state(slice, _ctx, _repo_at_base) {
   let findings = scan_swift_if(
     slice,
     { text -> (contains(text, "import SwiftUI") || contains(text, "import UIKit")
-    || contains(text, "import AppKit"))
-    && (contains(text, "ObservableObject") || contains(text, "@Observable")
-    || regex_match(r"class\s+\w*(ViewModel|Controller)\b", text, "s") != nil)
-    && !contains(text, "@MainActor") },
+      || contains(text, "import AppKit"))
+      && (contains(text, "ObservableObject") || contains(text, "@Observable")
+      || regex_match(r"class\s+\w*(ViewModel|Controller)\b", text, "s") != nil)
+      && !contains(text, "@MainActor") },
   )
   return warn_on_findings(
     "main_actor_on_ui_observable_state",
@@ -239,7 +239,7 @@ pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_force_unwrap)
 @archivist(evidence: _EVIDENCE_ARC_CLOSURES, confidence: 0.66, source_date: "2026-04-26")
 /** Blocks likely retain cycles from escaping closures that capture self strongly. */
 pub fn no_retain_cycle_in_escaping_closure(slice, ctx, _repo_at_base) {
@@ -256,7 +256,7 @@ pub fn no_retain_cycle_in_escaping_closure(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_force_unwrap)
 @archivist(evidence: _EVIDENCE_UI_MAIN_ACTOR, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks UI state mutation from non-main actor callbacks or tasks. */
 pub fn ui_state_mutations_stay_main_actor(slice, ctx, _repo_at_base) {
@@ -273,7 +273,7 @@ pub fn ui_state_mutations_stay_main_actor(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_force_unwrap)
 @archivist(evidence: _EVIDENCE_SENDABLE, confidence: 0.62, source_date: "2026-04-26")
 /** Blocks unsafe cross-concurrency sharing that Swift 6 sendability should protect. */
 pub fn sendable_cross_actor_boundaries_are_safe(slice, ctx, _repo_at_base) {

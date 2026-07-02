@@ -161,7 +161,7 @@ pub fn datetime_includes_offset(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_duplicate_table_headers)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, or signing secrets in TOML configuration. */
 pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
@@ -178,7 +178,7 @@ pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_duplicate_table_headers)
 @archivist(evidence: _EVIDENCE_PACKAGE_LICENSE, confidence: 0.6, source_date: "2026-05-15")
 /** Warns when publishable Cargo or Python package metadata omits license information. */
 pub fn package_metadata_declares_license(slice, ctx, _repo_at_base) {

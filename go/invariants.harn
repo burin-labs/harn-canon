@@ -347,7 +347,7 @@ pub fn no_math_rand_for_keys(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_ignored_errors)
 @archivist(evidence: _EVIDENCE_GOROUTINE_LEAKS, confidence: 0.62, source_date: "2026-05-08")
 /** Blocks long-lived goroutines that lack cancellation or shutdown evidence. */
 pub fn goroutine_leak_guard(slice, ctx, _repo_at_base) {
@@ -364,7 +364,7 @@ pub fn goroutine_leak_guard(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_ignored_errors)
 @archivist(evidence: _EVIDENCE_DEP_SECURITY, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks Go dependency changes that omit vulnerability-check evidence. */
 pub fn go_dependency_vulns_checked(slice, ctx, _repo_at_base) {

@@ -272,7 +272,7 @@ pub fn initialize_calls_super(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: frozen_string_literal_magic_comment)
 @archivist(evidence: _EVIDENCE_RUBOCOP, confidence: 0.66, source_date: "2026-05-08")
 /** Blocks changes that bypass or weaken the repo's RuboCop policy without justification. */
 pub fn rubocop_style_compliance(slice, ctx, _repo_at_base) {
@@ -289,7 +289,7 @@ pub fn rubocop_style_compliance(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: frozen_string_literal_magic_comment)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials and high-risk secrets in Ruby source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -306,7 +306,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: frozen_string_literal_magic_comment)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.63, source_date: "2026-05-08")
 /** Blocks logs and errors that expose secrets or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {

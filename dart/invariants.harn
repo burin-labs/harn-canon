@@ -268,7 +268,7 @@ pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_null_safety_opt_out)
 @archivist(evidence: _EVIDENCE_IMMUTABLE_WIDGET, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks Flutter Widget subclasses that hold mutable instance state. */
 pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
@@ -285,7 +285,7 @@ pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_null_safety_opt_out)
 @archivist(evidence: _EVIDENCE_UNAWAITED_FUTURES, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks discarded Futures inside async bodies without intentional fire-and-forget. */
 pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
@@ -302,7 +302,7 @@ pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_null_safety_opt_out)
 @archivist(evidence: _EVIDENCE_EFFECTIVE_DART_DOCS, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks new public Dart APIs in lib/ that lack /// doc comments. */
 pub fn effective_dart_documents_public_apis(slice, ctx, _repo_at_base) {

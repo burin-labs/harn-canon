@@ -152,7 +152,11 @@ pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     first_party_proto_files(slice),
     { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto3\"\\s*;", file.text, "m") != nil
-      && regex_match(r"(?m)^\s*required\s+[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*\d+", file.text, "m")
+      && regex_match(
+      r"(?m)^\s*required\s+[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*\d+",
+      file.text,
+      "m",
+    )
       != nil },
   )
   return block_on_findings(
@@ -224,7 +228,7 @@ pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: explicit_syntax_version)
 @archivist(evidence: _EVIDENCE_FIELD_RENUMBER, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks renumbered or repurposed field tags that would break wire compatibility. */
 pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
@@ -241,9 +245,11 @@ pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: explicit_syntax_version)
 @archivist(evidence: _EVIDENCE_RESERVED_ON_DELETE, confidence: 0.72, source_date: "2026-05-09")
-/** Blocks field deletions that omit a matching reserved declaration for the freed number or name. */
+/**
+ * Blocks field deletions that omit a matching reserved declaration for the freed number or name.
+ */
 pub fn reserved_on_field_removal(slice, ctx, _repo_at_base) {
   let rubric = "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
   let judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})

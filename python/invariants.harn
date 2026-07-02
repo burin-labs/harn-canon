@@ -236,7 +236,7 @@ pub fn no_assert_in_prod_path(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_bare_except)
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.66, source_date: "2026-04-30")
 /** Blocks SQL assembled with user-controlled string interpolation. */
 pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
@@ -253,7 +253,7 @@ pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_bare_except)
 @archivist(evidence: _EVIDENCE_SOURCE_SECRETS, confidence: 0.64, source_date: "2026-04-30")
 /** Blocks hardcoded credentials and high-risk secrets in Python source. */
 pub fn secrets_not_hardcoded_in_source(slice, ctx, _repo_at_base) {

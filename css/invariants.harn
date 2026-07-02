@@ -206,7 +206,7 @@ pub fn font_size_uses_relative_units(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_important_without_comment)
 @archivist(evidence: _EVIDENCE_FOCUS_INDICATOR, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks suppressing the default focus outline without supplying a visible replacement. */
 pub fn accessible_focus_indicator(slice, ctx, _repo_at_base) {
@@ -223,7 +223,7 @@ pub fn accessible_focus_indicator(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_important_without_comment)
 @archivist(evidence: _EVIDENCE_REDUCED_MOTION, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks new non-trivial animations or transitions that ignore `prefers-reduced-motion`. */
 pub fn respect_prefers_reduced_motion(slice, ctx, _repo_at_base) {

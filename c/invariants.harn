@@ -88,7 +88,12 @@ fn is_test_path(path) {
 }
 
 fn is_generated_c(file) {
-  return regex_match(r"(?im)^\s*(?://|/\*|\*)\s*(?:Code\s+generated|Auto-?generated|GENERATED FILE)[^\n]*DO NOT EDIT", file.text, "m") != nil
+  return regex_match(
+    r"(?im)^\s*(?://|/\*|\*)\s*(?:Code\s+generated|Auto-?generated|GENERATED FILE)[^\n]*DO NOT EDIT",
+    file.text,
+    "m",
+  )
+    != nil
 }
 
 fn c_files(slice) {
@@ -177,7 +182,9 @@ fn warn_on_findings(rule, remediation, findings) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_GETS, confidence: 0.95, source_date: "2026-05-10")
-/** Blocks gets, which has no length-bounded form and was removed from the C standard library in C11. */
+/**
+ * Blocks gets, which has no length-bounded form and was removed from the C standard library in C11.
+ */
 pub fn no_gets(slice, _ctx, _repo_at_base) {
   let findings = scan_files(production_c_files(slice), r"\bgets\s*\(", "s")
   return block_on_findings(
@@ -192,11 +199,7 @@ pub fn no_gets(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BOUNDED_STRING_OPS, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on unbounded string and formatted-input calls that prefer length-bounded variants. */
 pub fn bounded_string_ops(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_c_files(slice),
-    r"\b(?:strcpy|strcat|sprintf|vsprintf|scanf)\s*\(",
-    "s",
-  )
+  let findings = scan_files(production_c_files(slice), r"\b(?:strcpy|strcat|sprintf|vsprintf|scanf)\s*\(", "s")
   return warn_on_findings(
     "bounded_string_ops",
     "Prefer strncpy/strlcpy, strncat/strlcat, snprintf/vsnprintf, or fgets+sscanf with explicit lengths.",
@@ -224,21 +227,20 @@ pub fn no_void_main(slice, _ctx, _repo_at_base) {
 pub fn no_format_string_from_variable(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_c_files(slice),
-    { file -> regex_match(
-      r"\b(?:printf|vprintf|sprintf|vsprintf)\s*\(\s*[A-Za-z_]\w*\s*[,)]",
-      file.text,
-      "s",
-    ) != nil
+    { file -> regex_match(r"\b(?:printf|vprintf|sprintf|vsprintf)\s*\(\s*[A-Za-z_]\w*\s*[,)]", file.text, "s")
+      != nil
       || regex_match(
       r"\b(?:fprintf|dprintf|vfprintf|syslog)\s*\(\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
       file.text,
       "s",
-    ) != nil
+    )
+      != nil
       || regex_match(
       r"\b(?:snprintf|vsnprintf)\s*\(\s*[^,)\n]+,\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
       file.text,
       "s",
-    ) != nil },
+    )
+      != nil },
   )
   return block_on_findings(
     "no_format_string_from_variable",
@@ -252,11 +254,7 @@ pub fn no_format_string_from_variable(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_TMPFILE, confidence: 0.9, source_date: "2026-05-10")
 /** Blocks tmpnam, tempnam, and mktemp; they create races between name choice and file open. */
 pub fn no_unsafe_tmpfile(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_c_files(slice),
-    r"\b(?:tmpnam|tempnam|mktemp)\s*\(",
-    "s",
-  )
+  let findings = scan_files(production_c_files(slice), r"\b(?:tmpnam|tempnam|mktemp)\s*\(", "s")
   return block_on_findings(
     "no_unsafe_tmpfile",
     "Use mkstemp, mkostemp, or tmpfile, which atomically create the file with the returned name.",
@@ -269,11 +267,7 @@ pub fn no_unsafe_tmpfile(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ATOI_FAMILY, confidence: 0.78, source_date: "2026-05-10")
 /** Warns on atoi, atol, atoll, and atof, which silently swallow conversion errors and overflow. */
 pub fn no_atoi_family(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_c_files(slice),
-    r"\b(?:atoi|atol|atoll|atof)\s*\(",
-    "s",
-  )
+  let findings = scan_files(production_c_files(slice), r"\b(?:atoi|atol|atoll|atof)\s*\(", "s")
   return warn_on_findings(
     "no_atoi_family",
     "Use strtol/strtoul/strtod with errno and endptr checks so invalid input and overflow are detectable.",
@@ -293,7 +287,8 @@ pub fn c_header_has_include_guard(slice, _ctx, _repo_at_base) {
       r"(?ms)^\s*#\s*ifndef\s+\w+\s*\n\s*#\s*define\s+\w+\b.*^\s*#\s*endif\b",
       file.text,
       "ms",
-    ) == nil },
+    )
+      == nil },
   )
   return warn_on_findings(
     "c_header_has_include_guard",
@@ -305,13 +300,11 @@ pub fn c_header_has_include_guard(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_ALLOCA, confidence: 0.72, source_date: "2026-05-10")
-/** Warns on alloca and variable-length arrays sized by user input; both can silently overflow the stack. */
+/**
+ * Warns on alloca and variable-length arrays sized by user input; both can silently overflow the stack.
+ */
 pub fn no_alloca(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
-    production_c_files(slice),
-    r"\b(?:alloca|_alloca|__builtin_alloca)\s*\(",
-    "s",
-  )
+  let findings = scan_files(production_c_files(slice), r"\b(?:alloca|_alloca|__builtin_alloca)\s*\(", "s")
   return warn_on_findings(
     "no_alloca",
     "Use a fixed-size buffer, malloc with a checked size cap, or a stack-bounded helper; alloca is unportable and unchecked.",
@@ -320,7 +313,7 @@ pub fn no_alloca(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_gets)
 @archivist(evidence: _EVIDENCE_ALLOC_NULL_CHECK, confidence: 0.64, source_date: "2026-05-10")
 /** Blocks heap allocation paths that lack a NULL-return check before the result is dereferenced. */
 pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
@@ -337,9 +330,11 @@ pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_gets)
 @archivist(evidence: _EVIDENCE_STATIC_ANALYZER, confidence: 0.6, source_date: "2026-05-10")
-/** Blocks meaningful C source changes that ship without evidence of a static-analysis or sanitizer path. */
+/**
+ * Blocks meaningful C source changes that ship without evidence of a static-analysis or sanitizer path.
+ */
 pub fn static_analyzer_clean(slice, ctx, _repo_at_base) {
   let rubric = "Block only when changed C source materially adds or rewrites pointer arithmetic, manual memory management, file or socket I/O, parsing, concurrency primitives, or unsafe casts, and the slice plus repo configuration shows no evidence of clang-analyzer, scan-build, clang-tidy, cppcheck, an Address/Undefined/Memory/Thread sanitizer build mode, or an equivalent static-analysis or dynamic-analysis pipeline being applied to the changed code. Allow trivial refactors, comment-only edits, and changes to projects that already wire one of these tools into CI or developer tooling."
   let judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
@@ -354,9 +349,11 @@ pub fn static_analyzer_clean(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_gets)
 @archivist(evidence: _EVIDENCE_DEP_SECURITY, confidence: 0.6, source_date: "2026-05-10")
-/** Blocks C dependency or build-system changes that omit advisory or vulnerability-check evidence. */
+/**
+ * Blocks C dependency or build-system changes that omit advisory or vulnerability-check evidence.
+ */
 pub fn c_dependency_security_checked(slice, ctx, _repo_at_base) {
   let rubric = "Block only when C build or dependency metadata changed, such as CMakeLists.txt, *.cmake, Makefile, *.mk, conanfile.txt, conanfile.py, vcpkg.json, meson.build, or C-targeted CI workflows, and the slice provides no evidence that vulnerability review was considered: NVD/CVE lookup, OSV, Dependabot, vendored-source pinning with documented update cadence, or a tool such as cargo-audit-style scanning for native deps. Allow pure source changes, formatting-only changes, and dependency changes that add or preserve a clear vulnerability-check path."
   let judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})

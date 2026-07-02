@@ -292,7 +292,7 @@ pub fn use_exec_form_for_cmd_entrypoint(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_latest_or_unpinned_base_image)
 @archivist(evidence: _EVIDENCE_MULTI_STAGE, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks single-stage Dockerfiles that ship build toolchains into the runtime image. */
 pub fn multi_stage_build_preferred(slice, ctx, _repo_at_base) {
@@ -309,7 +309,7 @@ pub fn multi_stage_build_preferred(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: no_latest_or_unpinned_base_image)
 @archivist(evidence: _EVIDENCE_MINIMIZE_LAYERS, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when consecutive RUN steps could be merged to shrink the image and cache surface. */
 pub fn minimize_layer_count(slice, ctx, _repo_at_base) {

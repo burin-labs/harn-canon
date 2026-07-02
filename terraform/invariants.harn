@@ -114,7 +114,9 @@ fn warn_on_findings(rule, remediation, findings) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_TAGGING, confidence: 0.6, source_date: "2026-05-09")
-/** Warns when changed Terraform files declare cloud resources without Owner, Env, and CostCenter tags. */
+/**
+ * Warns when changed Terraform files declare cloud resources without Owner, Env, and CostCenter tags.
+ */
 pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
@@ -133,7 +135,9 @@ pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_VAR_TYPES, confidence: 0.74, source_date: "2026-05-09")
-/** Warns when changed Terraform files declare variable blocks without an explicit type constraint. */
+/**
+ * Warns when changed Terraform files declare variable blocks without an explicit type constraint.
+ */
 pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
@@ -150,7 +154,9 @@ pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_BACKEND, confidence: 0.6, source_date: "2026-05-09")
-/** Warns when a root-module file declares required_providers without configuring a remote state backend. */
+/**
+ * Warns when a root-module file declares required_providers without configuring a remote state backend.
+ */
 pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
   var findings = []
   for file in production_tf_files(slice) {
@@ -195,7 +201,9 @@ pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_PROVIDER_VERSION, confidence: 0.74, source_date: "2026-05-09")
-/** Blocks required_providers declarations that omit a version constraint for at least one provider. */
+/**
+ * Blocks required_providers declarations that omit a version constraint for at least one provider.
+ */
 pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
   let findings = scan_files_if(
     production_tf_files(slice),
@@ -232,7 +240,7 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: required_tags_on_resources)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in Terraform source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -249,9 +257,11 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: required_tags_on_resources)
 @archivist(evidence: _EVIDENCE_IAM_LEAST_PRIV, confidence: 0.62, source_date: "2026-05-09")
-/** Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification. */
+/**
+ * Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification.
+ */
 pub fn iam_policies_avoid_wildcard_grants(slice, ctx, _repo_at_base) {
   let rubric = "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
   let judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})

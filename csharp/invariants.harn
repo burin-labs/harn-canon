@@ -319,7 +319,7 @@ pub fn no_console_write_in_prod_path(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: nullable_reference_types_enabled)
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks SQL commands assembled with untrusted string interpolation or concatenation. */
 pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
@@ -336,7 +336,7 @@ pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: nullable_reference_types_enabled)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, private keys, and production connection strings. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -353,7 +353,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic
+@semantic(fallback: nullable_reference_types_enabled)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, authorization material, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
