@@ -30,6 +30,8 @@ pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
 ```
 
 The predicate runtime lives in the [Harn](https://github.com/burin-labs/harn) repo.
+This repo tests packs against the Harn release pinned in [`.harn-version`](./.harn-version);
+update that file when validating a new runtime.
 
 ## Packs
 
