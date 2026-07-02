@@ -77,6 +77,12 @@ let _EVIDENCE_HASHMAP_COUNT = [
   "https://zig.guide/standard-library/hashmaps/",
 ]
 
+let _EVIDENCE_TAG_NAME = [
+  "https://ziglang.org/documentation/master/#tagName",
+  "https://github.com/ziglang/zig/blob/master/lib/std/meta.zig",
+  "https://zig.guide/language-basics/enums/",
+]
+
 let _EVIDENCE_ARRAYLIST_UNMANAGED = [
   "https://ziglang.org/download/0.16.0/release-notes.html#Migration-to-Unmanaged-Containers",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
@@ -347,6 +353,19 @@ pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "hashmap_count_uses_count_method",
     "Use the hash map's public `.count()` method instead of reading a stale `.size` field.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_TAG_NAME, confidence: 0.78, source_date: "2026-07-02")
+/** Blocks stale std.meta.tagToString spellings; use the builtin @tagName. */
+pub fn enum_tags_use_tag_name_builtin(slice, _ctx, _repo_at_base) {
+  let findings = scan_files(zig_files(slice), r"\bstd\.meta\.tagToString\s*\(")
+  return block_on_findings(
+    "enum_tags_use_tag_name_builtin",
+    "Use the `@tagName(value)` builtin to turn an enum or tagged-union value into its tag name; use `std.meta.stringToEnum(T, name)` for the inverse.",
     findings,
   )
 }

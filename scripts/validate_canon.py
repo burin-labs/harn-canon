@@ -26,6 +26,10 @@ MIN_DETERMINISTIC = 5
 MAX_DETERMINISTIC = 12
 MIN_SEMANTIC = 2
 MAX_SEMANTIC = 3
+PACK_DETERMINISTIC_LIMITS = {
+    # Zig carries current-stdlib migration predicates; keep the exception scoped.
+    "zig": (MIN_DETERMINISTIC, 13),
+}
 VALID_EXPECTS = {"Allow", "Warn", "Block"}
 FIXTURE_KEYS = {"predicate", "cases"}
 CASE_KEYS = {"name", "expect", "files"}
@@ -292,9 +296,12 @@ def main():
 
         deterministic = sum(1 for entry in entries if entry["mode"] == "deterministic")
         semantic = sum(1 for entry in entries if entry["mode"] == "semantic")
-        if not MIN_DETERMINISTIC <= deterministic <= MAX_DETERMINISTIC:
+        deterministic_min, deterministic_max = PACK_DETERMINISTIC_LIMITS.get(
+            pack, (MIN_DETERMINISTIC, MAX_DETERMINISTIC)
+        )
+        if not deterministic_min <= deterministic <= deterministic_max:
             errors.append(
-                f"{pack}: expected {MIN_DETERMINISTIC}-{MAX_DETERMINISTIC} deterministic predicates, found {deterministic}"
+                f"{pack}: expected {deterministic_min}-{deterministic_max} deterministic predicates, found {deterministic}"
             )
         if not MIN_SEMANTIC <= semantic <= MAX_SEMANTIC:
             errors.append(

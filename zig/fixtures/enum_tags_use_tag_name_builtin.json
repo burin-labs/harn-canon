@@ -1,0 +1,35 @@
+{
+  "predicate": "enum_tags_use_tag_name_builtin",
+  "cases": [
+    {
+      "name": "blocks_stale_meta_tag_to_string",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Kind = enum { string, number };\n\npub fn label(kind: Kind) []const u8 {\n    return std.meta.tagToString(kind);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_tag_name_builtin",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Kind = enum { string, number };\n\npub fn label(kind: Kind) []const u8 {\n    return @tagName(kind);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_string_to_enum_inverse",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\nconst Kind = enum { string, number };\n\npub fn parse(name: []const u8) !Kind {\n    return std.meta.stringToEnum(Kind, name) orelse error.UnknownKind;\n}\n"
+        }
+      ]
+    }
+  ]
+}
