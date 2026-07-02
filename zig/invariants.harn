@@ -90,6 +90,11 @@ let _EVIDENCE_ARRAYLIST_UNMANAGED = [
 
 let _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", "https://zig.guide/language-basics/defer/"]
 
+let _EVIDENCE_DOC_COMMENTS = [
+  "https://ziglang.org/documentation/master/#Doc-Comments",
+  "https://zig.guide/build-system/generating-documentation/",
+]
+
 fn is_zig_path(path) {
   return path.ends_with(".zig")
 }
@@ -392,6 +397,23 @@ pub fn defer_block_closes_without_semicolon(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "defer_block_closes_without_semicolon",
     "Close `defer { ... }` with `}` only. The extra semicolon after the block is a Zig syntax error.",
+    findings,
+  )
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_DOC_COMMENTS, confidence: 0.76, source_date: "2026-07-02")
+/** Blocks `///` used as an implementation note before a statement. */
+pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
+  let findings = scan_files_with_flags(
+    zig_files(slice),
+    r"(?m)^\s*///[^\n]*\n\s*(?:(?:return|if|while|for|switch|try|defer|errdefer|break|continue|unreachable)\b|@)",
+    "m",
+  )
+  return block_on_findings(
+    "doc_comments_attach_to_declarations",
+    "Use `//` for implementation notes inside function bodies. Reserve `///` for declarations, fields, enum tags, and other doc-comment attachment sites.",
     findings,
   )
 }

@@ -27,6 +27,7 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 | `enum_tags_use_tag_name_builtin` | deterministic | Block | Enum and tagged-union values use the `@tagName(value)` builtin for names, not stale `std.meta.tagToString(...)` calls. |
 | `arraylist_uses_unmanaged_api` | deterministic | Block | Current `std.ArrayList(T)` values initialize with `.empty`; allocator-bearing calls happen on methods. |
 | `defer_block_closes_without_semicolon` | deterministic | Block | `defer { ... }` closes with `}` only; `};` after the block is a syntax error. |
+| `doc_comments_attach_to_declarations` | deterministic | Block | `///` doc comments attach to declarations and fields; implementation notes before statements should use `//`. |
 | `allocator_lifetime_hygiene` | semantic | Block | Heap allocations need a matching `defer`/`errdefer` free or a documented ownership transfer. |
 | `no_hardcoded_secrets` | semantic | Block | Credentials, tokens, and private keys must not be embedded as string literals in Zig source. |
 | `integer_endianness_explicit` | semantic | Warn | Multi-byte integer I/O across a serialization boundary should name the endianness rather than relying on host byte order. |
@@ -46,6 +47,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
 - Zig standard library hash map and array hash map sources, plus current zig.guide hash map examples, for the public `.count()` API on map values.
 - Zig language reference, Zig standard library `std.meta` source, and current zig.guide enum examples for `@tagName(value)` and `std.meta.stringToEnum`.
 - Zig language reference and zig.guide examples for `defer` semantics and block-form usage.
+- Zig language reference and zig.guide documentation-generation examples for doc-comment attachment sites.
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
 
 ## Known False Positives and Negatives
@@ -63,6 +65,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
 - `enum_tags_use_tag_name_builtin` is an exact token scan. A comment or string literal that mentions `std.meta.tagToString(` will be blocked until the pack can use AST facts.
 - `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
 - `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
+- `doc_comments_attach_to_declarations` is intentionally narrow. It blocks `///` immediately before statement-shaped lines such as `return`, `try`, `defer`, and `if`, but can miss misplaced doc comments before local `const` or `var` declarations to avoid false-positives on documented top-level declarations.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.
 
 ## Design Notes
