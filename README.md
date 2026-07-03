@@ -18,7 +18,9 @@ Per-language and per-stack predicate packs. Each pack is a directory containing:
 pack discovery without scraping the repository layout. It also owns pack
 routing metadata: lowercase file extensions and exact lowercase basenames such
 as `dockerfile`. Harn and product hosts should infer harn-canon packs from that
-manifest instead of carrying their own language-routing tables.
+manifest instead of carrying their own language-routing tables. The validator
+treats eval-critical language routes as a contract so convergence packs cannot
+silently disappear from Harn/Burin discovery.
 
 Predicate files use Harn attributes to carry evidence:
 

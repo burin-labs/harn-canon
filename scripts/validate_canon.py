@@ -22,6 +22,18 @@ def load_pack_manifest():
 PACK_MANIFEST = load_pack_manifest()
 EXPECTED_PACKS = tuple(pack["id"] for pack in PACK_MANIFEST)
 
+EVAL_CRITICAL_PACK_ROUTES = {
+    "c": {"extensions": {"c", "h"}},
+    "cpp": {"extensions": {"cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"}},
+    "csharp": {"extensions": {"cs"}},
+    "go": {"extensions": {"go"}},
+    "rust": {"extensions": {"rs"}},
+    "scala": {"extensions": {"sc", "scala"}},
+    "swift": {"extensions": {"swift"}},
+    "typescript": {"extensions": {"ts", "tsx"}},
+    "zig": {"extensions": {"zig"}},
+}
+
 MIN_DETERMINISTIC = 5
 MAX_DETERMINISTIC = 12
 MIN_SEMANTIC = 2
@@ -322,6 +334,7 @@ def validate_readme_coverage(errors):
 
 def validate_manifest(errors):
     seen = set()
+    packs_by_id = {}
     for index, pack in enumerate(PACK_MANIFEST):
         if not isinstance(pack, dict):
             errors.append(f"canon-packs.json: pack {index} must be an object")
@@ -340,6 +353,7 @@ def validate_manifest(errors):
         if pack_id in seen:
             errors.append(f"canon-packs.json: duplicate pack id {pack_id}")
         seen.add(pack_id)
+        packs_by_id[pack_id] = pack
         expected_invariants = f"{pack_id}/invariants.harn"
         expected_fixtures = f"{pack_id}/fixtures"
         if pack.get("invariants") != expected_invariants:
@@ -355,6 +369,25 @@ def validate_manifest(errors):
         if not (ROOT / expected_fixtures).is_dir():
             errors.append(f"canon-packs.json: {expected_fixtures} does not exist")
         validate_routing_selectors(pack_id, pack, errors)
+
+    validate_eval_critical_routes(packs_by_id, errors)
+
+
+def validate_eval_critical_routes(packs_by_id, errors):
+    for pack_id, required in EVAL_CRITICAL_PACK_ROUTES.items():
+        pack = packs_by_id.get(pack_id)
+        if pack is None:
+            errors.append(f"canon-packs.json: missing eval-critical pack {pack_id}")
+            continue
+
+        for field, expected_values in required.items():
+            actual_values = set(pack.get(field, []))
+            missing = sorted(expected_values - actual_values)
+            if missing:
+                errors.append(
+                    f"canon-packs.json: eval-critical pack {pack_id} {field} "
+                    f"must include {', '.join(missing)}"
+                )
 
 
 def validate_pack_readme_coverage(pack_dir, predicate_names, errors):
