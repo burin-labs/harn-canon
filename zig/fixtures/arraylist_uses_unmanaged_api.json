@@ -12,6 +12,16 @@
       ]
     },
     {
+      "name": "blocks_empty_arraylist_methods_without_allocator",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/schema.zig",
+          "text": "const std = @import(\"std\");\n\npub fn collect(allocator: std.mem.Allocator) ![]u8 {\n    _ = allocator;\n    var out: std.ArrayList(u8) = .empty;\n    defer out.deinit();\n    try out.append('x');\n    return out.toOwnedSlice();\n}\n"
+        }
+      ]
+    },
+    {
       "name": "allows_unmanaged_arraylist_empty",
       "expect": "Allow",
       "files": [
