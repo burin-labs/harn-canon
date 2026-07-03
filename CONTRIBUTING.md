@@ -8,6 +8,9 @@ This repo reviews seed invariants carefully. These predicates become the default
 - **5–10 `@deterministic` predicates + 2–3 `@semantic` predicates** is the target bundle for a v0 pack. Less is fine; more should be split.
 - **Include fixtures.** Every predicate needs at least one fixture slice it blocks and one it allows. CI runs these.
 - Fixture cases need stable `snake_case` names, an `expect` value of `Allow`, `Warn`, or `Block`, and normalized relative file paths.
+- **Keep routing in `canon-packs.json`.** If a pack owns a file extension or
+  exact no-extension filename, add the lowercase selector there. Do not ask Harn
+  or a host product to hardcode the same language table.
 
 ## Evidence bar
 
