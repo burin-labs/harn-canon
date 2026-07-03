@@ -41,7 +41,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
 - Zig source `doc/build.zig.zon.md` for the manifest schema, including `.minimum_zig_version` (advisory) and the `.hash` requirement on URL-based dependencies.
 - Zig Build System tutorial (`ziglang.org/learn/build-system`) for package-manager workflow guidance.
 - The Zig Guide community handbook (`zig.guide`) for error-handling and allocator idioms.
-- Zig 0.16.0 release notes for the migration to unmanaged containers.
+- Zig 0.16.0 release notes for the migration to unmanaged containers and allocator-taking ArrayList methods.
 - Zig standard library JSON source and current zig.guide JSON examples for `std.json.parseFromSlice`.
 - Zig standard library JSON parser, JSON hashmap, array-hash-map sources, and memory docs for `std.json.ArrayHashMap` ownership and cleanup.
 - Zig standard library hash map and array hash map sources, plus current zig.guide hash map examples, for the public `.count()` API on map values.
@@ -63,7 +63,11 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
 - `parsed_json_arrayhashmap_has_single_owner` has two file-local checks. The parsed-value check requires `std.json.ArrayHashMap`, `std.json.parseFromSlice`, and a manual `.value...map.deinit(...)` in the same changed file. The manual-key check looks for `allocator.dupe` or `dupeZ`, insertion through common `.map` insert APIs, and `.map.deinit(...)` without an entry loop that frees `entry.key_ptr.*` or `entry.key`. It can miss helper-based cleanup in another file and can block unusual code that intentionally copies a parsed value into a new owner or uses a custom key-cleanup helper.
 - `hashmap_count_uses_count_method` requires a recognized Zig hash map type in the file and then scans for likely map-shaped `.size` reads such as `map.size`, `user_map.size`, or `.items.map.size`. It can miss unusually named map variables and can false-positive on a non-map field named `size` in the same changed file.
 - `enum_tags_use_tag_name_builtin` is an exact token scan. A comment or string literal that mentions `std.meta.tagToString(` will be blocked until the pack can use AST facts.
-- `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
+- `arraylist_uses_unmanaged_api` blocks `std.ArrayList(T).init(allocator)` in current Zig code and recognizes
+  direct `const` or `var` declarations of `std.ArrayList(T) = .empty` whose mutating or ownership calls still
+  omit allocator arguments. Projects pinned to older Zig releases may need to suppress or opt out of this predicate.
+  The method-call arm can miss aliases and helper-returned lists, and can block unrelated allocator-less method
+  calls in the same file as a direct `.empty` declaration.
 - `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
 - `doc_comments_attach_to_declarations` is intentionally narrow. It blocks `///` immediately before statement-shaped lines such as `return`, `try`, `defer`, and `if`, but can miss misplaced doc comments before local `const` or `var` declarations to avoid false-positives on documented top-level declarations.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.

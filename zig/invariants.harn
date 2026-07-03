@@ -385,10 +385,26 @@ pub fn enum_tags_use_tag_name_builtin(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ARRAYLIST_UNMANAGED, confidence: 0.78, source_date: "2026-06-23")
 /** Blocks the old managed std.ArrayList(T).init(allocator) spelling in current Zig code. */
 pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(zig_files(slice), r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(")
+  let findings = scan_files_if(
+    zig_files(slice),
+    { file -> regex_match(r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(", file.text, "s") != nil
+      || (regex_match(
+      r"\b(?:const|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*std\.ArrayList\s*\([^)\n]+\)\s*=\s*\.empty\b",
+      file.text,
+      "s",
+    )
+      != nil
+      && (regex_match(
+      r"\.(?:append|appendSlice|insert|insertSlice|resize|ensureTotalCapacity|ensureUnusedCapacity)\s*\(\s*[^,\n)]*\s*\)",
+      file.text,
+      "s",
+    )
+      != nil
+      || regex_match(r"\.(?:deinit|toOwnedSlice)\s*\(\s*\)", file.text, "s") != nil)) },
+  )
   return block_on_findings(
     "arraylist_uses_unmanaged_api",
-    "Initialize current `std.ArrayList(T)` values with `.empty`; pass the allocator to methods such as `append`, `toOwnedSlice`, and `deinit`.",
+    "Initialize current `std.ArrayList(T)` values with `.empty`, then pass the allocator to mutating and ownership methods such as `append`, `toOwnedSlice`, and `deinit`.",
     findings,
   )
 }
