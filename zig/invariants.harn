@@ -331,11 +331,20 @@ pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
     )
       != nil
       && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
-      && regex_match(r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)", file.text, "s") == nil)) },
+      && regex_match(r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)", file.text, "s") == nil)
+      || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+      && regex_match(r"\.map\.getOrPut(?:AssumeCapacity)?\s*\(", file.text, "s") != nil
+      && regex_match(r"\.found_existing\b", file.text, "s") != nil
+      && regex_match(
+      r"\bfree\s*\(\s*(?:key|[A-Za-z_][A-Za-z0-9_]*_key|key_[A-Za-z0-9_]*)\s*\)",
+      file.text,
+      "s",
+    )
+      == nil)) },
   )
   return block_on_findings(
     "parsed_json_arrayhashmap_has_single_owner",
-    "Keep `std.json.ArrayHashMap` ownership single-owner: use `parsed.deinit()` for parsed values, and free every duplicated manual key before `map.deinit(allocator)`.",
+    "Use `parsed.deinit()` for parsed values; free duplicated stored keys before map deinit; free unused duplicated getOrPut keys when `found_existing` is true.",
     findings,
   )
 }
