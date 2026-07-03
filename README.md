@@ -15,7 +15,10 @@ Per-language and per-stack predicate packs. Each pack is a directory containing:
 - `fixtures/` — small atom/slice fixtures the predicates are expected to allow or block, used by CI.
 
 `canon-packs.json` is the canonical pack manifest for tools that need stable
-pack discovery without scraping the repository layout.
+pack discovery without scraping the repository layout. It also owns pack
+routing metadata: lowercase file extensions and exact lowercase basenames such
+as `dockerfile`. Harn and product hosts should infer harn-canon packs from that
+manifest instead of carrying their own language-routing tables.
 
 Predicate files use Harn attributes to carry evidence:
 

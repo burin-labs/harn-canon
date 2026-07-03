@@ -34,6 +34,15 @@ VALID_EXPECTS = {"Allow", "Warn", "Block"}
 FIXTURE_KEYS = {"predicate", "cases"}
 CASE_KEYS = {"name", "expect", "files"}
 FILE_KEYS = {"path", "text"}
+PACK_MANIFEST_KEYS = {
+    "id",
+    "title",
+    "invariants",
+    "fixtures",
+    "extensions",
+    "file_names",
+}
+ROUTING_SELECTOR_RE = re.compile(r"[a-z0-9][a-z0-9_+-]*\Z")
 
 INVARIANT_RE = re.compile(
     r"@invariant\s*"
@@ -87,6 +96,43 @@ def is_normalized_relative_path(value):
         and "\\" not in value
         and all(part not in {"", ".", ".."} for part in parts)
     )
+
+
+def validate_routing_selectors(pack_id, pack, errors):
+    extensions = pack.get("extensions", [])
+    file_names = pack.get("file_names", [])
+    for field, values in (("extensions", extensions), ("file_names", file_names)):
+        if not isinstance(values, list):
+            errors.append(f"canon-packs.json: {pack_id} {field} must be a list")
+            continue
+        if values != sorted(values):
+            errors.append(f"canon-packs.json: {pack_id} {field} must be sorted")
+        duplicates = duplicate_values(values)
+        if duplicates:
+            errors.append(
+                f"canon-packs.json: {pack_id} {field} has duplicates: {', '.join(duplicates)}"
+            )
+        for value in values:
+            if not isinstance(value, str) or not value:
+                errors.append(f"canon-packs.json: {pack_id} {field} entries must be strings")
+                continue
+            if value != value.lower():
+                errors.append(
+                    f"canon-packs.json: {pack_id} {field} entry {value} must be lowercase"
+                )
+            if "/" in value or "\\" in value or value.startswith("."):
+                errors.append(
+                    f"canon-packs.json: {pack_id} {field} entry {value} must be a basename selector"
+                )
+            if ROUTING_SELECTOR_RE.fullmatch(value) is None:
+                errors.append(
+                    f"canon-packs.json: {pack_id} {field} entry {value} has invalid characters"
+                )
+
+    if not extensions and not file_names:
+        errors.append(
+            f"canon-packs.json: {pack_id} needs at least one extension or file_names selector"
+        )
 
 
 def parse_invariants(path, errors):
@@ -280,6 +326,13 @@ def validate_manifest(errors):
         if not isinstance(pack, dict):
             errors.append(f"canon-packs.json: pack {index} must be an object")
             continue
+        validate_allowed_keys(
+            "canon-packs.json",
+            f"pack {index}",
+            pack,
+            PACK_MANIFEST_KEYS,
+            errors,
+        )
         pack_id = pack.get("id")
         if not isinstance(pack_id, str) or not pack_id:
             errors.append(f"canon-packs.json: pack {index} needs a non-empty id")
@@ -301,6 +354,7 @@ def validate_manifest(errors):
             errors.append(f"canon-packs.json: {expected_invariants} does not exist")
         if not (ROOT / expected_fixtures).is_dir():
             errors.append(f"canon-packs.json: {expected_fixtures} does not exist")
+        validate_routing_selectors(pack_id, pack, errors)
 
 
 def validate_pack_readme_coverage(pack_dir, predicate_names, errors):
