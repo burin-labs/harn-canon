@@ -61,7 +61,8 @@ add syntactically-malicious or unlintable Harn code fail before merge.
 
 ## Review flow
 
-Run `python3 scripts/validate_canon.py` before opening a PR. CI runs the same validator and checks:
+Run `HARN_CANON_TODAY=$(date -u +%F) harn run scripts/validate-canon.harn`
+before opening a PR. CI runs the same validator and checks:
 
 - expected pack directories
 - root README pack links
@@ -70,6 +71,7 @@ Run `python3 scripts/validate_canon.py` before opening a PR. CI runs the same va
 - fixture shape and allow/block coverage
 - pack README coverage for every predicate
 - side-effect builtin ban (see "Trust model" above)
+- deterministic fixture execution through `harn run scripts/execute-fixtures.harn`
 - `harn check` + `harn lint` pass on each `invariants.harn`
 
 Approvals come from CODEOWNERS.
