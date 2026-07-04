@@ -28,13 +28,14 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 | `arraylist_uses_unmanaged_api` | deterministic | Block | Current `std.ArrayList(T)` values initialize with `.empty`; allocator-bearing calls happen on methods. |
 | `defer_block_closes_without_semicolon` | deterministic | Block | `defer { ... }` closes with `}` only; `};` after the block is a syntax error. |
 | `doc_comments_attach_to_declarations` | deterministic | Block | `///` doc comments attach to declarations and fields; implementation notes before statements should use `//`. |
+| `assertion_on_ungrounded_output` | deterministic | Block | A changed test that asserts an author literal against the output of an in-repo producing symbol (serialize/format/encode/parse/write family) whose value was never observed this session (`ctx.observed_symbols`) must observe-then-assert instead of asserting a hand-simulated value. |
 | `allocator_lifetime_hygiene` | semantic | Block | Heap allocations need a matching `defer`/`errdefer` free or a documented ownership transfer. |
 | `no_hardcoded_secrets` | semantic | Block | Credentials, tokens, and private keys must not be embedded as string literals in Zig source. |
 | `integer_endianness_explicit` | semantic | Warn | Multi-byte integer I/O across a serialization boundary should name the endianness rather than relying on host byte order. |
 
 ## Evidence
 
-Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
+Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, 2026-07-02, and 2026-07-03.
 
 - Zig language reference (master) for `@truncate`, `@ptrCast`, `@alignCast`, `@bitCast`, `@intCast`, `@panic`, `unreachable`, error sets, `errdefer`, `Choosing-an-Allocator`, `Memory`, `byteSwap`, and the build system overview.
 - Zig standard library docs for `std.testing.allocator`, `std.mem.readInt`, `std.mem.writeInt`.
@@ -49,6 +50,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
 - Zig language reference and zig.guide examples for `defer` semantics and block-form usage.
 - Zig language reference and zig.guide documentation-generation examples for doc-comment attachment sites.
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
+- Zig testing docs (`Zig-Test`, `std.testing.expectEqualStrings`) and the zig.guide test chapter for the assertion node kinds the observe-before-assert detector reasons over.
 
 ## Known False Positives and Negatives
 
@@ -70,6 +72,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, and 2026-07-02.
   calls in the same file as a direct `.empty` declaration.
 - `defer_block_closes_without_semicolon` scans from a `defer {` opener to a line containing only `};`. A multiline struct literal inside a defer body that also has a standalone `};` line can false-positive.
 - `doc_comments_attach_to_declarations` is intentionally narrow. It blocks `///` immediately before statement-shaped lines such as `return`, `try`, `defer`, and `if`, but can miss misplaced doc comments before local `const` or `var` declarations to avoid false-positives on documented top-level declarations.
+- `assertion_on_ungrounded_output` is the observe-before-assert grounding detector. It parses the changed test file with the bundled Zig tree-sitter grammar (`std/ast`), maps `const x = <producer(...)>` bindings whose callee role is in the producing family (serialize/format/encode/parse/write/etc.), then blocks an assertion callee (`expect`/`expectEqual*`/`expectStringStartsWith`/…) that carries an author string literal and references a producer-bound variable **when the producing callee is absent from `ctx.observed_symbols`**. The discriminator is provenance, not shape: the identical assertion is allowed once an `observe_output` probe has recorded the producing symbol in `ctx.observed_symbols`, so a run that already grounded is never fought. Two current limits: (1) it keys on the same-file `output = producer(...)` binding, so an assertion on a producer output flowing through a helper in another file is missed; and (2) it only runs on files the shared `is_test_zig_path` helper recognizes as tests — that helper matches `_test.zig`, `test_*.zig`, and `/tests/`, `/test/`, `/testdata/`, `/examples/`, `/example/` **directory** segments, so a top-level `tests/foo.zig` (no leading slash) is treated as production and skipped. `ctx.observed_symbols` is host-injected (Burin threads it from the agent event stream in follow-on work); with no host it defaults to empty, so the detector treats every producer as unobserved.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.
 
 ## Design Notes

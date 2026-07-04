@@ -39,12 +39,13 @@ MAX_DETERMINISTIC = 12
 MIN_SEMANTIC = 2
 MAX_SEMANTIC = 3
 PACK_DETERMINISTIC_LIMITS = {
-    # Zig carries current-stdlib migration predicates; keep the exception scoped.
-    "zig": (MIN_DETERMINISTIC, 14),
+    # Zig carries current-stdlib migration predicates plus the AST-based
+    # observe-before-assert grounding detector; keep the exception scoped.
+    "zig": (MIN_DETERMINISTIC, 15),
 }
 VALID_EXPECTS = {"Allow", "Warn", "Block"}
 FIXTURE_KEYS = {"predicate", "cases"}
-CASE_KEYS = {"name", "expect", "files"}
+CASE_KEYS = {"name", "expect", "files", "ctx"}
 FILE_KEYS = {"path", "text"}
 PACK_MANIFEST_KEYS = {
     "id",
@@ -285,6 +286,9 @@ def validate_fixtures(pack_dir, predicate_names, errors):
                 errors.append(f"{rel_path}: case {index} has invalid expect {expect!r}")
             else:
                 expects.add(expect)
+
+            if "ctx" in case and not isinstance(case["ctx"], dict):
+                errors.append(f"{rel_path}: case {index} ctx must be an object")
 
             files = case.get("files")
             if not isinstance(files, list) or not files:

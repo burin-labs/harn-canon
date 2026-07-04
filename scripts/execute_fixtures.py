@@ -50,9 +50,16 @@ def wrapper_source(pack, deterministic_entries):
             )
             case_name = case["name"]
             expect = case["expect"]
+            # Optional host-injectable invariant `ctx` (e.g. `observed_symbols`
+            # for the observe-before-assert grounding detector). Passed verbatim
+            # into flow_evaluate_invariants so a fixture can exercise the
+            # grounded/ungrounded discriminator without a live session.
+            ctx_json = json.dumps(case.get("ctx", {}), ensure_ascii=False, separators=(",", ":"))
+            ctx_literal = harn_string_literal(base64.b64encode(ctx_json.encode("utf-8")).decode("ascii"))
             lines.extend(
                 [
                     f"  let files_{counter} = json_parse(base64_decode({files_literal}))",
+                    f"  let ctx_{counter} = json_parse(base64_decode({ctx_literal}))",
                     f"  let eval_{counter} = flow_evaluate_invariants(",
                     '    "",',
                     f"    {{files: files_{counter}}},",
@@ -60,6 +67,7 @@ def wrapper_source(pack, deterministic_entries):
                     f"      path: {harn_string_literal(invariants_path)},",
                     f"      predicates: [{harn_string_literal(predicate)}],",
                     "      budget_ms: 50,",
+                    f"      ctx: ctx_{counter},",
                     "    },",
                     "  )",
                     f"  let records_{counter} = eval_{counter}.records ?? []",

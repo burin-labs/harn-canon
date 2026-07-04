@@ -1,0 +1,56 @@
+{
+  "predicate": "assertion_on_ungrounded_output",
+  "cases": [
+    {
+      "name": "blocks_assert_on_unobserved_writer_output",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/writer_test.zig",
+          "text": "const std = @import(\"std\");\nconst writer = @import(\"writer.zig\");\n\ntest \"round trip preserves the header comment\" {\n    var buf: [256]u8 = undefined;\n    const output = try writer.serialize(&buf, kv);\n    try std.testing.expect(std.mem.indexOf(u8, output, \"# header comment\") != null);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "blocks_expect_equal_strings_on_unobserved_output",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "src/writer_roundtrip_test.zig",
+          "text": "const std = @import(\"std\");\nconst writer = @import(\"writer.zig\");\n\ntest \"serialize emits the re-prefixed comment\" {\n    var buf: [256]u8 = undefined;\n    const output = try writer.serialize(&buf, kv);\n    try std.testing.expectEqualStrings(\"# inline comment\", output);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_assert_when_producer_output_was_observed",
+      "expect": "Allow",
+      "ctx": {"observed_symbols": ["writer.serialize"]},
+      "files": [
+        {
+          "path": "src/writer_test.zig",
+          "text": "const std = @import(\"std\");\nconst writer = @import(\"writer.zig\");\n\ntest \"round trip preserves the header comment\" {\n    var buf: [256]u8 = undefined;\n    const output = try writer.serialize(&buf, kv);\n    try std.testing.expectEqualStrings(\"# header comment\", output);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_known_literal_arithmetic_assert",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/math_test.zig",
+          "text": "const std = @import(\"std\");\nconst math = @import(\"math.zig\");\n\ntest \"add sums two integers\" {\n    try std.testing.expectEqual(math.add(2, 3), 5);\n}\n"
+        }
+      ]
+    },
+    {
+      "name": "allows_assert_without_producing_symbol",
+      "expect": "Allow",
+      "files": [
+        {
+          "path": "src/plain_test.zig",
+          "text": "const std = @import(\"std\");\n\ntest \"a plain literal comparison is not an output contract\" {\n    const greeting = \"hello\";\n    try std.testing.expectEqualStrings(\"hello\", greeting);\n}\n"
+        }
+      ]
+    }
+  ]
+}
