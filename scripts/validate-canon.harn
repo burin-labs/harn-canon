@@ -1,0 +1,556 @@
+import { parse_args } from "std/cli"
+import {
+  duplicate_values,
+  expected_packs,
+  is_normalized_relative_path,
+  load_pack_manifest,
+  parse_invariants,
+  parse_ymd,
+  repo_root,
+  set_difference,
+  set_intersects,
+  shifted_months,
+  today_from_env_or_args,
+  validate_allowed_keys,
+} from "./canon-lib"
+
+let EVAL_CRITICAL_PACK_ROUTES = {
+  c: {extensions: ["c", "h"]},
+  cpp: {extensions: ["cc", "cpp", "cxx", "h", "hh", "hpp", "hxx"]},
+  csharp: {extensions: ["cs"]},
+  go: {extensions: ["go"]},
+  rust: {extensions: ["rs"]},
+  scala: {extensions: ["sc", "scala"]},
+  swift: {extensions: ["swift"]},
+  typescript: {extensions: ["ts", "tsx"]},
+  zig: {extensions: ["zig"]},
+}
+
+let MIN_DETERMINISTIC = 5
+
+let MAX_DETERMINISTIC = 12
+
+let MIN_SEMANTIC = 2
+
+let MAX_SEMANTIC = 3
+
+let PACK_DETERMINISTIC_LIMITS = {zig: [MIN_DETERMINISTIC, 15]}
+
+let VALID_EXPECTS = ["Allow", "Warn", "Block"]
+
+let FIXTURE_KEYS = ["predicate", "cases"]
+
+let CASE_KEYS = ["name", "expect", "files", "ctx"]
+
+let FILE_KEYS = ["path", "text"]
+
+let PACK_MANIFEST_KEYS = ["id", "title", "invariants", "fixtures", "extensions", "file_names"]
+
+let arg_spec = [{kind: "option", name: "today", flags: ["--today"], default: nil}]
+
+fn usage() -> string {
+  return "Validate harn-canon pack structure and fixtures.\n\nUsage: harn run scripts/validate-canon.harn -- --today YYYY-MM-DD\n"
+}
+
+fn validate_routing_selectors(pack_id: string, pack: dict, errors: list<string>) -> list<string> {
+  var out = errors
+  for field in ["extensions", "file_names"] {
+    let values = pack[field] ?? []
+    if type_of(values) != "list" {
+      out = out + ["canon-packs.json: " + pack_id + " " + field + " must be a list"]
+      continue
+    }
+    if values != values.sort() {
+      out = out + ["canon-packs.json: " + pack_id + " " + field + " must be sorted"]
+    }
+    let duplicates = duplicate_values(values)
+    if len(duplicates) > 0 {
+      out = out
+        + ["canon-packs.json: " + pack_id + " " + field + " has duplicates: " + join(duplicates, ", ")]
+    }
+    for value in values {
+      if type_of(value) != "string" || value == "" {
+        out = out + ["canon-packs.json: " + pack_id + " " + field + " entries must be strings"]
+        continue
+      }
+      if value != value.lower() {
+        out = out
+          + ["canon-packs.json: " + pack_id + " " + field + " entry " + value + " must be lowercase"]
+      }
+      if value.contains("/") || value.contains("\\") || value.starts_with(".") {
+        out = out
+          + [
+          "canon-packs.json: " + pack_id + " " + field + " entry " + value
+            + " must be a basename selector",
+        ]
+      }
+      if regex_match("^[a-z0-9][a-z0-9_+-]*$", value) == nil {
+        out = out
+          + [
+          "canon-packs.json: " + pack_id + " " + field + " entry " + value
+            + " has invalid characters",
+        ]
+      }
+    }
+  }
+  if len(pack?.extensions ?? []) == 0 && len(pack?.file_names ?? []) == 0 {
+    out = out + ["canon-packs.json: " + pack_id + " needs at least one extension or file_names selector"]
+  }
+  return out
+}
+
+fn validate_eval_critical_routes(packs_by_id: dict, errors: list<string>) -> list<string> {
+  var out = errors
+  for pack_id in keys(EVAL_CRITICAL_PACK_ROUTES).sort() {
+    let pack = packs_by_id[pack_id]
+    if pack == nil {
+      out = out + ["canon-packs.json: missing eval-critical pack " + pack_id]
+      continue
+    }
+    let required = EVAL_CRITICAL_PACK_ROUTES[pack_id]
+    for field in keys(required).sort() {
+      let missing = set_difference(required[field], pack[field] ?? [])
+      if len(missing) > 0 {
+        out = out
+          + [
+          "canon-packs.json: eval-critical pack "
+            + pack_id
+            + " "
+            + field
+            + " must include "
+            + join(missing, ", "),
+        ]
+      }
+    }
+  }
+  return out
+}
+
+fn validate_manifest(errors: list<string>) -> list<string> {
+  var out = errors
+  var seen = {}
+  var packs_by_id = {}
+  let packs = load_pack_manifest()
+  for index in range(0, len(packs)) {
+    let pack = packs[index]
+    if type_of(pack) != "dict" {
+      out = out + ["canon-packs.json: pack " + to_string(index) + " must be an object"]
+      continue
+    }
+    out = validate_allowed_keys("canon-packs.json", "pack " + to_string(index), pack, PACK_MANIFEST_KEYS, out)
+    let pack_id = pack?.id
+    if type_of(pack_id) != "string" || pack_id == "" {
+      out = out + ["canon-packs.json: pack " + to_string(index) + " needs a non-empty id"]
+      continue
+    }
+    if seen[pack_id] ?? false {
+      out = out + ["canon-packs.json: duplicate pack id " + pack_id]
+    }
+    seen[pack_id] = true
+    packs_by_id[pack_id] = pack
+    let expected_invariants = pack_id + "/invariants.harn"
+    let expected_fixtures = pack_id + "/fixtures"
+    if pack?.invariants != expected_invariants {
+      out = out + ["canon-packs.json: " + pack_id + " invariants must be " + expected_invariants]
+    }
+    if pack?.fixtures != expected_fixtures {
+      out = out + ["canon-packs.json: " + pack_id + " fixtures must be " + expected_fixtures]
+    }
+    if type_of(pack?.title) != "string" || trim(pack.title) == "" {
+      out = out + ["canon-packs.json: " + pack_id + " needs a non-empty title"]
+    }
+    if !harness.fs.exists(path_join(repo_root(), expected_invariants)) {
+      out = out + ["canon-packs.json: " + expected_invariants + " does not exist"]
+    }
+    if !harness.fs.exists(path_join(repo_root(), expected_fixtures)) {
+      out = out + ["canon-packs.json: " + expected_fixtures + " does not exist"]
+    }
+    out = validate_routing_selectors(pack_id, pack, out)
+  }
+  return validate_eval_critical_routes(packs_by_id, out)
+}
+
+fn validate_readme_coverage(errors: list<string>) -> list<string> {
+  var out = errors
+  let readme = harness.fs.read_text(path_join(repo_root(), "README.md"))
+  for pack in expected_packs() {
+    if !readme.contains("](./" + pack + "/)") {
+      out = out + ["README.md: missing pack link for " + pack + "/"]
+    }
+  }
+  return out
+}
+
+fn validate_semantic_fallbacks(pack: string, entries: list, errors: list<string>) -> list<string> {
+  var out = errors
+  var deterministic = {}
+  for entry in entries {
+    if entry.mode == "deterministic" {
+      deterministic[entry.name] = true
+    }
+  }
+  for entry in entries {
+    let predicate = entry.name
+    if entry.mode == "deterministic" {
+      if trim(entry?.mode_args ?? "") != "" {
+        out = out + [pack + ": deterministic predicate " + predicate + " must not declare mode args"]
+      }
+      continue
+    }
+    if entry?.fallback == nil {
+      out = out
+        + [
+        pack + ": semantic predicate " + predicate
+          + " must declare @semantic(fallback: deterministic_predicate)",
+      ]
+    } else if !(deterministic[entry.fallback] ?? false) {
+      out = out
+        + [
+        pack
+          + ": semantic predicate "
+          + predicate
+          + " fallback "
+          + entry.fallback
+          + " is not a deterministic predicate in the same pack",
+      ]
+    }
+  }
+  return out
+}
+
+fn validate_evidence(
+  pack: string,
+  entries: list,
+  evidence_defs: dict,
+  today: dict,
+  errors: list<string>,
+) -> list<string> {
+  var out = errors
+  let cutoff = shifted_months(today, -18)
+  for entry in entries {
+    let predicate = entry.name
+    let evidence_name = entry.evidence
+    let urls = evidence_defs[evidence_name]
+    if urls == nil {
+      out = out + [pack + ": " + predicate + " references missing evidence " + evidence_name]
+    } else if len(urls) < 2 {
+      out = out + [pack + ": " + evidence_name + " must list at least two evidence URLs"]
+    }
+    let confidence = to_float(entry.confidence)
+    if confidence == nil || confidence < 0.0 || confidence > 1.0 {
+      out = out + [pack + ": " + predicate + " confidence " + entry.confidence + " is outside 0.0..1.0"]
+    }
+    let source_date = parse_ymd(entry.source_date)
+    if source_date == nil {
+      out = out + [pack + ": " + predicate + " has invalid source_date " + entry.source_date]
+      continue
+    }
+    if source_date.serial > today.serial {
+      out = out + [pack + ": " + predicate + " source_date " + entry.source_date + " is in the future"]
+    }
+    if source_date.serial < cutoff.serial {
+      out = out
+        + [pack + ": " + predicate + " source_date " + entry.source_date + " is older than 18 months"]
+    }
+  }
+  return out
+}
+
+fn validate_pack_readme_coverage(
+  pack_dir: string,
+  predicate_names: list<string>,
+  errors: list<string>,
+) -> list<string> {
+  var out = errors
+  let readme_path = path_join(pack_dir, "README.md")
+  let readme = harness.fs.read_text(readme_path)
+  var missing: list<string> = []
+  for name in predicate_names {
+    if !readme.contains(name) {
+      missing = missing + [name]
+    }
+  }
+  if len(missing) > 0 {
+    out = out
+      + [
+      basename(pack_dir) + "/README.md: missing predicate coverage for "
+        + join(missing.sort(), ", "),
+    ]
+  }
+  return out
+}
+
+fn validate_case_file(
+  rel_path: string,
+  case_index: int,
+  file_index: int,
+  file_fixture,
+  errors: list<string>,
+) -> list<string> {
+  var out = errors
+  if type_of(file_fixture) != "dict" {
+    return out
+      + [
+      rel_path
+        + ": case "
+        + to_string(case_index)
+        + " file "
+        + to_string(file_index)
+        + " must be an object",
+    ]
+  }
+  out = validate_allowed_keys(
+    rel_path,
+    "case " + to_string(case_index) + " file " + to_string(file_index),
+    file_fixture,
+    FILE_KEYS,
+    out,
+  )
+  let file_path = file_fixture?.path
+  if type_of(file_path) != "string" || file_path == "" {
+    out = out
+      + [
+      rel_path + ": case " + to_string(case_index) + " file " + to_string(file_index)
+        + " needs a path",
+    ]
+  } else if !is_normalized_relative_path(file_path) {
+    out = out
+      + [
+      rel_path
+        + ": case "
+        + to_string(case_index)
+        + " file "
+        + to_string(file_index)
+        + " path must be normalized and relative",
+    ]
+  }
+  if type_of(file_fixture?.text) != "string" {
+    out = out
+      + [
+      rel_path + ": case " + to_string(case_index) + " file " + to_string(file_index)
+        + " needs text",
+    ]
+  }
+  return out
+}
+
+fn validate_fixture_case(rel_path: string, index: int, case, errors: list<string>) -> dict {
+  var out = errors
+  var expects: list<string> = []
+  var case_names: list<string> = []
+  if type_of(case) != "dict" {
+    return {
+      errors: out + [rel_path + ": case " + to_string(index) + " must be an object"],
+      expects: expects,
+      case_names: case_names,
+    }
+  }
+  out = validate_allowed_keys(rel_path, "case " + to_string(index), case, CASE_KEYS, out)
+  let case_name = case?.name
+  if type_of(case_name) != "string" || case_name == "" {
+    out = out + [rel_path + ": case " + to_string(index) + " needs a name"]
+  } else if regex_match("^[a-z][a-z0-9_]*$", case_name) == nil {
+    out = out + [rel_path + ": case " + to_string(index) + " name must be snake_case"]
+  } else {
+    case_names = case_names + [case_name]
+  }
+  let expect = case?.expect
+  if !VALID_EXPECTS.contains(expect) {
+    out = out + [rel_path + ": case " + to_string(index) + " has invalid expect " + to_string(expect)]
+  } else {
+    expects = expects + [expect]
+  }
+  if keys(case).contains("ctx") && type_of(case.ctx) != "dict" {
+    out = out + [rel_path + ": case " + to_string(index) + " ctx must be an object"]
+  }
+  let files = case?.files
+  if type_of(files) != "list" || len(files) == 0 {
+    out = out + [rel_path + ": case " + to_string(index) + " files must be a non-empty list"]
+    return {errors: out, expects: expects, case_names: case_names}
+  }
+  for file_index in range(0, len(files)) {
+    out = validate_case_file(rel_path, index, file_index, files[file_index], out)
+  }
+  return {errors: out, expects: expects, case_names: case_names}
+}
+
+fn validate_fixture_document(pack_dir: string, fixture_path: string, errors: list<string>) -> list<string> {
+  var out = errors
+  let rel_path = basename(pack_dir) + "/fixtures/" + basename(fixture_path)
+  let loaded = try {
+    json_parse(harness.fs.read_text(fixture_path))
+  }
+  if is_err(loaded) {
+    return out + [rel_path + ": invalid JSON: " + to_string(unwrap_err(loaded))]
+  }
+  let fixture = unwrap(loaded)
+  if type_of(fixture) != "dict" {
+    return out + [rel_path + ": fixture must be an object"]
+  }
+  if fixture?.predicate != basename(fixture_path).replace(".json", "") {
+    out = out + [rel_path + ": predicate must match fixture file name"]
+  }
+  let cases = fixture?.cases
+  if type_of(cases) != "list" || len(cases) == 0 {
+    return out + [rel_path + ": cases must be a non-empty list"]
+  }
+  out = validate_allowed_keys(rel_path, "fixture", fixture, FIXTURE_KEYS, out)
+  var expects: list<string> = []
+  var case_names: list<string> = []
+  for index in range(0, len(cases)) {
+    let result = validate_fixture_case(rel_path, index, cases[index], out)
+    out = result.errors
+    expects = expects + result.expects
+    case_names = case_names + result.case_names
+  }
+  let duplicate_case_names = duplicate_values(case_names)
+  if len(duplicate_case_names) > 0 {
+    out = out + [rel_path + ": duplicate case names: " + join(duplicate_case_names, ", ")]
+  }
+  if !expects.contains("Allow") {
+    out = out + [rel_path + ": fixture must include at least one Allow case"]
+  }
+  if !set_intersects(expects, ["Warn", "Block"]) {
+    out = out + [rel_path + ": fixture must include at least one Warn or Block case"]
+  }
+  return out
+}
+
+fn validate_fixtures(pack_dir: string, predicate_names: list<string>, errors: list<string>) -> dict {
+  var out = errors
+  let fixtures_dir = path_join(pack_dir, "fixtures")
+  if !harness.fs.exists(fixtures_dir) {
+    return {errors: out + [basename(pack_dir) + ": missing fixtures/ directory"], count: 0}
+  }
+  var fixture_files: list<string> = []
+  for entry in harness.fs.list_dir(fixtures_dir) ?? [] {
+    if entry.ends_with(".json") {
+      fixture_files = fixture_files + [path_join(fixtures_dir, entry)]
+    }
+  }
+  fixture_files = fixture_files.sort()
+  let fixture_names = fixture_files.map({ path -> basename(path).replace(".json", "") }).to_list()
+  let missing = set_difference(predicate_names, fixture_names)
+  let extra = set_difference(fixture_names, predicate_names)
+  if len(missing) > 0 {
+    out = out + [basename(pack_dir) + ": missing fixture files for " + join(missing, ", ")]
+  }
+  if len(extra) > 0 {
+    out = out + [basename(pack_dir) + ": fixture files without predicates: " + join(extra, ", ")]
+  }
+  for fixture_path in fixture_files {
+    out = validate_fixture_document(pack_dir, fixture_path, out)
+  }
+  return {errors: out, count: len(fixture_files)}
+}
+
+fn pack_dirs() -> list<string> {
+  var out: list<string> = []
+  for entry in harness.fs.list_dir(repo_root()) ?? [] {
+    let dir = path_join(repo_root(), entry)
+    if harness.fs.exists(path_join(dir, "invariants.harn")) {
+      out = out + [entry]
+    }
+  }
+  return out.sort()
+}
+
+fn main(harness: Harness) {
+  let parsed = parse_args(argv, arg_spec)
+  if parsed?._help ?? false {
+    harness.stdio.print(usage())
+    return
+  }
+  if len(parsed?._errors ?? []) > 0 {
+    harness.stdio.println(join(parsed._errors, "\n"))
+    exit(2)
+  }
+  let today_result = try {
+    today_from_env_or_args(parsed?.today)
+  }
+  if is_err(today_result) {
+    harness.stdio.println("Canon validation failed:\n- " + to_string(unwrap_err(today_result)))
+    exit(1)
+  }
+  let today = unwrap(today_result)
+  var errors: list<string> = []
+  let expected = expected_packs()
+  let actual = pack_dirs()
+  for pack in set_difference(expected, actual) {
+    errors = errors + [pack + ": expected pack directory is missing"]
+  }
+  for pack in set_difference(actual, expected) {
+    errors = errors + [pack + ": pack directory is not listed in EXPECTED_PACKS"]
+  }
+  errors = validate_manifest(errors)
+  errors = validate_readme_coverage(errors)
+  var total_predicates = 0
+  var total_fixtures = 0
+  for pack in expected {
+    let pack_dir = path_join(repo_root(), pack)
+    let invariants_path = path_join(pack_dir, "invariants.harn")
+    let readme_path = path_join(pack_dir, "README.md")
+    if !harness.fs.exists(invariants_path) || !harness.fs.exists(readme_path) {
+      continue
+    }
+    let parsed_invariants = parse_invariants(invariants_path, errors)
+    errors = parsed_invariants.errors
+    let entries = parsed_invariants.entries
+    let names = entries.map({ entry -> entry.name }).to_list()
+    let duplicate_names = duplicate_values(names)
+    if len(duplicate_names) > 0 {
+      errors = errors + [pack + ": duplicate predicate names: " + join(duplicate_names, ", ")]
+    }
+    let deterministic = len(entries.filter({ entry -> entry.mode == "deterministic" }).to_list())
+    let semantic = len(entries.filter({ entry -> entry.mode == "semantic" }).to_list())
+    let limits = PACK_DETERMINISTIC_LIMITS[pack] ?? [MIN_DETERMINISTIC, MAX_DETERMINISTIC]
+    if deterministic < limits[0] || deterministic > limits[1] {
+      errors = errors
+        + [
+        pack
+          + ": expected "
+          + to_string(limits[0])
+          + "-"
+          + to_string(limits[1])
+          + " deterministic predicates, found "
+          + to_string(deterministic),
+      ]
+    }
+    if semantic < MIN_SEMANTIC || semantic > MAX_SEMANTIC {
+      errors = errors
+        + [
+        pack
+          + ": expected "
+          + to_string(MIN_SEMANTIC)
+          + "-"
+          + to_string(MAX_SEMANTIC)
+          + " semantic predicates, found "
+          + to_string(semantic),
+      ]
+    }
+    errors = validate_semantic_fallbacks(pack, entries, errors)
+    errors = validate_evidence(pack, entries, parsed_invariants.evidence_defs, today, errors)
+    errors = validate_pack_readme_coverage(pack_dir, names, errors)
+    total_predicates = total_predicates + len(entries)
+    let fixture_result = validate_fixtures(pack_dir, names, errors)
+    errors = fixture_result.errors
+    total_fixtures = total_fixtures + fixture_result.count
+  }
+  if len(errors) > 0 {
+    harness.stdio.println("Canon validation failed:")
+    for error in errors {
+      harness.stdio.println("- " + error)
+    }
+    exit(1)
+  }
+  harness.stdio
+    .println(
+    "Validated "
+      + to_string(len(expected))
+      + " packs, "
+      + to_string(total_predicates)
+      + " predicates, and "
+      + to_string(total_fixtures)
+      + " fixtures.",
+  )
+}

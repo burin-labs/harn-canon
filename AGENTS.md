@@ -8,7 +8,7 @@ and evidence-backed.
 - Each pack lives at the repo root, for example `rust/`, `typescript/`, or
   `harn/`.
 - A pack contains `invariants.harn`, `README.md`, and `fixtures/*.json`.
-- `scripts/validate_canon.py` is the local and CI structure gate.
+- `scripts/validate-canon.harn` is the local and CI structure gate.
 - `docs/` is only an index for shared policy and design notes. Pack-specific
   rationale belongs in the pack README.
 
@@ -27,8 +27,11 @@ and evidence-backed.
 
 ## Validation
 
-- Structure and fixtures: `python3 scripts/validate_canon.py`
-- Validator syntax: `python3 -m py_compile scripts/validate_canon.py`
+- Structure and fixtures:
+  `HARN_CANON_TODAY=$(date -u +%F) harn run scripts/validate-canon.harn`
+- Deterministic fixtures: `harn run scripts/execute-fixtures.harn`
+- Validator syntax:
+  `harn check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn`
 - Whitespace: `git diff --check`
 - Harn formatting: run `harn fmt --check <changed .harn files>` when touching
   Harn files. Do not treat repo-wide `harn fmt --check .` as a clean gate until

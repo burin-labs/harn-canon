@@ -30,7 +30,7 @@ We aim to:
 In scope:
 
 - every `invariants.harn` predicate pack and its fixtures
-- the validator (`scripts/validate_canon.py`)
+- the validator (`scripts/validate-canon.harn`)
 - CI gates that enforce the trust model (see `CONTRIBUTING.md`)
 - the side-effect builtin ban and any way to bypass it
 

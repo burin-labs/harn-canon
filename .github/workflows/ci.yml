@@ -16,25 +16,6 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - name: Validate canon packs
-        run: python3 scripts/validate_canon.py
-
-      - name: Reject side-effect builtins in predicates
-        shell: bash
-        run: |
-          set -euo pipefail
-          # Predicate packs are TRUSTED CODE executed on consumer machines by
-          # `harn lint`. PRs may not introduce calls to side-effect builtins.
-          # See CONTRIBUTING.md "Trust model" for the rationale and the full
-          # forbidden list. The pattern requires `<name>\s*\(` so regex
-          # literals that just mention these names (e.g. the parallel-io
-          # predicate's own scan_without regex) are not false-positives.
-          if grep -nrE '\b(command_json|http_get|http_post|process_exec|secret_get|store_set|store_get)\s*\(' --include='*.harn' .; then
-            echo "::error::Predicate packs may not call side-effect builtins. See CONTRIBUTING.md \"Trust model\"." >&2
-            exit 1
-          fi
-          echo "No side-effect builtin calls in predicate packs."
-
       - name: Install pinned Harn
         shell: bash
         run: |
@@ -67,6 +48,36 @@ jobs:
           install -m 755 "${tmpdir}/harn" "${HOME}/.local/bin/harn"
           echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
 
+      - name: Harn script check + lint
+        shell: bash
+        run: |
+          set -euo pipefail
+          harn fmt --check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn
+          for script in scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn; do
+            harn check "${script}"
+            harn lint --strict "${script}"
+          done
+
+      - name: Validate canon packs
+        shell: bash
+        run: HARN_CANON_TODAY="$(date -u +%F)" harn run scripts/validate-canon.harn
+
+      - name: Reject side-effect builtins in predicates
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Predicate packs are TRUSTED CODE executed on consumer machines by
+          # `harn lint`. PRs may not introduce calls to side-effect builtins.
+          # See CONTRIBUTING.md "Trust model" for the rationale and the full
+          # forbidden list. The pattern requires `<name>\s*\(` so regex
+          # literals that just mention these names (e.g. the parallel-io
+          # predicate's own scan_without regex) are not false-positives.
+          if grep -nrE '\b(command_json|http_get|http_post|process_exec|secret_get|store_set|store_get)\s*\(' --include='*.harn' .; then
+            echo "::error::Predicate packs may not call side-effect builtins. See CONTRIBUTING.md \"Trust model\"." >&2
+            exit 1
+          fi
+          echo "No side-effect builtin calls in predicate packs."
+
       - name: Harn check + lint predicate packs
         shell: bash
         run: |
@@ -94,7 +105,7 @@ jobs:
           fi
 
       - name: Execute deterministic fixture cases
-        run: python3 scripts/execute_fixtures.py
+        run: harn run scripts/execute-fixtures.harn
 
   ci-status:
     name: CI status
