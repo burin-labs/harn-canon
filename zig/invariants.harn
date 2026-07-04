@@ -1,3 +1,5 @@
+import { ast_search } from "std/ast"
+
 let _EVIDENCE_ERROR_SWALLOW = [
   "https://ziglang.org/documentation/master/#Errors",
   "https://ziglang.org/documentation/master/#errdefer",
@@ -93,6 +95,12 @@ let _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", 
 let _EVIDENCE_DOC_COMMENTS = [
   "https://ziglang.org/documentation/master/#Doc-Comments",
   "https://zig.guide/build-system/generating-documentation/",
+]
+
+let _EVIDENCE_OBSERVE_BEFORE_ASSERT = [
+  "https://ziglang.org/documentation/master/#Zig-Test",
+  "https://ziglang.org/documentation/master/std/#std.testing.expectEqualStrings",
+  "https://zig.guide/build-system/zig-test/",
 ]
 
 fn is_zig_path(path) {
@@ -444,6 +452,143 @@ pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
   return block_on_findings(
     "doc_comments_attach_to_declarations",
     "Use `//` for implementation notes inside function bodies. Reserve `///` for declarations, fields, enum tags, and other doc-comment attachment sites.",
+    findings,
+  )
+}
+
+/**
+ * The producing-symbol role family: an in-repo callee whose output the test is
+ * asserting a literal against (write/serialize/format/encode/render/parse/etc).
+ * Resolved by the callee's role — its trailing path segment — NOT by task text.
+ * This same role list is copyable into every other `<lang>/invariants.harn`
+ * pack; only the assertion node kinds and grammar name are language-specific.
+ */
+let _PRODUCER_ROLE_PATTERN = r"(?i)(serialize|serialise|deserialize|deserialise|stringify|format|encode|decode|marshal|unmarshal|render|parse|tojson|fromjson|toString|write|dump|emit|print)"
+
+/**
+ * Zig assertion callees whose asserted value is compared against an author
+ * literal. Trailing-segment match so `std.testing.expectEqualStrings` and a
+ * bare `expectEqualStrings` both resolve.
+ */
+let _ZIG_ASSERT_PATTERN = r"(?i)^(expect|expectEqual|expectEqualStrings|expectEqualSlices|expectEqualDeep|expectStringStartsWith|expectStringEndsWith)$"
+
+/** Trailing path segment of a dotted callee (`writer.serialize` -> `serialize`). */
+fn _last_segment(name) {
+  let parts = to_string(name ?? "").split(".")
+  if len(parts) == 0 {
+    return to_string(name ?? "")
+  }
+  return parts[len(parts) - 1]
+}
+
+fn _is_producer_callee(callee) {
+  return regex_match(_PRODUCER_ROLE_PATTERN, _last_segment(callee), "") != nil
+}
+
+fn _is_assertion_callee(callee) {
+  return regex_match(_ZIG_ASSERT_PATTERN, _last_segment(callee), "") != nil
+}
+
+/**
+ * `observed_symbols` may name the full callee (`writer.serialize`) or the bare
+ * role symbol (`serialize`). A producer counts as grounded when either spelling
+ * is present, so an observe probe that captured the value suppresses the gate.
+ */
+fn _symbol_observed(callee, observed) {
+  let segment = _last_segment(callee)
+  for symbol in observed ?? [] {
+    let s = to_string(symbol ?? "")
+    if s == to_string(callee ?? "") || s == segment || _last_segment(s) == segment {
+      return true
+    }
+  }
+  return false
+}
+
+/**
+ * Collect each `const x = <call producer(...)>` binding in a file as a
+ * `{variable, callee}` record. Only producer-role callees are recorded, so a
+ * `const n = add(2, 3)` binding never enters the list.
+ */
+fn _producer_bindings(file_text) {
+  var bindings = []
+  let search = ast_search(
+    {
+      source: file_text,
+      query: "(variable_declaration (identifier) @name (_ (call_expression function: (_) @callee)))",
+      language: "zig",
+    },
+  )
+  for node in search.matches ?? [] {
+    let name = node.captures?.name?.text
+    let callee = node.captures?.callee?.text
+    if name != nil && callee != nil && _is_producer_callee(callee) {
+      bindings = bindings.push({variable: name, callee: callee})
+    }
+  }
+  return bindings
+}
+
+/**
+ * An assertion is ungrounded when it (1) is an assertion callee, (2) carries an
+ * author-written string literal, and (3) references a producer-bound variable
+ * whose producing callee is absent from `ctx.observed_symbols`.
+ */
+fn _ungrounded_assertions(file_text, bindings, observed) {
+  var hits = []
+  let search = ast_search(
+    {source: file_text, query: "(call_expression function: (_) @callee) @call", language: "zig"},
+  )
+  for node in search.matches ?? [] {
+    let callee = node.captures?.callee?.text
+    let call_text = node.captures?.call?.text ?? ""
+    if callee == nil || !_is_assertion_callee(callee) {
+      continue
+    }
+    if regex_match(r#""[^"]*""#, call_text, "") == nil {
+      continue
+    }
+    for binding in bindings {
+      // Zig identifiers are `[A-Za-z_][A-Za-z0-9_]*`, so no regex escaping is
+      // needed to word-boundary-match the bound variable name in the call text.
+      if regex_match(r"\b" + binding.variable + r"\b", call_text, "") != nil
+        && !_symbol_observed(binding.callee, observed) {
+        hits = hits.push({assertion: call_text, symbol: binding.callee, variable: binding.variable})
+      }
+    }
+  }
+  return hits
+}
+
+@invariant
+@deterministic
+@archivist(evidence: _EVIDENCE_OBSERVE_BEFORE_ASSERT, confidence: 0.7, source_date: "2026-07-03")
+/**
+ * Blocks a changed test that asserts an author-written literal against the
+ * output of an in-repo producing symbol (serialize/format/encode/parse/write
+ * family) when that symbol's output was never observed this session
+ * (`ctx.observed_symbols`). Forces observe-then-assert instead of asserting a
+ * hand-simulated value. The producing callee is resolved by role, and the
+ * grounded case (`observe_output` populated the symbol) suppresses the block.
+ */
+pub fn assertion_on_ungrounded_output(slice, ctx, _repo_at_base) {
+  let observed = ctx?.observed_symbols ?? []
+  var findings = []
+  for file in zig_files(slice) {
+    if !is_test_zig_path(file.path) {
+      continue
+    }
+    let bindings = _producer_bindings(file.text)
+    if len(bindings) == 0 {
+      continue
+    }
+    for hit in _ungrounded_assertions(file.text, bindings, observed) {
+      findings = findings.push({path: file.path, symbol: hit.symbol, assertion: hit.assertion})
+    }
+  }
+  return block_on_findings(
+    "assertion_on_ungrounded_output",
+    "Run the producing symbol on your own test input (observe_output) and assert the OBSERVED bytes/value, not a hand-simulated literal. Freeze the expected value from a real run before writing the assertion.",
     findings,
   )
 }

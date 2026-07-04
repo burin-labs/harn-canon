@@ -39,8 +39,9 @@ MAX_DETERMINISTIC = 12
 MIN_SEMANTIC = 2
 MAX_SEMANTIC = 3
 PACK_DETERMINISTIC_LIMITS = {
-    # Zig carries current-stdlib migration predicates; keep the exception scoped.
-    "zig": (MIN_DETERMINISTIC, 14),
+    # Zig carries current-stdlib migration predicates plus the AST-based
+    # observe-before-assert grounding detector; keep the exception scoped.
+    "zig": (MIN_DETERMINISTIC, 15),
 }
 VALID_EXPECTS = {"Allow", "Warn", "Block"}
 FIXTURE_KEYS = {"predicate", "cases"}
