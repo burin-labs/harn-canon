@@ -22,6 +22,17 @@
       ]
     },
     {
+      "name": "allows_assert_when_producer_output_was_observed",
+      "expect": "Allow",
+      "ctx": {"observed_symbols": ["writer.serialize"]},
+      "files": [
+        {
+          "path": "src/writer_test.zig",
+          "text": "const std = @import(\"std\");\nconst writer = @import(\"writer.zig\");\n\ntest \"round trip preserves the header comment\" {\n    var buf: [256]u8 = undefined;\n    const output = try writer.serialize(&buf, kv);\n    try std.testing.expectEqualStrings(\"# header comment\", output);\n}\n"
+        }
+      ]
+    },
+    {
       "name": "allows_known_literal_arithmetic_assert",
       "expect": "Allow",
       "files": [
