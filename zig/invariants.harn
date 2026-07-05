@@ -108,13 +108,14 @@ fn is_zig_path(path) {
 }
 
 fn is_test_zig_path(path) {
+  let wrapped = "/" + replace(to_string(path ?? ""), "\\", "/")
   return path.ends_with("_test.zig")
     || regex_match(r"(^|/)test_[^/]*\.zig$", path, "") != nil
-    || contains(path, "/tests/")
-    || contains(path, "/test/")
-    || contains(path, "/testdata/")
-    || contains(path, "/examples/")
-    || contains(path, "/example/")
+    || wrapped.contains("/tests/")
+    || wrapped.contains("/test/")
+    || wrapped.contains("/testdata/")
+    || wrapped.contains("/examples/")
+    || wrapped.contains("/example/")
 }
 
 fn zig_files(slice) {

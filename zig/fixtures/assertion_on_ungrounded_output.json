@@ -22,6 +22,16 @@
       ]
     },
     {
+      "name": "blocks_top_level_tests_dir_unobserved_output",
+      "expect": "Block",
+      "files": [
+        {
+          "path": "tests/writer_roundtrip.zig",
+          "text": "const std = @import(\"std\");\nconst writer = @import(\"../src/writer.zig\");\n\ntest \"serialize emits the re-prefixed comment\" {\n    var buf: [256]u8 = undefined;\n    const output = try writer.serialize(&buf, kv);\n    try std.testing.expectEqualStrings(\"# inline comment\", output);\n}\n"
+        }
+      ]
+    },
+    {
       "name": "allows_assert_when_producer_output_was_observed",
       "expect": "Allow",
       "ctx": {"observed_symbols": ["writer.serialize"]},
