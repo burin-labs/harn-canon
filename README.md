@@ -22,6 +22,11 @@ manifest instead of carrying their own language-routing tables. The validator
 treats eval-critical language routes as a contract so convergence packs cannot
 silently disappear from Harn/Burin discovery.
 
+When this repo is installed as a Harn package, `harn.toml` exposes the same
+`canon-packs.json` file as a `harn.canon` contribution. Package consumers should
+read that contribution and still treat `canon-packs.json` as the single source
+of pack routing truth.
+
 Predicate files use Harn attributes to carry evidence:
 
 ```harn
