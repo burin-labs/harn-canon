@@ -11,7 +11,7 @@
     {"id": "go", "title": "Go", "invariants": "go/invariants.harn", "fixtures": "go/fixtures", "extensions": ["go"]},
     {"id": "graphql", "title": "GraphQL", "invariants": "graphql/invariants.harn", "fixtures": "graphql/fixtures", "extensions": ["gql", "graphql"]},
     {"id": "harn", "title": "Harn", "invariants": "harn/invariants.harn", "fixtures": "harn/fixtures", "extensions": ["harn"]},
-    {"id": "haskell", "title": "Haskell", "invariants": "haskell/invariants.harn", "fixtures": "haskell/fixtures", "extensions": ["hs"]},
+    {"id": "haskell", "title": "Haskell", "invariants": "haskell/invariants.harn", "fixtures": "haskell/fixtures", "extensions": ["hs", "lhs"]},
     {"id": "html", "title": "HTML", "invariants": "html/invariants.harn", "fixtures": "html/fixtures", "extensions": ["htm", "html"]},
     {"id": "java", "title": "Java", "invariants": "java/invariants.harn", "fixtures": "java/fixtures", "extensions": ["java"]},
     {"id": "javascript", "title": "JavaScript", "invariants": "javascript/invariants.harn", "fixtures": "javascript/fixtures", "extensions": ["cjs", "js", "jsx", "mjs"]},
@@ -34,6 +34,6 @@
     {"id": "typescript", "title": "TypeScript", "invariants": "typescript/invariants.harn", "fixtures": "typescript/fixtures", "extensions": ["cts", "mts", "ts", "tsx"]},
     {"id": "xml", "title": "XML", "invariants": "xml/invariants.harn", "fixtures": "xml/fixtures", "extensions": ["xml", "xsd", "xsl", "xslt"]},
     {"id": "yaml", "title": "YAML", "invariants": "yaml/invariants.harn", "fixtures": "yaml/fixtures", "extensions": ["yaml", "yml"]},
-    {"id": "zig", "title": "Zig", "invariants": "zig/invariants.harn", "fixtures": "zig/fixtures", "extensions": ["zig"]}
+    {"id": "zig", "title": "Zig", "invariants": "zig/invariants.harn", "fixtures": "zig/fixtures", "extensions": ["zig", "zon"]}
   ]
 }
