@@ -1,37 +1,37 @@
-let _EVIDENCE_SELECT_STAR = [
+const _EVIDENCE_SELECT_STAR = [
   "https://www.postgresql.org/docs/current/sql-createview.html",
   "https://docs.gitlab.com/development/sql/",
 ]
 
-let _EVIDENCE_EXPLICIT_JOIN = [
+const _EVIDENCE_EXPLICIT_JOIN = [
   "https://www.postgresql.org/docs/current/queries-table-expressions.html",
   "https://www.sqlstyle.guide/",
 ]
 
-let _EVIDENCE_UNBOUNDED_DML = [
+const _EVIDENCE_UNBOUNDED_DML = [
   "https://dev.mysql.com/doc/refman/8.0/en/mysql-tips.html",
   "https://www.postgresql.org/docs/current/sql-update.html",
   "https://www.postgresql.org/docs/current/sql-delete.html",
 ]
 
-let _EVIDENCE_IF_NOT_EXISTS = [
+const _EVIDENCE_IF_NOT_EXISTS = [
   "https://www.postgresql.org/docs/current/sql-createtable.html",
   "https://www.postgresql.org/docs/current/sql-createindex.html",
   "https://dev.mysql.com/doc/refman/8.0/en/create-table.html",
 ]
 
-let _EVIDENCE_DROP_IF_EXISTS = [
+const _EVIDENCE_DROP_IF_EXISTS = [
   "https://www.postgresql.org/docs/current/sql-droptable.html",
   "https://dev.mysql.com/doc/refman/8.0/en/drop-table.html",
 ]
 
-let _EVIDENCE_PARAMETERIZED = [
+const _EVIDENCE_PARAMETERIZED = [
   "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
   "https://www.postgresql.org/docs/current/sql-prepare.html",
   "https://learn.microsoft.com/en-us/sql/relational-databases/system-stored-procedures/sp-executesql-transact-sql",
 ]
 
-let _EVIDENCE_FK_INDEX = [
+const _EVIDENCE_FK_INDEX = [
   "https://www.postgresql.org/docs/current/ddl-constraints.html",
   "https://dev.mysql.com/doc/refman/8.0/en/create-table-foreign-keys.html",
 ]
@@ -76,7 +76,7 @@ fn migration_sql_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -86,7 +86,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -138,7 +138,7 @@ fn any_match_lacks(matches, lack_pattern) {
 @archivist(evidence: _EVIDENCE_SELECT_STAR, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks unqualified SELECT * in production SQL files. */
 pub fn no_select_star(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_sql_files(slice), r"(?i)\bSELECT\s+\*\s+FROM\b", "is")
+  const findings = scan_files(production_sql_files(slice), r"(?i)\bSELECT\s+\*\s+FROM\b", "is")
   return block_on_findings(
     "no_select_star",
     "List explicit columns instead of SELECT *; column drift breaks views, contracts, and downstream consumers.",
@@ -151,7 +151,7 @@ pub fn no_select_star(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EXPLICIT_JOIN, confidence: 0.74, source_date: "2026-05-09")
 /** Blocks comma-separated table lists in FROM in favor of explicit JOIN syntax. */
 pub fn explicit_join_type(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_sql_files(slice),
     r"(?i)\bFROM\s+[\w\.]+(?:\s+(?:AS\s+)?\w+)?\s*,\s*[\w\.]+",
     "is",
@@ -168,7 +168,7 @@ pub fn explicit_join_type(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNBOUNDED_DML, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks DELETE or UPDATE statements that lack a WHERE clause. */
 pub fn no_unbounded_delete_or_update(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_sql_files(slice),
     { file -> any_match_lacks(regex_match(r"(?is)\bDELETE\s+FROM\s+[^;]+;", file.text, "is"), r"(?i)\bWHERE\b")
       || any_match_lacks(
@@ -188,7 +188,7 @@ pub fn no_unbounded_delete_or_update(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_IF_NOT_EXISTS, confidence: 0.7, source_date: "2026-05-09")
 /** Warns when migration CREATE TABLE or CREATE INDEX statements omit IF NOT EXISTS. */
 pub fn migrations_use_if_not_exists(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     migration_sql_files(slice),
     { file -> any_match_lacks(
       regex_match(r"(?is)\bCREATE\s+(?:TABLE|UNIQUE\s+INDEX|INDEX)(?:\s+\w+){1,4}", file.text, "is"),
@@ -207,7 +207,7 @@ pub fn migrations_use_if_not_exists(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_DROP_IF_EXISTS, confidence: 0.78, source_date: "2026-05-09")
 /** Warns when migration DROP statements omit IF EXISTS. */
 pub fn destructive_drops_use_if_exists(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     migration_sql_files(slice),
     { file -> any_match_lacks(
       regex_match(
@@ -230,8 +230,8 @@ pub fn destructive_drops_use_if_exists(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks dynamic SQL that interpolates untrusted input instead of binding parameters. */
 pub fn parameterized_queries_only(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed SQL builds a query by concatenating, formatting, or interpolating user-controlled values into the SQL text instead of using bind parameters, prepared statements, or sp_executesql with typed parameters. Allow safe identifier whitelisting, format() with %I or %L, and template substitutions where the substituted token is a constant or trusted identifier."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: sql_files(slice)})
+  const rubric = "Block only when changed SQL builds a query by concatenating, formatting, or interpolating user-controlled values into the SQL text instead of using bind parameters, prepared statements, or sp_executesql with typed parameters. Allow safe identifier whitelisting, format() with %I or %L, and template substitutions where the substituted token is a constant or trusted identifier."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: sql_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "parameterized_queries_only",
@@ -247,8 +247,8 @@ pub fn parameterized_queries_only(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FK_INDEX, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks new foreign-key references that lack a covering index on the referencing column. */
 pub fn index_on_fk(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when a SQL migration or schema change adds a FOREIGN KEY constraint or REFERENCES clause on a column that is not already the leading column of an index, primary key, or unique constraint, and the same change set does not add a CREATE INDEX covering it. Allow MySQL InnoDB inline FOREIGN KEY constraints that auto-create the supporting index, and allow columns already covered by an existing index."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: production_sql_files(slice)})
+  const rubric = "Block only when a SQL migration or schema change adds a FOREIGN KEY constraint or REFERENCES clause on a column that is not already the leading column of an index, primary key, or unique constraint, and the same change set does not add a CREATE INDEX covering it. Allow MySQL InnoDB inline FOREIGN KEY constraints that auto-create the supporting index, and allow columns already covered by an existing index."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: production_sql_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "index_on_fk",

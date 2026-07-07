@@ -1,54 +1,54 @@
-let _EVIDENCE_NULLABLE = [
+const _EVIDENCE_NULLABLE = [
   "https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references",
   "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/nullable-reference-types",
 ]
 
-let _EVIDENCE_ASYNC_NAMING = [
+const _EVIDENCE_ASYNC_NAMING = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/naming-rules",
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/",
 ]
 
-let _EVIDENCE_TASK_WAIT = [
+const _EVIDENCE_TASK_WAIT = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca1849",
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2007",
 ]
 
-let _EVIDENCE_CONFIGURE_AWAIT = [
+const _EVIDENCE_CONFIGURE_AWAIT = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2007",
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/reliability-warnings",
 ]
 
-let _EVIDENCE_UNUSED_PRIVATES = [
+const _EVIDENCE_UNUSED_PRIVATES = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/ide0051",
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/style-rules/",
 ]
 
-let _EVIDENCE_RETHROW = [
+const _EVIDENCE_RETHROW = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2200",
   "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/statements/exception-handling-statements",
 ]
 
-let _EVIDENCE_VALUETASK = [
+const _EVIDENCE_VALUETASK = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2012",
   "https://learn.microsoft.com/en-us/dotnet/api/system.threading.tasks.valuetask",
 ]
 
-let _EVIDENCE_CONSOLE_LOGGING = [
+const _EVIDENCE_CONSOLE_LOGGING = [
   "https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/overview",
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
 ]
 
-let _EVIDENCE_SQL_PARAMETERS = [
+const _EVIDENCE_SQL_PARAMETERS = [
   "https://learn.microsoft.com/en-us/dotnet/fundamentals/code-analysis/quality-rules/ca2100",
   "https://cheatsheetseries.owasp.org/cheatsheets/SQL_Injection_Prevention_Cheat_Sheet.html",
 ]
 
-let _EVIDENCE_SECRETS = [
+const _EVIDENCE_SECRETS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
 ]
 
-let _EVIDENCE_SENSITIVE_LOGS = [
+const _EVIDENCE_SENSITIVE_LOGS = [
   "https://learn.microsoft.com/en-us/dotnet/core/extensions/logging/overview",
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
 ]
@@ -109,7 +109,7 @@ fn library_csharp_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -119,7 +119,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -167,7 +167,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_NULLABLE, confidence: 0.86, source_date: "2026-05-08")
 /** Blocks C# project files that disable or omit nullable reference types. */
 pub fn nullable_reference_types_enabled(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     project_files(slice),
     { file -> regex_match(r"<Nullable>\s*enable\s*</Nullable>", file.text, "is") == nil },
   )
@@ -183,7 +183,7 @@ pub fn nullable_reference_types_enabled(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ASYNC_NAMING, confidence: 0.7, source_date: "2026-05-08")
 /** Warns when async Task-returning methods do not use an Async suffix. */
 pub fn async_method_naming(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in csharp_files(slice) {
     for line in file.text.lines() {
       if regex_match(
@@ -209,7 +209,7 @@ pub fn async_method_naming(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TASK_WAIT, confidence: 0.84, source_date: "2026-05-08")
 /** Blocks synchronous waits on Task results in production C# paths. */
 pub fn no_task_wait(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_csharp_files(slice),
     r"(\.Wait\s*\(|\.Result\b|\.GetAwaiter\s*\(\s*\)\s*\.GetResult\s*\()",
     "s",
@@ -226,7 +226,7 @@ pub fn no_task_wait(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CONFIGURE_AWAIT, confidence: 0.68, source_date: "2026-05-08")
 /** Warns when library-looking code awaits tasks without an explicit ConfigureAwait choice. */
 pub fn configure_await_false_in_libraries(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_without(
+  const findings = scan_files_without(
     library_csharp_files(slice),
     r"\bawait\s+[^;\n]+;",
     r"\.ConfigureAwait\s*\(\s*(false|true)\s*\)",
@@ -243,7 +243,7 @@ pub fn configure_await_false_in_libraries(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNUSED_PRIVATES, confidence: 0.72, source_date: "2026-05-08")
 /** Blocks disabling the unused-private-member analyzer for C# source. */
 pub fn no_unused_privates(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     analyzer_config_files(slice),
     r"(dotnet_diagnostic\.IDE0051\.severity\s*=\s*(none|silent)|<NoWarn>[^<]*IDE0051)",
     "is",
@@ -260,7 +260,7 @@ pub fn no_unused_privates(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RETHROW, confidence: 0.82, source_date: "2026-05-08")
 /** Blocks `throw ex;` because it resets the original exception stack trace. */
 pub fn no_throw_ex_resets_stack(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     csharp_files(slice),
     r"catch\s*\([^)]*\b[A-Za-z_][A-Za-z0-9_]*\s*\)\s*\{[^}]*\bthrow\s+[A-Za-z_][A-Za-z0-9_]*\s*;",
     "s",
@@ -277,10 +277,10 @@ pub fn no_throw_ex_resets_stack(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_VALUETASK, confidence: 0.66, source_date: "2026-05-08")
 /** Warns when a ValueTask local is awaited or read more than once in one method body. */
 pub fn no_valuetask_reuse(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in csharp_files(slice) {
-    var value_task_local = false
-    var reads = 0
+    let value_task_local = false
+    let reads = 0
     for line in file.text.lines() {
       if regex_match(r"\bValueTask(<[^>\n]+>)?\s+[A-Za-z_][A-Za-z0-9_]*\s*=", line, "") != nil {
         value_task_local = true
@@ -306,7 +306,7 @@ pub fn no_valuetask_reuse(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CONSOLE_LOGGING, confidence: 0.74, source_date: "2026-05-08")
 /** Warns on Console debug output in production C# paths. */
 pub fn no_console_write_in_prod_path(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_csharp_files(slice),
     r"\bConsole\.(Write|WriteLine|Error\.Write|Error\.WriteLine)\s*\(",
     "s",
@@ -323,8 +323,8 @@ pub fn no_console_write_in_prod_path(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks SQL commands assembled with untrusted string interpolation or concatenation. */
 pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed C# builds SQL command text by concatenating, interpolating, or formatting user-controlled values into the SQL string instead of using parameters, stored procedures, or a query builder that binds values."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
+  const rubric = "Block only when changed C# builds SQL command text by concatenating, interpolating, or formatting user-controlled values into the SQL string instead of using parameters, stored procedures, or a query builder that binds values."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "sql_commands_use_parameters",
@@ -340,8 +340,8 @@ pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, private keys, and production connection strings. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed C# source, appsettings JSON, csproj metadata, or test host configuration embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from configuration or a managed secret source."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
+  const rubric = "Block only when changed C# source, appsettings JSON, csproj metadata, or test host configuration embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from configuration or a managed secret source."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
   if judgement.verdict == "Block" {
     return block(
       "no_hardcoded_secrets",
@@ -357,8 +357,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, authorization material, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed C# logs or throws messages containing secrets, credentials, session identifiers, authorization headers, access tokens, passwords, payment data, or sensitive personal data through ILogger, Console, diagnostics, telemetry, or exception text."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
+  const rubric = "Block only when changed C# logs or throws messages containing secrets, credentials, session identifiers, authorization headers, access tokens, passwords, payment data, or sensitive personal data through ILogger, Console, diagnostics, telemetry, or exception text."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_sensitive_data_in_logs",

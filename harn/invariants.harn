@@ -1,71 +1,71 @@
-let _EVIDENCE_SCHEMA_RETRIES = [
+const _EVIDENCE_SCHEMA_RETRIES = [
   "https://harnlang.com/docs/llm/harn-quickref.html#json-querying",
   "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#v0735",
   "https://platform.openai.com/docs/guides/structured-outputs",
 ]
 
-let _EVIDENCE_PARALLEL_IO = [
+const _EVIDENCE_PARALLEL_IO = [
   "https://harnlang.com/docs/llm/harn-quickref.html#concurrency",
   "https://harnlang.com/concurrency.html",
   "https://help.openai.com/en/articles/6891753-rate-limit-advice",
   "https://docs.anthropic.com/en/api/rate-limits",
 ]
 
-let _EVIDENCE_SOURCE_STRINGS = [
+const _EVIDENCE_SOURCE_STRINGS = [
   "https://harnlang.com/docs/llm/harn-quickref.html#files-and-execution",
   "https://harnlang.com/docs/llm/harn-quickref.html#strings",
 ]
 
-let _EVIDENCE_TRANSCRIPTS = [
+const _EVIDENCE_TRANSCRIPTS = [
   "https://harnlang.com/docs/llm/harn-quickref.html#module-scope",
   "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#v070",
 ]
 
-let _EVIDENCE_SCHEMA_OBJECTS = [
+const _EVIDENCE_SCHEMA_OBJECTS = [
   "https://harnlang.com/docs/llm/harn-quickref.html#json-querying",
   "https://json-schema.org/understanding-json-schema/reference/object",
   "https://platform.openai.com/docs/guides/structured-outputs",
 ]
 
-let _EVIDENCE_DYNAMIC_BOUNDARIES = [
+const _EVIDENCE_DYNAMIC_BOUNDARIES = [
   "https://harnlang.com/docs/llm/harn-quickref.html#typing-any-vs-unknown-vs-no-annotation",
   "https://harnlang.com/builtins.html#json",
 ]
 
-let _EVIDENCE_MOCK_TIME = [
+const _EVIDENCE_MOCK_TIME = [
   "https://harnlang.com/docs/llm/harn-quickref.html#time-sleep-monotonic-clock",
   "https://harnlang.com/concurrency.html#retry",
 ]
 
-let _EVIDENCE_ITERATION = [
+const _EVIDENCE_ITERATION = [
   "https://harnlang.com/docs/llm/harn-quickref.html#iteration",
   "https://harnlang.com/builtins.html#list-methods",
 ]
 
-let _EVIDENCE_CHANNEL_IDEMPOTENCY = [
+const _EVIDENCE_CHANNEL_IDEMPOTENCY = [
   "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
   "https://harnlang.com/builtins.html",
 ]
 
-let _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION = [
+const _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION = [
   "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
   "https://www.rfc-editor.org/rfc/rfc7591.html#section-5.1",
   "https://www.rfc-editor.org/rfc/rfc8252.html#section-7.3",
 ]
 
-let _EVIDENCE_OAUTH_REDACTION = [
+const _EVIDENCE_OAUTH_REDACTION = [
   "https://github.com/burin-labs/harn/blob/main/CHANGELOG.md#unreleased",
   "https://www.rfc-editor.org/rfc/rfc7591.html#section-3.2.1",
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html#data-to-exclude",
 ]
 
-let _EVIDENCE_PROMPT_SECRETS = [
+const _EVIDENCE_PROMPT_SECRETS = [
   "https://genai.owasp.org/llmrisk/llm07-insecure-plugin-design/",
   "https://openai.com/index/prompt-injections/",
   "https://learn.microsoft.com/en-us/security/zero-trust/sfi/defend-indirect-prompt-injection",
 ]
 
-let _EVIDENCE_ACP_SIDE_EFFECTS = [
+const _EVIDENCE_ACP_SIDE_EFFECTS = [
   "https://harnlang.com/docs/llm/harn-quickref.html#attributes--name",
   "https://genai.owasp.org/llmrisk/llm062025-excessive-agency/",
   "https://platform.openai.com/docs/guides/agent-builder-safety",
@@ -76,7 +76,7 @@ fn harn_files(slice) {
 }
 
 fn scan(slice, pattern) {
-  var findings = []
+  let findings = []
   for file in harn_files(slice) {
     if regex_match(pattern, file.text, "s") != nil {
       findings = findings
@@ -87,7 +87,7 @@ fn scan(slice, pattern) {
 }
 
 fn scan_if(slice, predicate) {
-  var findings = []
+  let findings = []
   for file in harn_files(slice) {
     if predicate(file.text) {
       findings = findings
@@ -117,7 +117,7 @@ fn block(rule, remediation, findings) {
 }
 
 fn block_on_match(slice, rule, pattern, remediation) {
-  let findings = scan(slice, pattern)
+  const findings = scan(slice, pattern)
   if findings.none() {
     return allow(rule)
   }
@@ -125,7 +125,7 @@ fn block_on_match(slice, rule, pattern, remediation) {
 }
 
 fn warn_on_match(slice, rule, pattern, remediation) {
-  let findings = scan(slice, pattern)
+  const findings = scan(slice, pattern)
   if findings.none() {
     return allow(rule)
   }
@@ -151,7 +151,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_SCHEMA_RETRIES, confidence: 0.86, source_date: "2026-04-26")
 /** Blocks schema-mode llm_call calls that omit a schema retry budget. */
 pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
-  let findings = scan_if(
+  const findings = scan_if(
     slice,
     { text -> regex_match(r"llm_call\s*\(", text, "s") != nil
       && (contains(text, "output_schema:") || contains(text, "response_schema:")
@@ -170,7 +170,7 @@ pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PARALLEL_IO, confidence: 0.82, source_date: "2026-04-26")
 /** Warns when external IO is fanned out without max_concurrent. */
 pub fn parallel_io_sets_max_concurrent(slice, _ctx, _repo_at_base) {
-  let findings = scan_without(
+  const findings = scan_without(
     slice,
     r"parallel\s+(each|settle)\s+[^{]*\{[^}]*\b(llm_call|http_get|http_post|host_tool_call|mcp_tool_call)\s*\(",
     r"parallel\s+(each|settle)\s+[^{]*with\s*\{[^}]*max_concurrent\s*:",
@@ -213,7 +213,7 @@ pub fn no_legacy_transcript_options(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SCHEMA_OBJECTS, confidence: 0.78, source_date: "2026-04-26")
 /** Warns when closed-looking object schemas allow unknown fields. */
 pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
-  let findings = scan_if(
+  const findings = scan_if(
     slice,
     { text -> (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
       && contains(text, "properties:")
@@ -245,7 +245,7 @@ pub fn dynamic_boundaries_use_unknown(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MOCK_TIME, confidence: 0.8, source_date: "2026-04-26")
 /** Warns when tests use time-sensitive operations without mock_time. */
 pub fn tests_mock_time_for_sleep(slice, _ctx, _repo_at_base) {
-  let findings = scan_without(
+  const findings = scan_without(
     slice,
     r"@test\s+pipeline\s+\w+\s*\([^)]*\)\s*\{[^}]*\b(sleep_ms|sleep|deadline)\b",
     r"@test\s+pipeline\s+\w+\s*\([^)]*\)\s*\{[^}]*\bmock_time\s*\(",
@@ -275,7 +275,7 @@ pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CHANNEL_IDEMPOTENCY, confidence: 0.72, source_date: "2026-05-19")
 /** Warns when durable channel emits omit a stable idempotency id. */
 pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
-  let findings = scan_if(
+  const findings = scan_if(
     slice,
     { text -> regex_match(r"emit_channel\s*\(", text, "s") != nil
       && regex_match(r"\bid\s*:", text, "s") == nil },
@@ -292,7 +292,7 @@ pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION, confidence: 0.78, source_date: "2026-05-19")
 /** Blocks obvious non-loopback HTTP redirect URIs in OAuth dynamic registration metadata. */
 pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
-  let findings = scan_if(
+  const findings = scan_if(
     slice,
     { text -> regex_match(r"redirect_uris?\s*:\s*\[[^\]]*\x22http://", text, "s") != nil
       && !contains(text, "http://127.0.0.1")
@@ -311,8 +311,8 @@ pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
 /** Blocks prompts that embed secrets or sensitive customer data. */
 pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  const rubric = "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "llm_prompts_do_not_embed_secrets",
@@ -328,8 +328,8 @@ pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_OAUTH_REDACTION, confidence: 0.68, source_date: "2026-05-19")
 /** Blocks OAuth client secrets and tokens from audit, transcript, log, or span payloads. */
 pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  const rubric = "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "oauth_audit_payloads_redact_tokens",
@@ -345,8 +345,8 @@ pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ACP_SIDE_EFFECTS, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks ACP tool metadata that understates real side effects. */
 pub fn acp_tool_side_effects_are_honest(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
+  const rubric = "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "acp_tool_side_effects_are_honest",

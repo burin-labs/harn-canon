@@ -1,55 +1,55 @@
-let _EVIDENCE_RAW_NEW_DELETE = [
+const _EVIDENCE_RAW_NEW_DELETE = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#r11-avoid-calling-new-and-delete-explicitly",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/owning-memory.html",
   "https://en.cppreference.com/w/cpp/memory/unique_ptr",
 ]
 
-let _EVIDENCE_NAKED_MALLOC = [
+const _EVIDENCE_NAKED_MALLOC = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#r10-avoid-malloc-and-free",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/no-malloc.html",
 ]
 
-let _EVIDENCE_NULLPTR = [
+const _EVIDENCE_NULLPTR = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es47-use-nullptr-rather-than-0-or-null",
   "https://clang.llvm.org/extra/clang-tidy/checks/modernize/use-nullptr.html",
   "https://en.cppreference.com/w/cpp/language/nullptr",
 ]
 
-let _EVIDENCE_INCLUDE_GUARD = [
+const _EVIDENCE_INCLUDE_GUARD = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#sf8-use-include-guards-for-all-h-files",
   "https://clang.llvm.org/extra/clang-tidy/checks/llvm/header-guard.html",
   "https://en.cppreference.com/w/cpp/preprocessor/impl",
 ]
 
-let _EVIDENCE_USING_NAMESPACE_HEADER = [
+const _EVIDENCE_USING_NAMESPACE_HEADER = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#sf7-dont-write-using-namespace-at-global-scope-in-a-header-file",
   "https://google.github.io/styleguide/cppguide.html#Namespaces",
 ]
 
-let _EVIDENCE_C_STYLE_CAST = [
+const _EVIDENCE_C_STYLE_CAST = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#es49-if-you-must-use-a-cast-use-a-named-cast",
   "https://clang.llvm.org/extra/clang-tidy/checks/google/readability-casting.html",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/pro-type-cstyle-cast.html",
 ]
 
-let _EVIDENCE_USING_OVER_TYPEDEF = [
+const _EVIDENCE_USING_OVER_TYPEDEF = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#t43-prefer-using-over-typedef-for-defining-aliases",
   "https://clang.llvm.org/extra/clang-tidy/checks/modernize/use-using.html",
 ]
 
-let _EVIDENCE_RULE_OF_FIVE = [
+const _EVIDENCE_RULE_OF_FIVE = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c21-if-you-define-or-delete-any-default-operation-define-or-delete-them-all",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/special-member-functions.html",
   "https://en.cppreference.com/w/cpp/language/rule_of_three",
 ]
 
-let _EVIDENCE_MEMBER_INIT = [
+const _EVIDENCE_MEMBER_INIT = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#type6-always-initialize-a-member-variable",
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#c48-prefer-default-member-initializers-to-member-initializers-in-constructors-for-constant-initializers",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/pro-type-member-init.html",
 ]
 
-let _EVIDENCE_CONST_CORRECTNESS = [
+const _EVIDENCE_CONST_CORRECTNESS = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#con2-by-default-make-member-functions-const",
   "https://clang.llvm.org/extra/clang-tidy/checks/readability/make-member-function-const.html",
 ]
@@ -143,7 +143,7 @@ fn cpp_header_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -153,7 +153,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -195,7 +195,7 @@ fn warn_on_findings(rule, remediation, findings) {
  * Blocks raw new and delete in production C++ paths in favor of smart pointers and RAII containers.
  */
 pub fn no_raw_new_delete(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     cpp_production_files(slice),
     r"\bnew\s+[A-Za-z_]|\bdelete\b\s*(?:\[\s*\])?\s*[A-Za-z_]",
     "s",
@@ -212,7 +212,7 @@ pub fn no_raw_new_delete(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NAKED_MALLOC, confidence: 0.82, source_date: "2026-05-10")
 /** Blocks malloc/calloc/realloc/free in production C++ paths in favor of RAII allocations. */
 pub fn no_naked_malloc_free(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(cpp_production_files(slice), r"\b(?:malloc|calloc|realloc|free)\s*\(", "s")
+  const findings = scan_files(cpp_production_files(slice), r"\b(?:malloc|calloc|realloc|free)\s*\(", "s")
   return block_on_findings(
     "no_naked_malloc_free",
     "Replace malloc/calloc/realloc/free with std::vector, std::unique_ptr, or std::pmr allocators.",
@@ -225,7 +225,7 @@ pub fn no_naked_malloc_free(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NULLPTR, confidence: 0.78, source_date: "2026-05-10")
 /** Warns when production C++ uses NULL instead of nullptr for null pointer constants. */
 pub fn prefer_nullptr_over_null(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     cpp_production_files(slice),
     r"(?:=|==|!=|<|>|\(|,|\?|:|\breturn)\s*NULL\b|\bNULL\s*(?:==|!=|<|>|,|\)|\?|:|=)",
     "s",
@@ -242,7 +242,7 @@ pub fn prefer_nullptr_over_null(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INCLUDE_GUARD, confidence: 0.86, source_date: "2026-05-10")
 /** Blocks C++ headers that lack #pragma once or an #ifndef/#define include guard. */
 pub fn header_include_guard_or_pragma_once(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     cpp_header_files(slice),
     { file -> regex_match(r"#\s*pragma\s+once", file.text, "i") == nil
       && (regex_match(r"#\s*ifndef\s+\w+", file.text, "i") == nil
@@ -260,7 +260,7 @@ pub fn header_include_guard_or_pragma_once(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_USING_NAMESPACE_HEADER, confidence: 0.88, source_date: "2026-05-10")
 /** Blocks `using namespace` directives in C++ headers. */
 pub fn no_using_namespace_in_header(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(cpp_header_files(slice), r"\busing\s+namespace\s+\S+\s*;", "s")
+  const findings = scan_files(cpp_header_files(slice), r"\busing\s+namespace\s+\S+\s*;", "s")
   return block_on_findings(
     "no_using_namespace_in_header",
     "Remove `using namespace` from the header; restrict it to .cpp source or function-local scope so includers keep their lookup clean.",
@@ -273,7 +273,7 @@ pub fn no_using_namespace_in_header(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_C_STYLE_CAST, confidence: 0.7, source_date: "2026-05-10")
 /** Warns when production C++ uses a C-style cast to a primitive type instead of a named cast. */
 pub fn no_c_style_cast_in_prod(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     cpp_production_files(slice),
     r"\(\s*(?:const\s+|volatile\s+|unsigned\s+|signed\s+)*(?:char|short|int|long|float|double|bool|size_t|ssize_t|ptrdiff_t|u?int(?:8|16|32|64)_t|void|wchar_t|char(?:8|16|32)_t)\s*\*?\s*\)\s*[A-Za-z_(\-+&*]",
     "s",
@@ -290,7 +290,7 @@ pub fn no_c_style_cast_in_prod(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_USING_OVER_TYPEDEF, confidence: 0.74, source_date: "2026-05-10")
 /** Warns when production C++ declares aliases with typedef instead of `using`. */
 pub fn prefer_using_over_typedef(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(cpp_production_files(slice), r"(?m)^\s*typedef\s+", "m")
+  const findings = scan_files(cpp_production_files(slice), r"(?m)^\s*typedef\s+", "m")
   return warn_on_findings(
     "prefer_using_over_typedef",
     "Use `using Alias = T;` instead of typedef; it reads left-to-right and supports template aliases.",
@@ -305,8 +305,8 @@ pub fn prefer_using_over_typedef(slice, _ctx, _repo_at_base) {
  * Blocks classes that declare some special member functions while leaving others implicit, violating the Rule of Five.
  */
 pub fn rule_of_five_consistency(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when a changed C++ class definition declares one or more of the destructor, copy constructor, copy assignment operator, move constructor, or move assignment operator without explicitly declaring or =default/=delete the remaining special members. Allow classes that follow the Rule of Zero (no special members declared), classes whose remaining special members are inherited unchanged from a base that already declares them, and classes whose declaration carries a comment that documents why a specific member is intentionally implicit."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
+  const rubric = "Block only when a changed C++ class definition declares one or more of the destructor, copy constructor, copy assignment operator, move constructor, or move assignment operator without explicitly declaring or =default/=delete the remaining special members. Allow classes that follow the Rule of Zero (no special members declared), classes whose remaining special members are inherited unchanged from a base that already declares them, and classes whose declaration carries a comment that documents why a specific member is intentionally implicit."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "rule_of_five_consistency",
@@ -322,8 +322,8 @@ pub fn rule_of_five_consistency(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MEMBER_INIT, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks class members left without an in-class initializer or constructor initialization. */
 pub fn members_initialized(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when a changed C++ class adds or modifies a non-static data member of a non-class fundamental, pointer, enum, or array type that has neither an in-class default initializer nor initialization in every constructor's member initializer list, leaving the field with indeterminate value when an instance is constructed. Allow class-typed members whose own default constructor performs the required initialization, fields explicitly tagged for indeterminate state via a documented placement-new pattern, fields initialized by every base or delegating constructor in the change set, and union members which cannot carry an in-class initializer."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: cpp_files(slice)})
+  const rubric = "Block only when a changed C++ class adds or modifies a non-static data member of a non-class fundamental, pointer, enum, or array type that has neither an in-class default initializer nor initialization in every constructor's member initializer list, leaving the field with indeterminate value when an instance is constructed. Allow class-typed members whose own default constructor performs the required initialization, fields explicitly tagged for indeterminate state via a documented placement-new pattern, fields initialized by every base or delegating constructor in the change set, and union members which cannot carry an in-class initializer."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "members_initialized",
@@ -341,8 +341,8 @@ pub fn members_initialized(slice, ctx, _repo_at_base) {
  * Warns on public/protected member functions that do not modify *this but are not declared const.
  */
 pub fn const_correctness_on_pub_api(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when a changed C++ public or protected non-static member function does not write to any non-mutable data member of *this and does not call any non-const member function on *this, yet its declaration omits the trailing const qualifier. Allow virtual overrides whose base class signature is non-const, methods that lock a non-mutable mutex or update non-mutable cache state, methods that return *this or a non-const reference to a member to outside callers, and call operators on stateful function objects whose contract is documented as non-const."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
+  const rubric = "Block only when a changed C++ public or protected non-static member function does not write to any non-mutable data member of *this and does not call any non-const member function on *this, yet its declaration omits the trailing const qualifier. Allow virtual overrides whose base class signature is non-const, methods that lock a non-mutable mutex or update non-mutable cache state, methods that return *this or a non-const reference to a member to outside callers, and call operators on stateful function objects whose contract is documented as non-const."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
   if judgement.verdict == "Block" {
     return warn(
       "const_correctness_on_pub_api",

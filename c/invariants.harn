@@ -1,64 +1,64 @@
-let _EVIDENCE_GETS = [
+const _EVIDENCE_GETS = [
   "https://man7.org/linux/man-pages/man3/gets.3.html",
   "https://man7.org/linux/man-pages/man3/fgets.3p.html",
   "https://cwe.mitre.org/data/definitions/242.html",
 ]
 
-let _EVIDENCE_BOUNDED_STRING_OPS = [
+const _EVIDENCE_BOUNDED_STRING_OPS = [
   "https://man7.org/linux/man-pages/man3/strncpy.3.html",
   "https://man7.org/linux/man-pages/man3/snprintf.3.html",
   "https://www.gnu.org/software/libc/manual/html_node/Copying-Strings-and-Arrays.html",
   "https://cwe.mitre.org/data/definitions/120.html",
 ]
 
-let _EVIDENCE_VOID_MAIN = [
+const _EVIDENCE_VOID_MAIN = [
   "https://www.gnu.org/software/libc/manual/html_node/Program-Arguments.html",
   "https://www.iso-9899.info/n1570.html",
 ]
 
-let _EVIDENCE_FORMAT_STRING = [
+const _EVIDENCE_FORMAT_STRING = [
   "https://cwe.mitre.org/data/definitions/134.html",
   "https://owasp.org/www-community/attacks/Format_string_attack",
   "https://man7.org/linux/man-pages/man3/printf.3.html",
 ]
 
-let _EVIDENCE_UNSAFE_TMPFILE = [
+const _EVIDENCE_UNSAFE_TMPFILE = [
   "https://man7.org/linux/man-pages/man3/mkstemp.3.html",
   "https://man7.org/linux/man-pages/man3/tmpnam.3.html",
   "https://cwe.mitre.org/data/definitions/377.html",
 ]
 
-let _EVIDENCE_ATOI_FAMILY = [
+const _EVIDENCE_ATOI_FAMILY = [
   "https://man7.org/linux/man-pages/man3/strtol.3.html",
   "https://man7.org/linux/man-pages/man3/atoi.3.html",
   "https://www.gnu.org/software/libc/manual/html_node/Parsing-of-Integers.html",
 ]
 
-let _EVIDENCE_INCLUDE_GUARDS = [
+const _EVIDENCE_INCLUDE_GUARDS = [
   "https://gcc.gnu.org/onlinedocs/cpp/Once-Only-Headers.html",
   "https://google.github.io/styleguide/cppguide.html#The__define_Guard",
 ]
 
-let _EVIDENCE_ALLOCA = [
+const _EVIDENCE_ALLOCA = [
   "https://man7.org/linux/man-pages/man3/alloca.3.html",
   "https://www.gnu.org/software/libc/manual/html_node/Variable-Size-Automatic.html",
   "https://www.gnu.org/software/libc/manual/html_node/Unconstrained-Allocation.html",
 ]
 
-let _EVIDENCE_ALLOC_NULL_CHECK = [
+const _EVIDENCE_ALLOC_NULL_CHECK = [
   "https://man7.org/linux/man-pages/man3/malloc.3.html",
   "https://www.gnu.org/software/libc/manual/html_node/Unconstrained-Allocation.html",
   "https://cwe.mitre.org/data/definitions/690.html",
 ]
 
-let _EVIDENCE_STATIC_ANALYZER = [
+const _EVIDENCE_STATIC_ANALYZER = [
   "https://clang-analyzer.llvm.org/",
   "https://cppcheck.sourceforge.io/manual.html",
   "https://github.com/google/sanitizers/wiki/AddressSanitizer",
   "https://owasp.org/www-community/Source_Code_Analysis_Tools",
 ]
 
-let _EVIDENCE_DEP_SECURITY = [
+const _EVIDENCE_DEP_SECURITY = [
   "https://osv.dev/",
   "https://learn.microsoft.com/en-us/vcpkg/users/binarycaching",
   "https://docs.conan.io/2/reference/conanfile/methods/requirements.html",
@@ -132,7 +132,7 @@ fn c_project_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings
@@ -143,7 +143,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings
@@ -186,7 +186,7 @@ fn warn_on_findings(rule, remediation, findings) {
  * Blocks gets, which has no length-bounded form and was removed from the C standard library in C11.
  */
 pub fn no_gets(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_files(slice), r"\bgets\s*\(", "s")
+  const findings = scan_files(production_c_files(slice), r"\bgets\s*\(", "s")
   return block_on_findings(
     "no_gets",
     "Use fgets with an explicit buffer size; gets cannot be made safe and was removed from C11 onward.",
@@ -199,7 +199,7 @@ pub fn no_gets(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BOUNDED_STRING_OPS, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on unbounded string and formatted-input calls that prefer length-bounded variants. */
 pub fn bounded_string_ops(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_files(slice), r"\b(?:strcpy|strcat|sprintf|vsprintf|scanf)\s*\(", "s")
+  const findings = scan_files(production_c_files(slice), r"\b(?:strcpy|strcat|sprintf|vsprintf|scanf)\s*\(", "s")
   return warn_on_findings(
     "bounded_string_ops",
     "Prefer strncpy/strlcpy, strncat/strlcat, snprintf/vsnprintf, or fgets+sscanf with explicit lengths.",
@@ -212,7 +212,7 @@ pub fn bounded_string_ops(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_VOID_MAIN, confidence: 0.88, source_date: "2026-05-10")
 /** Blocks void main entry points; hosted C requires int main. */
 pub fn no_void_main(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_source_files(slice), r"(?m)^\s*void\s+main\s*\(", "m")
+  const findings = scan_files(production_c_source_files(slice), r"(?m)^\s*void\s+main\s*\(", "m")
   return block_on_findings(
     "no_void_main",
     "Declare main with int return type: int main(void) or int main(int argc, char *argv[]).",
@@ -225,7 +225,7 @@ pub fn no_void_main(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FORMAT_STRING, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks printf-family calls whose format argument is a non-literal variable. */
 pub fn no_format_string_from_variable(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_c_files(slice),
     { file -> regex_match(r"\b(?:printf|vprintf|sprintf|vsprintf)\s*\(\s*[A-Za-z_]\w*\s*[,)]", file.text, "s")
       != nil
@@ -254,7 +254,7 @@ pub fn no_format_string_from_variable(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_TMPFILE, confidence: 0.9, source_date: "2026-05-10")
 /** Blocks tmpnam, tempnam, and mktemp; they create races between name choice and file open. */
 pub fn no_unsafe_tmpfile(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_files(slice), r"\b(?:tmpnam|tempnam|mktemp)\s*\(", "s")
+  const findings = scan_files(production_c_files(slice), r"\b(?:tmpnam|tempnam|mktemp)\s*\(", "s")
   return block_on_findings(
     "no_unsafe_tmpfile",
     "Use mkstemp, mkostemp, or tmpfile, which atomically create the file with the returned name.",
@@ -267,7 +267,7 @@ pub fn no_unsafe_tmpfile(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ATOI_FAMILY, confidence: 0.78, source_date: "2026-05-10")
 /** Warns on atoi, atol, atoll, and atof, which silently swallow conversion errors and overflow. */
 pub fn no_atoi_family(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_files(slice), r"\b(?:atoi|atol|atoll|atof)\s*\(", "s")
+  const findings = scan_files(production_c_files(slice), r"\b(?:atoi|atol|atoll|atof)\s*\(", "s")
   return warn_on_findings(
     "no_atoi_family",
     "Use strtol/strtoul/strtod with errno and endptr checks so invalid input and overflow are detectable.",
@@ -280,7 +280,7 @@ pub fn no_atoi_family(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INCLUDE_GUARDS, confidence: 0.8, source_date: "2026-05-10")
 /** Warns on production C headers that lack #pragma once or an #ifndef/#define include guard. */
 pub fn c_header_has_include_guard(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_c_header_files(slice),
     { file -> regex_match(r"(?m)^\s*#\s*pragma\s+once\b", file.text, "m") == nil
       && regex_match(
@@ -304,7 +304,7 @@ pub fn c_header_has_include_guard(slice, _ctx, _repo_at_base) {
  * Warns on alloca and variable-length arrays sized by user input; both can silently overflow the stack.
  */
 pub fn no_alloca(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_c_files(slice), r"\b(?:alloca|_alloca|__builtin_alloca)\s*\(", "s")
+  const findings = scan_files(production_c_files(slice), r"\b(?:alloca|_alloca|__builtin_alloca)\s*\(", "s")
   return warn_on_findings(
     "no_alloca",
     "Use a fixed-size buffer, malloc with a checked size cap, or a stack-bounded helper; alloca is unportable and unchecked.",
@@ -317,8 +317,8 @@ pub fn no_alloca(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ALLOC_NULL_CHECK, confidence: 0.64, source_date: "2026-05-10")
 /** Blocks heap allocation paths that lack a NULL-return check before the result is dereferenced. */
 pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed C code calls malloc, calloc, realloc, aligned_alloc, strdup, strndup, or asprintf and dereferences, indexes, copies into, or passes the resulting pointer to a function that requires a non-null argument before any check that the result is non-NULL or before forwarding the NULL upward as an error. Allow allocations followed by a NULL check, an assignment-and-return-on-NULL helper, a wrapper that aborts on OOM, a goto cleanup pattern, or a checked allocator that the project documents."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: production_c_files(slice)})
+  const rubric = "Block only when changed C code calls malloc, calloc, realloc, aligned_alloc, strdup, strndup, or asprintf and dereferences, indexes, copies into, or passes the resulting pointer to a function that requires a non-null argument before any check that the result is non-NULL or before forwarding the NULL upward as an error. Allow allocations followed by a NULL check, an assignment-and-return-on-NULL helper, a wrapper that aborts on OOM, a goto cleanup pattern, or a checked allocator that the project documents."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: production_c_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "allocation_return_checked",
@@ -336,8 +336,8 @@ pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
  * Blocks meaningful C source changes that ship without evidence of a static-analysis or sanitizer path.
  */
 pub fn static_analyzer_clean(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed C source materially adds or rewrites pointer arithmetic, manual memory management, file or socket I/O, parsing, concurrency primitives, or unsafe casts, and the slice plus repo configuration shows no evidence of clang-analyzer, scan-build, clang-tidy, cppcheck, an Address/Undefined/Memory/Thread sanitizer build mode, or an equivalent static-analysis or dynamic-analysis pipeline being applied to the changed code. Allow trivial refactors, comment-only edits, and changes to projects that already wire one of these tools into CI or developer tooling."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
+  const rubric = "Block only when changed C source materially adds or rewrites pointer arithmetic, manual memory management, file or socket I/O, parsing, concurrency primitives, or unsafe casts, and the slice plus repo configuration shows no evidence of clang-analyzer, scan-build, clang-tidy, cppcheck, an Address/Undefined/Memory/Thread sanitizer build mode, or an equivalent static-analysis or dynamic-analysis pipeline being applied to the changed code. Allow trivial refactors, comment-only edits, and changes to projects that already wire one of these tools into CI or developer tooling."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "static_analyzer_clean",
@@ -355,8 +355,8 @@ pub fn static_analyzer_clean(slice, ctx, _repo_at_base) {
  * Blocks C dependency or build-system changes that omit advisory or vulnerability-check evidence.
  */
 pub fn c_dependency_security_checked(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when C build or dependency metadata changed, such as CMakeLists.txt, *.cmake, Makefile, *.mk, conanfile.txt, conanfile.py, vcpkg.json, meson.build, or C-targeted CI workflows, and the slice provides no evidence that vulnerability review was considered: NVD/CVE lookup, OSV, Dependabot, vendored-source pinning with documented update cadence, or a tool such as cargo-audit-style scanning for native deps. Allow pure source changes, formatting-only changes, and dependency changes that add or preserve a clear vulnerability-check path."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
+  const rubric = "Block only when C build or dependency metadata changed, such as CMakeLists.txt, *.cmake, Makefile, *.mk, conanfile.txt, conanfile.py, vcpkg.json, meson.build, or C-targeted CI workflows, and the slice provides no evidence that vulnerability review was considered: NVD/CVE lookup, OSV, Dependabot, vendored-source pinning with documented update cadence, or a tool such as cargo-audit-style scanning for native deps. Allow pure source changes, formatting-only changes, and dependency changes that add or preserve a clear vulnerability-check path."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "c_dependency_security_checked",

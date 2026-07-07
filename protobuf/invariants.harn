@@ -1,42 +1,42 @@
-let _EVIDENCE_SYNTAX_VERSION = [
+const _EVIDENCE_SYNTAX_VERSION = [
   "https://protobuf.dev/programming-guides/proto3/#simple",
   "https://protobuf.dev/programming-guides/proto2/#simple",
   "https://protobuf.dev/editions/overview/",
 ]
 
-let _EVIDENCE_PACKAGE = [
+const _EVIDENCE_PACKAGE = [
   "https://protobuf.dev/programming-guides/proto3/#packages",
   "https://protobuf.dev/programming-guides/style/#packages",
 ]
 
-let _EVIDENCE_NO_REQUIRED = [
+const _EVIDENCE_NO_REQUIRED = [
   "https://protobuf.dev/programming-guides/proto3/#specifying-field-rules",
   "https://protobuf.dev/best-practices/dos-donts/#dont-add-a-required-field",
 ]
 
-let _EVIDENCE_FIELD_NAMES = [
+const _EVIDENCE_FIELD_NAMES = [
   "https://protobuf.dev/programming-guides/style/#field-names",
   "https://protobuf.dev/programming-guides/proto3/#assigning",
 ]
 
-let _EVIDENCE_ENUM_ZERO = [
+const _EVIDENCE_ENUM_ZERO = [
   "https://protobuf.dev/programming-guides/proto3/#enum",
   "https://protobuf.dev/best-practices/dos-donts/#do-include-an-unspecified-value-in-an-enum",
   "https://protobuf.dev/programming-guides/style/#enums",
 ]
 
-let _EVIDENCE_RESERVED_RANGE = [
+const _EVIDENCE_RESERVED_RANGE = [
   "https://protobuf.dev/programming-guides/proto3/#assigning",
   "https://protobuf.dev/programming-guides/proto2/#assigning",
 ]
 
-let _EVIDENCE_FIELD_RENUMBER = [
+const _EVIDENCE_FIELD_RENUMBER = [
   "https://protobuf.dev/programming-guides/proto3/#updating",
   "https://protobuf.dev/best-practices/dos-donts/#dont-re-use-a-tag-number",
   "https://protobuf.dev/programming-guides/proto2/#updating",
 ]
 
-let _EVIDENCE_RESERVED_ON_DELETE = [
+const _EVIDENCE_RESERVED_ON_DELETE = [
   "https://protobuf.dev/programming-guides/proto3/#deleting",
   "https://protobuf.dev/best-practices/dos-donts/#do-reserve-tag-numbers-for-deleted-fields",
 ]
@@ -58,7 +58,7 @@ fn first_party_proto_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -68,7 +68,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -116,7 +116,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_SYNTAX_VERSION, confidence: 0.92, source_date: "2026-05-09")
 /** Blocks .proto files that omit an explicit syntax or edition declaration. */
 pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     first_party_proto_files(slice),
     { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto[23]\"\\s*;", file.text, "m") == nil
       && regex_match("(?m)^\\s*edition\\s*=\\s*\"\\d{4}\"\\s*;", file.text, "m") == nil },
@@ -133,7 +133,7 @@ pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PACKAGE, confidence: 0.78, source_date: "2026-05-09")
 /** Warns when .proto files omit a package declaration, risking name collisions across schemas. */
 pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     first_party_proto_files(slice),
     { file -> regex_match(r"(?m)^\s*package\s+[A-Za-z_][A-Za-z0-9_.]*\s*;", file.text, "m") == nil },
   )
@@ -149,7 +149,7 @@ pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_REQUIRED, confidence: 0.95, source_date: "2026-05-09")
 /** Blocks the proto2-only required field rule in proto3 schemas. */
 pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     first_party_proto_files(slice),
     { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto3\"\\s*;", file.text, "m") != nil
       && regex_match(
@@ -171,7 +171,7 @@ pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FIELD_NAMES, confidence: 0.7, source_date: "2026-05-09")
 /** Warns when message field names use camelCase or PascalCase instead of lower_snake_case. */
 pub fn field_names_lower_snake_case(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     first_party_proto_files(slice),
     r"(?m)^\s*(?:optional\s+|repeated\s+|required\s+)?[A-Za-z_][A-Za-z0-9_.]*\s+([A-Za-z_]*[A-Z][A-Za-z0-9_]*)\s*=\s*\d+\s*[;\[]",
     "m",
@@ -188,7 +188,7 @@ pub fn field_names_lower_snake_case(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ENUM_ZERO, confidence: 0.74, source_date: "2026-05-09")
 /** Warns when an enum's first value is not an *_UNSPECIFIED zero entry. */
 pub fn enum_zero_value_unspecified(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     first_party_proto_files(slice),
     { file -> regex_match(
       r"(?s)enum\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*(?:reserved[^;]*;\s*|option[^;]*;\s*|//[^\n]*\n\s*)*([A-Z][A-Z0-9_]*)\s*=\s*(\d+)",
@@ -215,7 +215,7 @@ pub fn enum_zero_value_unspecified(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RESERVED_RANGE, confidence: 0.96, source_date: "2026-05-09")
 /** Blocks field numbers that fall in the protobuf-reserved 19000-19999 range. */
 pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     first_party_proto_files(slice),
     r"(?m)^\s*(?:optional\s+|repeated\s+|required\s+)?[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:19[0-9]{3})\s*[;\[]",
     "m",
@@ -232,8 +232,8 @@ pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FIELD_RENUMBER, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks renumbered or repurposed field tags that would break wire compatibility. */
 pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
+  const rubric = "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_field_number_renumbering",
@@ -251,8 +251,8 @@ pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
  * Blocks field deletions that omit a matching reserved declaration for the freed number or name.
  */
 pub fn reserved_on_field_removal(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
+  const rubric = "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "reserved_on_field_removal",

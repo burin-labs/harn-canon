@@ -1,18 +1,18 @@
 import { ast_search } from "std/ast"
 
-let _EVIDENCE_ERROR_SWALLOW = [
+const _EVIDENCE_ERROR_SWALLOW = [
   "https://ziglang.org/documentation/master/#Errors",
   "https://ziglang.org/documentation/master/#errdefer",
   "https://zig.guide/language-basics/errors",
 ]
 
-let _EVIDENCE_CATCH_UNREACHABLE = [
+const _EVIDENCE_CATCH_UNREACHABLE = [
   "https://ziglang.org/documentation/master/#unreachable",
   "https://ziglang.org/documentation/master/#Errors",
   "https://zig.guide/language-basics/errors",
 ]
 
-let _EVIDENCE_UNSAFE_CASTS = [
+const _EVIDENCE_UNSAFE_CASTS = [
   "https://ziglang.org/documentation/master/#truncate",
   "https://ziglang.org/documentation/master/#ptrCast",
   "https://ziglang.org/documentation/master/#bitCast",
@@ -20,52 +20,52 @@ let _EVIDENCE_UNSAFE_CASTS = [
   "https://ziglang.org/documentation/master/#alignCast",
 ]
 
-let _EVIDENCE_PANIC = [
+const _EVIDENCE_PANIC = [
   "https://ziglang.org/documentation/master/#panic",
   "https://ziglang.org/documentation/master/#Errors",
 ]
 
-let _EVIDENCE_TESTING_ALLOC = [
+const _EVIDENCE_TESTING_ALLOC = [
   "https://ziglang.org/documentation/master/#Choosing-an-Allocator",
   "https://ziglang.org/documentation/master/std/#std.testing.allocator",
   "https://zig.guide/standard-library/allocators",
 ]
 
-let _EVIDENCE_BUILD_ZON = [
+const _EVIDENCE_BUILD_ZON = [
   "https://github.com/ziglang/zig/blob/master/doc/build.zig.zon.md",
   "https://ziglang.org/learn/build-system/",
   "https://ziglang.org/documentation/master/#Zig-Build-System",
 ]
 
-let _EVIDENCE_BUILD_ZON_HASH = [
+const _EVIDENCE_BUILD_ZON_HASH = [
   "https://github.com/ziglang/zig/blob/master/doc/build.zig.zon.md",
   "https://ziglang.org/learn/build-system/",
   "https://cheatsheetseries.owasp.org/cheatsheets/Software_Supply_Chain_Security_Cheat_Sheet.html",
 ]
 
-let _EVIDENCE_ALLOCATOR_LIFETIME = [
+const _EVIDENCE_ALLOCATOR_LIFETIME = [
   "https://ziglang.org/documentation/master/#Choosing-an-Allocator",
   "https://ziglang.org/documentation/master/#Memory",
   "https://zig.guide/standard-library/allocators",
 ]
 
-let _EVIDENCE_SECRETS = [
+const _EVIDENCE_SECRETS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
 ]
 
-let _EVIDENCE_ENDIANNESS = [
+const _EVIDENCE_ENDIANNESS = [
   "https://ziglang.org/documentation/master/std/#std.mem.readInt",
   "https://ziglang.org/documentation/master/std/#std.mem.writeInt",
   "https://ziglang.org/documentation/master/#byteSwap",
 ]
 
-let _EVIDENCE_JSON_PARSE_FROM_SLICE = [
+const _EVIDENCE_JSON_PARSE_FROM_SLICE = [
   "https://github.com/ziglang/zig/blob/master/lib/std/json.zig",
   "https://zig.guide/standard-library/json/",
 ]
 
-let _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
+const _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
   "https://github.com/ziglang/zig/blob/master/lib/std/json/static.zig",
   "https://github.com/ziglang/zig/blob/master/lib/std/json/hashmap.zig",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_hash_map.zig",
@@ -73,31 +73,31 @@ let _EVIDENCE_JSON_ARRAYHASHMAP_OWNERSHIP = [
   "https://zig.guide/standard-library/json/",
 ]
 
-let _EVIDENCE_HASHMAP_COUNT = [
+const _EVIDENCE_HASHMAP_COUNT = [
   "https://github.com/ziglang/zig/blob/master/lib/std/hash_map.zig",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_hash_map.zig",
   "https://zig.guide/standard-library/hashmaps/",
 ]
 
-let _EVIDENCE_TAG_NAME = [
+const _EVIDENCE_TAG_NAME = [
   "https://ziglang.org/documentation/master/#tagName",
   "https://github.com/ziglang/zig/blob/master/lib/std/meta.zig",
   "https://zig.guide/language-basics/enums/",
 ]
 
-let _EVIDENCE_ARRAYLIST_UNMANAGED = [
+const _EVIDENCE_ARRAYLIST_UNMANAGED = [
   "https://ziglang.org/download/0.16.0/release-notes.html#Migration-to-Unmanaged-Containers",
   "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
 ]
 
-let _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", "https://zig.guide/language-basics/defer/"]
+const _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", "https://zig.guide/language-basics/defer/"]
 
-let _EVIDENCE_DOC_COMMENTS = [
+const _EVIDENCE_DOC_COMMENTS = [
   "https://ziglang.org/documentation/master/#Doc-Comments",
   "https://zig.guide/build-system/generating-documentation/",
 ]
 
-let _EVIDENCE_OBSERVE_BEFORE_ASSERT = [
+const _EVIDENCE_OBSERVE_BEFORE_ASSERT = [
   "https://ziglang.org/documentation/master/#Zig-Test",
   "https://ziglang.org/documentation/master/std/#std.testing.expectEqualStrings",
   "https://zig.guide/build-system/zig-test/",
@@ -108,7 +108,7 @@ fn is_zig_path(path) {
 }
 
 fn is_test_zig_path(path) {
-  let wrapped = "/" + replace(to_string(path ?? ""), "\\", "/")
+  const wrapped = "/" + replace(to_string(path ?? ""), "\\", "/")
   return path.ends_with("_test.zig")
     || regex_match(r"(^|/)test_[^/]*\.zig$", path, "") != nil
     || wrapped.contains("/tests/")
@@ -131,7 +131,7 @@ fn build_zon_files(slice) {
 }
 
 fn scan_files(files, pattern) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -141,7 +141,7 @@ fn scan_files(files, pattern) {
 }
 
 fn scan_files_with_flags(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -151,7 +151,7 @@ fn scan_files_with_flags(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -191,7 +191,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_ERROR_SWALLOW, confidence: 0.84, source_date: "2026-05-10")
 /** Blocks empty catch blocks that silently swallow error unions. */
 pub fn no_silent_error_swallow(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(zig_files(slice), r"catch(\s*\{\s*\}|\s*\|[^|\n]*\|\s*\{\s*\})")
+  const findings = scan_files(zig_files(slice), r"catch(\s*\{\s*\}|\s*\|[^|\n]*\|\s*\{\s*\})")
   return block_on_findings(
     "no_silent_error_swallow",
     "Handle the error explicitly: log it, propagate with try, or capture and convert it before continuing.",
@@ -204,7 +204,7 @@ pub fn no_silent_error_swallow(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CATCH_UNREACHABLE, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on `catch unreachable` in production source. */
 pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_zig_files(slice), r"catch\b[^;{]*\bunreachable\b")
+  const findings = scan_files(production_zig_files(slice), r"catch\b[^;{]*\bunreachable\b")
   return warn_on_findings(
     "no_catch_unreachable_in_prod",
     "Replace `catch unreachable` with explicit error handling, or restructure so the call cannot fail and document the invariant at the call site.",
@@ -217,7 +217,7 @@ pub fn no_catch_unreachable_in_prod(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_CASTS, confidence: 0.6, source_date: "2026-05-10")
 /** Warns on unchecked or reinterpreting cast builtins that lack an inline justification comment. */
 pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in zig_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(", line, "") != nil
@@ -238,7 +238,7 @@ pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PANIC, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on `@panic` calls in production source. */
 pub fn no_panic_in_production(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_zig_files(slice), r"@panic\s*\(")
+  const findings = scan_files(production_zig_files(slice), r"@panic\s*\(")
   return warn_on_findings(
     "no_panic_in_production",
     "Return an error from the function instead of `@panic` so callers can recover; reserve panics for unrecoverable invariants documented at the call site.",
@@ -253,7 +253,7 @@ pub fn no_panic_in_production(slice, _ctx, _repo_at_base) {
  * Warns when test files use `page_allocator` or `c_allocator` instead of `std.testing.allocator`.
  */
 pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     zig_files(slice),
     { file -> regex_match(r"(?m)^test\b", file.text, "m") != nil
       && regex_match(r"\b(page_allocator|c_allocator)\b", file.text, "s") != nil
@@ -271,7 +271,7 @@ pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BUILD_ZON, confidence: 0.7, source_date: "2026-05-10")
 /** Warns when build.zig.zon omits the advisory `.minimum_zig_version` field. */
 pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     build_zon_files(slice),
     { file -> regex_match(r"\.minimum_zig_version\s*=", file.text, "s") == nil },
   )
@@ -287,7 +287,7 @@ pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BUILD_ZON_HASH, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks build.zig.zon dependency entries that declare `.url` without a `.hash`. */
 pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     build_zon_files(slice),
     { file -> regex_match(r"\.url\s*=", file.text, "s") != nil
       && regex_match(r"\.hash\s*=", file.text, "s") == nil },
@@ -306,7 +306,7 @@ pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
  * Blocks the removed std.json.Parser API in favor of the current parseFromSlice or Scanner APIs.
  */
 pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(zig_files(slice), r"\bstd\.json\.Parser\b")
+  const findings = scan_files(zig_files(slice), r"\bstd\.json\.Parser\b")
   return block_on_findings(
     "no_std_json_parser_api",
     "Replace `std.json.Parser` with `std.json.parseFromSlice(T, allocator, bytes, .{})` for typed parsing, or use `std.json.Scanner` for token-level parsing.",
@@ -322,7 +322,7 @@ pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
  * and duplicated manual keys need an explicit key-free loop before map deinit.
  */
 pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     zig_files(slice),
     { file -> regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
       && ((regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s") != nil
@@ -363,7 +363,7 @@ pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_HASHMAP_COUNT, confidence: 0.68, source_date: "2026-07-01")
 /** Blocks stale `.size` reads on Zig hash maps; use the public `.count()` API. */
 pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     zig_files(slice),
     { file -> regex_match(
       r"\bstd\.(?:AutoHashMap|AutoHashMapUnmanaged|HashMap|HashMapUnmanaged|StringHashMap|StringHashMapUnmanaged|ArrayHashMap|ArrayHashMapUnmanaged|StringArrayHashMap|StringArrayHashMapUnmanaged)\b|\bstd\.json\.ArrayHashMap\b",
@@ -390,7 +390,7 @@ pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TAG_NAME, confidence: 0.78, source_date: "2026-07-02")
 /** Blocks stale std.meta.tagToString spellings; use the builtin @tagName. */
 pub fn enum_tags_use_tag_name_builtin(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(zig_files(slice), r"\bstd\.meta\.tagToString\s*\(")
+  const findings = scan_files(zig_files(slice), r"\bstd\.meta\.tagToString\s*\(")
   return block_on_findings(
     "enum_tags_use_tag_name_builtin",
     "Use the `@tagName(value)` builtin to turn an enum or tagged-union value into its tag name; use `std.meta.stringToEnum(T, name)` for the inverse.",
@@ -403,7 +403,7 @@ pub fn enum_tags_use_tag_name_builtin(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ARRAYLIST_UNMANAGED, confidence: 0.78, source_date: "2026-06-23")
 /** Blocks the old managed std.ArrayList(T).init(allocator) spelling in current Zig code. */
 pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     zig_files(slice),
     { file -> regex_match(r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(", file.text, "s") != nil
       || (regex_match(
@@ -432,7 +432,7 @@ pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_DEFER_BLOCK, confidence: 0.82, source_date: "2026-06-23")
 /** Blocks `defer { ... };` closers; a Zig defer block closes with `}` only. */
 pub fn defer_block_closes_without_semicolon(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_with_flags(zig_files(slice), r"(?m)^\s*defer\s*\{\s*$[\s\S]*?^\s*\};\s*$", "ms")
+  const findings = scan_files_with_flags(zig_files(slice), r"(?m)^\s*defer\s*\{\s*$[\s\S]*?^\s*\};\s*$", "ms")
   return block_on_findings(
     "defer_block_closes_without_semicolon",
     "Close `defer { ... }` with `}` only. The extra semicolon after the block is a Zig syntax error.",
@@ -445,7 +445,7 @@ pub fn defer_block_closes_without_semicolon(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_DOC_COMMENTS, confidence: 0.76, source_date: "2026-07-02")
 /** Blocks `///` used as an implementation note before a statement. */
 pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_with_flags(
+  const findings = scan_files_with_flags(
     zig_files(slice),
     r"(?m)^\s*///[^\n]*\n\s*(?:(?:return|if|while|for|switch|try|defer|errdefer|break|continue|unreachable)\b|@)",
     "m",
@@ -464,18 +464,18 @@ pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
  * This same role list is copyable into every other `<lang>/invariants.harn`
  * pack; only the assertion node kinds and grammar name are language-specific.
  */
-let _PRODUCER_ROLE_PATTERN = r"(?i)(serialize|serialise|deserialize|deserialise|stringify|format|encode|decode|marshal|unmarshal|render|parse|tojson|fromjson|toString|write|dump|emit|print)"
+const _PRODUCER_ROLE_PATTERN = r"(?i)(serialize|serialise|deserialize|deserialise|stringify|format|encode|decode|marshal|unmarshal|render|parse|tojson|fromjson|toString|write|dump|emit|print)"
 
 /**
  * Zig assertion callees whose asserted value is compared against an author
  * literal. Trailing-segment match so `std.testing.expectEqualStrings` and a
  * bare `expectEqualStrings` both resolve.
  */
-let _ZIG_ASSERT_PATTERN = r"(?i)^(expect|expectEqual|expectEqualStrings|expectEqualSlices|expectEqualDeep|expectStringStartsWith|expectStringEndsWith)$"
+const _ZIG_ASSERT_PATTERN = r"(?i)^(expect|expectEqual|expectEqualStrings|expectEqualSlices|expectEqualDeep|expectStringStartsWith|expectStringEndsWith)$"
 
 /** Trailing path segment of a dotted callee (`writer.serialize` -> `serialize`). */
 fn _last_segment(name) {
-  let parts = to_string(name ?? "").split(".")
+  const parts = to_string(name ?? "").split(".")
   if len(parts) == 0 {
     return to_string(name ?? "")
   }
@@ -496,9 +496,9 @@ fn _is_assertion_callee(callee) {
  * is present, so an observe probe that captured the value suppresses the gate.
  */
 fn _symbol_observed(callee, observed) {
-  let segment = _last_segment(callee)
+  const segment = _last_segment(callee)
   for symbol in observed ?? [] {
-    let s = to_string(symbol ?? "")
+    const s = to_string(symbol ?? "")
     if s == to_string(callee ?? "") || s == segment || _last_segment(s) == segment {
       return true
     }
@@ -512,8 +512,8 @@ fn _symbol_observed(callee, observed) {
  * `const n = add(2, 3)` binding never enters the list.
  */
 fn _producer_bindings(file_text) {
-  var bindings = []
-  let search = ast_search(
+  let bindings = []
+  const search = ast_search(
     {
       source: file_text,
       query: "(variable_declaration (identifier) @name (_ (call_expression function: (_) @callee)))",
@@ -521,8 +521,8 @@ fn _producer_bindings(file_text) {
     },
   )
   for node in search.matches ?? [] {
-    let name = node.captures?.name?.text
-    let callee = node.captures?.callee?.text
+    const name = node.captures?.name?.text
+    const callee = node.captures?.callee?.text
     if name != nil && callee != nil && _is_producer_callee(callee) {
       bindings = bindings.push({variable: name, callee: callee})
     }
@@ -536,13 +536,13 @@ fn _producer_bindings(file_text) {
  * whose producing callee is absent from `ctx.observed_symbols`.
  */
 fn _ungrounded_assertions(file_text, bindings, observed) {
-  var hits = []
-  let search = ast_search(
+  let hits = []
+  const search = ast_search(
     {source: file_text, query: "(call_expression function: (_) @callee) @call", language: "zig"},
   )
   for node in search.matches ?? [] {
-    let callee = node.captures?.callee?.text
-    let call_text = node.captures?.call?.text ?? ""
+    const callee = node.captures?.callee?.text
+    const call_text = node.captures?.call?.text ?? ""
     if callee == nil || !_is_assertion_callee(callee) {
       continue
     }
@@ -573,13 +573,13 @@ fn _ungrounded_assertions(file_text, bindings, observed) {
  * grounded case (`observe_output` populated the symbol) suppresses the block.
  */
 pub fn assertion_on_ungrounded_output(slice, ctx, _repo_at_base) {
-  let observed = ctx?.observed_symbols ?? []
-  var findings = []
+  const observed = ctx?.observed_symbols ?? []
+  let findings = []
   for file in zig_files(slice) {
     if !is_test_zig_path(file.path) {
       continue
     }
-    let bindings = _producer_bindings(file.text)
+    const bindings = _producer_bindings(file.text)
     if len(bindings) == 0 {
       continue
     }
@@ -599,8 +599,8 @@ pub fn assertion_on_ungrounded_output(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ALLOCATOR_LIFETIME, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks heap allocations whose result is not freed, transferred, or guarded by defer/errdefer. */
 pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  const rubric = "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "allocator_lifetime_hygiene",
@@ -616,8 +616,8 @@ pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials, tokens, and private keys in Zig sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  const rubric = "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_hardcoded_secrets",
@@ -635,8 +635,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
  * Warns when multi-byte integer I/O across a serialization boundary does not name an endianness.
  */
 pub fn integer_endianness_explicit(slice, ctx, _repo_at_base) {
-  let rubric = "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
+  const rubric = "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(
       "integer_endianness_explicit",

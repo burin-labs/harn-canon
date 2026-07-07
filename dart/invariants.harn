@@ -1,45 +1,45 @@
-let _EVIDENCE_NULL_SAFETY = ["https://dart.dev/null-safety", "https://dart.dev/language/versioning"]
+const _EVIDENCE_NULL_SAFETY = ["https://dart.dev/null-safety", "https://dart.dev/language/versioning"]
 
-let _EVIDENCE_NULL_ASSERTION = [
+const _EVIDENCE_NULL_ASSERTION = [
   "https://dart.dev/null-safety/understanding-null-safety",
   "https://dart.dev/tools/linter-rules/null_check_on_nullable_type_parameter",
 ]
 
-let _EVIDENCE_DYNAMIC = [
+const _EVIDENCE_DYNAMIC = [
   "https://dart.dev/tools/linter-rules/avoid_dynamic_calls",
   "https://dart.dev/effective-dart/design",
 ]
 
-let _EVIDENCE_PRINT = [
+const _EVIDENCE_PRINT = [
   "https://dart.dev/tools/linter-rules/avoid_print",
   "https://api.dart.dev/stable/dart-developer/log.html",
 ]
 
-let _EVIDENCE_MUTABILITY = ["https://dart.dev/tools/linter-rules/prefer_final_fields", "https://dart.dev/effective-dart/usage"]
+const _EVIDENCE_MUTABILITY = ["https://dart.dev/tools/linter-rules/prefer_final_fields", "https://dart.dev/effective-dart/usage"]
 
-let _EVIDENCE_LINT_IGNORES = ["https://dart.dev/tools/analysis", "https://dart.dev/tools/linter-rules"]
+const _EVIDENCE_LINT_IGNORES = ["https://dart.dev/tools/analysis", "https://dart.dev/tools/linter-rules"]
 
-let _EVIDENCE_CONST_WIDGETS = [
+const _EVIDENCE_CONST_WIDGETS = [
   "https://dart.dev/tools/linter-rules/prefer_const_constructors_in_immutables",
   "https://api.flutter.dev/flutter/widgets/StatelessWidget-class.html",
 ]
 
-let _EVIDENCE_RELATIVE_LIB_IMPORTS = [
+const _EVIDENCE_RELATIVE_LIB_IMPORTS = [
   "https://dart.dev/tools/linter-rules/avoid_relative_lib_imports",
   "https://dart.dev/tools/pub/package-layout",
 ]
 
-let _EVIDENCE_IMMUTABLE_WIDGET = [
+const _EVIDENCE_IMMUTABLE_WIDGET = [
   "https://api.flutter.dev/flutter/widgets/StatelessWidget-class.html",
   "https://api.flutter.dev/flutter/meta/immutable-constant.html",
 ]
 
-let _EVIDENCE_UNAWAITED_FUTURES = [
+const _EVIDENCE_UNAWAITED_FUTURES = [
   "https://dart.dev/tools/linter-rules/unawaited_futures",
   "https://api.dart.dev/stable/dart-async/unawaited.html",
 ]
 
-let _EVIDENCE_EFFECTIVE_DART_DOCS = [
+const _EVIDENCE_EFFECTIVE_DART_DOCS = [
   "https://dart.dev/effective-dart/documentation",
   "https://dart.dev/tools/linter-rules/public_member_api_docs",
 ]
@@ -92,7 +92,7 @@ fn lib_dart_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -102,7 +102,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -142,7 +142,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_NULL_SAFETY, confidence: 0.92, source_date: "2026-05-10")
 /** Blocks pre-null-safety language version markers in production Dart sources. */
 pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_dart_files(slice),
     r"(?m)^\s*//\s*@dart\s*=\s*2\.([0-9]|1[01])([^0-9]|$)",
     "m",
@@ -159,7 +159,7 @@ pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NULL_ASSERTION, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks the postfix null assertion operator in production Dart sources. */
 pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_dart_files(slice), r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]", "s")
+  const findings = scan_files(production_dart_files(slice), r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]", "s")
   return block_on_findings(
     "no_force_null_assertion",
     "Replace expr! with explicit null handling: if-null (??), pattern matching, ArgumentError, or a typed non-null contract.",
@@ -172,7 +172,7 @@ pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_DYNAMIC, confidence: 0.7, source_date: "2026-05-10")
 /** Warns when production Dart functions use dynamic in their signature. */
 pub fn no_dynamic_in_signatures(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_dart_files(slice),
     r"(?m)(^|[\(,])\s*\bdynamic\b\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[\(,\)\{=;]",
     "m",
@@ -189,7 +189,7 @@ pub fn no_dynamic_in_signatures(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PRINT, confidence: 0.85, source_date: "2026-05-10")
 /** Warns on ad hoc console output in production Dart sources. */
 pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_dart_files(slice), r"\b(print|debugPrint)\s*\(", "s")
+  const findings = scan_files(production_dart_files(slice), r"\b(print|debugPrint)\s*\(", "s")
   return warn_on_findings(
     "no_print_in_production",
     "Use dart:developer log(), package:logging, or the project logger instead of print/debugPrint.",
@@ -202,7 +202,7 @@ pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MUTABILITY, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on top-level mutable variables in production Dart sources. */
 pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     production_dart_files(slice),
     r"(?m)^(?:late\s+)?var\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[=;]",
     "m",
@@ -219,7 +219,7 @@ pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_LINT_IGNORES, confidence: 0.66, source_date: "2026-05-10")
 /** Warns on file-wide analyzer suppressions that bundle multiple rules or whole categories. */
 pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_dart_files(slice),
     { file -> regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m")
       != nil
@@ -237,7 +237,7 @@ pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CONST_WIDGETS, confidence: 0.66, source_date: "2026-05-10")
 /** Warns when a Flutter Widget subclass file declares no const constructor at class body indent. */
 pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_dart_files(slice),
     { file -> regex_match(
       r"class\s+\w+\s+extends\s+(StatelessWidget|StatefulWidget|InheritedWidget|InheritedNotifier|RenderObjectWidget)\b",
@@ -259,7 +259,7 @@ pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RELATIVE_LIB_IMPORTS, confidence: 0.82, source_date: "2026-05-10")
 /** Warns on parent-relative imports inside lib/ Dart sources. */
 pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(lib_dart_files(slice), r"\.\.[/]", "m")
+  const findings = scan_files(lib_dart_files(slice), r"\.\.[/]", "m")
   return warn_on_findings(
     "no_relative_lib_imports",
     "Inside lib/, import sibling libraries with a package: URI or a same-directory relative path; do not climb out of lib/.",
@@ -272,8 +272,8 @@ pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_IMMUTABLE_WIDGET, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks Flutter Widget subclasses that hold mutable instance state. */
 pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
+  const rubric = "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "widget_state_is_immutable",
@@ -289,8 +289,8 @@ pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNAWAITED_FUTURES, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks discarded Futures inside async bodies without intentional fire-and-forget. */
 pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
+  const rubric = "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "unawaited_futures_are_intentional",
@@ -306,8 +306,8 @@ pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EFFECTIVE_DART_DOCS, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks new public Dart APIs in lib/ that lack /// doc comments. */
 pub fn effective_dart_documents_public_apis(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: lib_dart_files(slice)})
+  const rubric = "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: lib_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "effective_dart_documents_public_apis",
