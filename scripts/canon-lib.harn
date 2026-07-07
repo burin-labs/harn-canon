@@ -1,22 +1,22 @@
-let ROOT_DIR = path_normalize(path_join(source_dir(), ".."))
+const ROOT_DIR = path_normalize(path_join(source_dir(), ".."))
 
-let PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
+const PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
 
-let INVARIANT_RE = "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
+const INVARIANT_RE = "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
 
-let EVIDENCE_RE = "let\\s+(_EVIDENCE_[A-Za-z0-9_]+)\\s*=\\s*\\[([\\s\\S]*?)\\]"
+const EVIDENCE_RE = "(?:let|const)\\s+(_EVIDENCE_[A-Za-z0-9_]+)\\s*=\\s*\\[([\\s\\S]*?)\\]"
 
-let URL_RE = "\"(https?://[^\"]+)\""
+const URL_RE = "\"(https?://[^\"]+)\""
 
-let SEMANTIC_FALLBACK_RE = "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
+const SEMANTIC_FALLBACK_RE = "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
 
 pub fn repo_root() -> string {
   return ROOT_DIR
 }
 
 pub fn load_pack_manifest() -> list {
-  let manifest = json_parse(harness.fs.read_text(PACK_MANIFEST_PATH))
-  let packs = manifest?.packs ?? []
+  const manifest = json_parse(harness.fs.read_text(PACK_MANIFEST_PATH))
+  const packs = manifest?.packs ?? []
   if manifest?.schema_version != 1 || type_of(packs) != "list" {
     throw "canon-packs.json must use schema_version 1 with a packs list"
   }
@@ -28,12 +28,12 @@ pub fn expected_packs() -> list<string> {
 }
 
 pub fn duplicate_values(values: list) -> list<string> {
-  var counts = {}
+  let counts = {}
   for value in values {
-    let key = to_string(value)
+    const key = to_string(value)
     counts[key] = (counts[key] ?? 0) + 1
   }
-  var out: list<string> = []
+  let out: list<string> = []
   for key in keys(counts).sort() {
     if (counts[key] ?? 0) > 1 {
       out = out + [key]
@@ -43,11 +43,11 @@ pub fn duplicate_values(values: list) -> list<string> {
 }
 
 pub fn set_difference(left: list<string>, right: list<string>) -> list<string> {
-  var right_set = {}
+  let right_set = {}
   for value in right {
     right_set[value] = true
   }
-  var out: list<string> = []
+  let out: list<string> = []
   for value in left {
     if !(right_set[value] ?? false) {
       out = out + [value]
@@ -57,7 +57,7 @@ pub fn set_difference(left: list<string>, right: list<string>) -> list<string> {
 }
 
 pub fn set_intersects(left: list<string>, right: list<string>) -> bool {
-  var right_set = {}
+  let right_set = {}
   for value in right {
     right_set[value] = true
   }
@@ -76,7 +76,7 @@ pub fn validate_allowed_keys(
   allowed: list<string>,
   errors: list<string>,
 ) -> list<string> {
-  let unknown = set_difference(keys(value ?? {}).sort(), allowed)
+  const unknown = set_difference(keys(value ?? {}).sort(), allowed)
   if len(unknown) > 0 {
     return errors + [rel_path + ": " + location + " has unknown keys: " + join(unknown, ", ")]
   }
@@ -96,11 +96,11 @@ pub fn is_normalized_relative_path(value: string) -> bool {
 }
 
 fn first_group(pattern: string, text: string) {
-  let captures = regex_captures(pattern, text ?? "") ?? []
+  const captures = regex_captures(pattern, text ?? "") ?? []
   if len(captures) == 0 {
     return nil
   }
-  let groups = captures[0]?.groups ?? []
+  const groups = captures[0]?.groups ?? []
   for group in groups {
     if group != nil {
       return group
@@ -114,12 +114,12 @@ fn fallback_name(mode_args: string) {
 }
 
 pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
-  let text = harness.fs.read_text(path)
-  var entries: list<dict> = []
+  const text = harness.fs.read_text(path)
+  let entries: list<dict> = []
   for capture in regex_captures(INVARIANT_RE, text) ?? [] {
-    let groups = capture?.groups ?? []
-    let mode = to_string(groups[0] ?? "")
-    let mode_args = to_string(groups[1] ?? "")
+    const groups = capture?.groups ?? []
+    const mode = to_string(groups[0] ?? "")
+    const mode_args = to_string(groups[1] ?? "")
     entries = entries
       + [
       {
@@ -133,8 +133,8 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
       },
     ]
   }
-  var out_errors = errors
-  let invariant_count = len(regex_captures("@invariant\\b", text) ?? [])
+  let out_errors = errors
+  const invariant_count = len(regex_captures("@invariant\\b", text) ?? [])
   if invariant_count != len(entries) {
     out_errors = out_errors
       + [
@@ -146,14 +146,14 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
         + " @invariant markers",
     ]
   }
-  var evidence_defs = {}
+  let evidence_defs = {}
   for capture in regex_captures(EVIDENCE_RE, text) ?? [] {
-    let groups = capture?.groups ?? []
-    let name = to_string(groups[0] ?? "")
-    let body = to_string(groups[1] ?? "")
-    var urls: list<string> = []
+    const groups = capture?.groups ?? []
+    const name = to_string(groups[0] ?? "")
+    const body = to_string(groups[1] ?? "")
+    let urls: list<string> = []
     for url_capture in regex_captures(URL_RE, body) ?? [] {
-      let url = to_string((url_capture?.groups ?? [])[0] ?? "")
+      const url = to_string((url_capture?.groups ?? [])[0] ?? "")
       if url != "" && !urls.contains(url) {
         urls = urls + [url]
       }
@@ -164,14 +164,14 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
 }
 
 pub fn parse_ymd(value: string) {
-  let captures = regex_captures("^(\\d{4})-(\\d{2})-(\\d{2})$", value) ?? []
+  const captures = regex_captures("^(\\d{4})-(\\d{2})-(\\d{2})$", value) ?? []
   if len(captures) == 0 {
     return nil
   }
-  let groups = captures[0]?.groups ?? []
-  let year = to_int(groups[0] ?? "")
-  let month = to_int(groups[1] ?? "")
-  let day = to_int(groups[2] ?? "")
+  const groups = captures[0]?.groups ?? []
+  const year = to_int(groups[0] ?? "")
+  const month = to_int(groups[1] ?? "")
+  const day = to_int(groups[2] ?? "")
   if year == nil || month == nil || day == nil {
     return nil
   }
@@ -199,10 +199,10 @@ fn days_in_month(year: int, month: int) -> int {
 }
 
 pub fn shifted_months(day: dict, months: int) -> dict {
-  let zero_based = day.year * 12 + (day.month - 1) + months
-  let year = floor(to_float(zero_based) / 12.0)
-  let month = zero_based - to_int(year) * 12 + 1
-  let capped_day = min(day.day, days_in_month(to_int(year), month))
+  const zero_based = day.year * 12 + (day.month - 1) + months
+  const year = floor(to_float(zero_based) / 12.0)
+  const month = zero_based - to_int(year) * 12 + 1
+  const capped_day = min(day.day, days_in_month(to_int(year), month))
   return {
     year: to_int(year),
     month: month,
@@ -212,11 +212,11 @@ pub fn shifted_months(day: dict, months: int) -> dict {
 }
 
 pub fn today_from_env_or_args(today_arg = nil) {
-  let raw = trim(to_string(today_arg ?? harness.env.get("HARN_CANON_TODAY") ?? ""))
+  const raw = trim(to_string(today_arg ?? harness.env.get("HARN_CANON_TODAY") ?? ""))
   if raw == "" {
     throw "set HARN_CANON_TODAY=YYYY-MM-DD or pass --today YYYY-MM-DD"
   }
-  let parsed = parse_ymd(raw)
+  const parsed = parse_ymd(raw)
   if parsed == nil {
     throw "--today/HARN_CANON_TODAY must be YYYY-MM-DD; got " + raw
   }
@@ -224,8 +224,8 @@ pub fn today_from_env_or_args(today_arg = nil) {
 }
 
 pub fn fixture_verdict(record) -> string {
-  let kind = to_string(record?.result?.verdict?.kind ?? record?.raw_result?.verdict ?? "")
-  let normalized = kind.lower()
+  const kind = to_string(record?.result?.verdict?.kind ?? record?.raw_result?.verdict ?? "")
+  const normalized = kind.lower()
   if normalized == "allow" {
     return "Allow"
   }

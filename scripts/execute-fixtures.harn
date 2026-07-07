@@ -1,14 +1,14 @@
 import { parse_args } from "std/cli"
 import { expected_packs, fixture_verdict, parse_invariants, repo_root } from "./canon-lib"
 
-let arg_spec = [{kind: "option", name: "pack", flags: ["--pack"], multi: true, default: []}]
+const arg_spec = [{kind: "option", name: "pack", flags: ["--pack"], multi: true, default: []}]
 
 fn load_fixture(pack: string, predicate: string) -> dict {
   return json_parse(harness.fs.read_text(path_join(repo_root(), pack, "fixtures", predicate + ".json")))
 }
 
 fn run_case(pack: string, predicate: string, case: dict) -> dict {
-  let eval_result = flow_evaluate_invariants(
+  const eval_result = flow_evaluate_invariants(
     "",
     {files: case.files},
     {
@@ -18,14 +18,14 @@ fn run_case(pack: string, predicate: string, case: dict) -> dict {
       ctx: case?.ctx ?? {},
     },
   )
-  let records = eval_result?.records ?? []
-  let record = if len(records) > 0 {
+  const records = eval_result?.records ?? []
+  const record = if len(records) > 0 {
     records[0]
   } else {
     nil
   }
-  let actual = fixture_verdict(record)
-  let expect = case.expect
+  const actual = fixture_verdict(record)
+  const expect = case.expect
   if actual == expect {
     return {ok: true}
   }
@@ -43,7 +43,7 @@ fn run_case(pack: string, predicate: string, case: dict) -> dict {
 }
 
 fn run_pack(pack: string) -> dict {
-  let parsed = parse_invariants(path_join(repo_root(), pack, "invariants.harn"), [])
+  const parsed = parse_invariants(path_join(repo_root(), pack, "invariants.harn"), [])
   if len(parsed.errors) > 0 {
     return {
       pack: pack,
@@ -52,17 +52,17 @@ fn run_pack(pack: string) -> dict {
       failures: parsed.errors.map({ error -> {error: error} }).to_list(),
     }
   }
-  var executed = 0
-  var skipped_semantic = 0
-  var failures: list<dict> = []
+  let executed = 0
+  let skipped_semantic = 0
+  let failures: list<dict> = []
   for entry in parsed.entries {
     if entry.mode == "semantic" {
       skipped_semantic = skipped_semantic + 1
       continue
     }
-    let fixture = load_fixture(pack, entry.name)
+    const fixture = load_fixture(pack, entry.name)
     for case in fixture.cases {
-      let result = run_case(pack, entry.name, case)
+      const result = run_case(pack, entry.name, case)
       executed = executed + 1
       if !(result?.ok ?? false) {
         failures = failures + [result.failure]
@@ -73,14 +73,14 @@ fn run_pack(pack: string) -> dict {
 }
 
 fn main(harness: Harness) {
-  let parsed = parse_args(argv, arg_spec)
+  const parsed = parse_args(argv, arg_spec)
   if len(parsed?._errors ?? []) > 0 {
     harness.stdio.println(join(parsed._errors, "\n"))
     exit(2)
   }
-  let all_packs = expected_packs()
-  let requested = parsed?.pack ?? []
-  var unknown: list<string> = []
+  const all_packs = expected_packs()
+  const requested = parsed?.pack ?? []
+  let unknown: list<string> = []
   for pack in requested {
     if !all_packs.contains(pack) {
       unknown = unknown + [pack]
@@ -90,18 +90,18 @@ fn main(harness: Harness) {
     harness.stdio.println("unknown pack(s): " + join(unknown.sort(), ", "))
     exit(2)
   }
-  let packs = if len(requested) > 0 {
+  const packs = if len(requested) > 0 {
     requested
   } else {
     all_packs
   }
-  var reports: list<dict> = []
+  let reports: list<dict> = []
   for pack in packs {
     reports = reports + [run_pack(pack)]
   }
-  var failures: list<dict> = []
-  var executed = 0
-  var skipped_semantic = 0
+  let failures: list<dict> = []
+  let executed = 0
+  let skipped_semantic = 0
   for report in reports {
     executed = executed + (report?.executed ?? 0)
     skipped_semantic = skipped_semantic + (report?.skipped_semantic ?? 0)

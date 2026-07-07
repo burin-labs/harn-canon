@@ -1,41 +1,41 @@
-let _EVIDENCE_STRICT_MODE = [
+const _EVIDENCE_STRICT_MODE = [
   "https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin",
   "https://google.github.io/styleguide/shellguide.html",
   "https://www.shellcheck.net/wiki/SC2086",
 ]
 
-let _EVIDENCE_PARSING_LS = [
+const _EVIDENCE_PARSING_LS = [
   "https://mywiki.wooledge.org/ParsingLs",
   "https://www.shellcheck.net/wiki/SC2045",
   "https://google.github.io/styleguide/shellguide.html#s6.7-arrays",
 ]
 
-let _EVIDENCE_EVAL = [
+const _EVIDENCE_EVAL = [
   "https://www.shellcheck.net/wiki/SC2294",
   "https://mywiki.wooledge.org/BashFAQ/048",
   "https://google.github.io/styleguide/shellguide.html#s6.6-eval",
 ]
 
-let _EVIDENCE_TRAP_CLEANUP = [
+const _EVIDENCE_TRAP_CLEANUP = [
   "https://www.gnu.org/software/bash/manual/bash.html#index-trap",
   "https://www.shellcheck.net/wiki/SC2064",
   "https://mywiki.wooledge.org/SignalTrap",
 ]
 
-let _EVIDENCE_SHELLCHECK_DIRECTIVE = ["https://www.shellcheck.net/wiki/Directive", "https://www.shellcheck.net/wiki/Ignore"]
+const _EVIDENCE_SHELLCHECK_DIRECTIVE = ["https://www.shellcheck.net/wiki/Directive", "https://www.shellcheck.net/wiki/Ignore"]
 
-let _EVIDENCE_SHELLCHECK = [
+const _EVIDENCE_SHELLCHECK = [
   "https://www.shellcheck.net/wiki/Home",
   "https://github.com/koalaman/shellcheck",
   "https://google.github.io/styleguide/shellguide.html#which-shell-to-use",
 ]
 
-let _EVIDENCE_SECRETS = [
+const _EVIDENCE_SECRETS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
 ]
 
-let _EVIDENCE_SENSITIVE_LOGS = [
+const _EVIDENCE_SENSITIVE_LOGS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
 ]
@@ -62,7 +62,7 @@ fn executable_shell_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -72,7 +72,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -112,7 +112,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_STRICT_MODE, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks executable shell scripts that omit errexit, nounset, or pipefail. */
 pub fn set_euo_pipefail(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     executable_shell_files(slice),
     { file -> regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*e[a-zA-Z]*\b|\berrexit\b)", file.text, "m")
       == nil
@@ -132,7 +132,7 @@ pub fn set_euo_pipefail(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PARSING_LS, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks parsing the output of ls in shell scripts. */
 pub fn no_parsing_ls(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(shell_files(slice), r"(\$\(\s*ls\b|`\s*ls\b)", "s")
+  const findings = scan_files(shell_files(slice), r"(\$\(\s*ls\b|`\s*ls\b)", "s")
   return block_on_findings(
     "no_parsing_ls",
     "Iterate with shell globs, arrays, or `find ... -print0 | xargs -0`; ls output is not safe to parse.",
@@ -145,7 +145,7 @@ pub fn no_parsing_ls(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EVAL, confidence: 0.74, source_date: "2026-05-09")
 /** Blocks eval calls whose argument contains a variable or command substitution. */
 pub fn no_eval_dynamic_input(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(shell_files(slice), r"(?m)^[^#\n]*\beval\b\s+[^\n]*(\$|`)", "m")
+  const findings = scan_files(shell_files(slice), r"(?m)^[^#\n]*\beval\b\s+[^\n]*(\$|`)", "m")
   return block_on_findings(
     "no_eval_dynamic_input",
     "Replace dynamic eval with explicit dispatch, arrays, or `printf -v`; eval on interpolated text is shell injection.",
@@ -158,7 +158,7 @@ pub fn no_eval_dynamic_input(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TRAP_CLEANUP, confidence: 0.66, source_date: "2026-05-09")
 /** Warns when a script creates temp files via mktemp without an EXIT trap. */
 pub fn trap_cleanup_on_tempfile(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     shell_files(slice),
     { file -> regex_match(r"\bmktemp\b", file.text, "s") != nil
       && regex_match(r"(?m)^[^#\n]*\btrap\b[^\n]*\bEXIT\b", file.text, "m") == nil },
@@ -175,7 +175,7 @@ pub fn trap_cleanup_on_tempfile(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SHELLCHECK_DIRECTIVE, confidence: 0.84, source_date: "2026-05-09")
 /** Warns on blanket ShellCheck disables that hide every diagnostic in a file. */
 pub fn no_blanket_shellcheck_disable(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(shell_files(slice), r"(?m)^\s*#\s*shellcheck\s+disable\s*=\s*all\b", "m")
+  const findings = scan_files(shell_files(slice), r"(?m)^\s*#\s*shellcheck\s+disable\s*=\s*all\b", "m")
   return warn_on_findings(
     "no_blanket_shellcheck_disable",
     "Disable specific SC codes with a comment explaining why, instead of `# shellcheck disable=all`.",
@@ -188,8 +188,8 @@ pub fn no_blanket_shellcheck_disable(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SHELLCHECK, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks changed shell scripts that would fail ShellCheck under default configuration. */
 pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed shell scripts contain issues ShellCheck would flag at error or warning severity under its default configuration, such as unquoted word-split expansions, missing `set` strict-mode flags on executables, parsing `ls`, eval on interpolated input, or unsafe redirections. Allow scripts that pass ShellCheck or whose only issues are localized info/style notes."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
+  const rubric = "Block only when changed shell scripts contain issues ShellCheck would flag at error or warning severity under its default configuration, such as unquoted word-split expansions, missing `set` strict-mode flags on executables, parsing `ls`, eval on interpolated input, or unsafe redirections. Allow scripts that pass ShellCheck or whose only issues are localized info/style notes."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "shellcheck_clean",
@@ -205,8 +205,8 @@ pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in shell sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed shell source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal value instead of reading it from a secret manager, scoped environment variable, or restricted-permission credential file."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
+  const rubric = "Block only when changed shell source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal value instead of reading it from a secret manager, scoped environment variable, or restricted-permission credential file."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_hardcoded_secrets",
@@ -222,8 +222,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks shell scripts that echo or print secrets and sensitive request data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed shell scripts echo, printf, log, or otherwise emit credentials, authorization headers, session tokens, passwords, signed URLs, or sensitive personal data without redaction. Allow benign diagnostic output and explicit dry-run prints that mask sensitive values."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
+  const rubric = "Block only when changed shell scripts echo, printf, log, or otherwise emit credentials, authorization headers, session tokens, passwords, signed URLs, or sensitive personal data without redaction. Allow benign diagnostic output and explicit dry-run prints that mask sensitive values."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_sensitive_data_in_logs",

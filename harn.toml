@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Seed Harn Flow invariant packs for language and stack review."
 license = "Apache-2.0 OR MIT"
 repository = "https://github.com/burin-labs/harn-canon"
-harn = ">=0.9,<0.10"
+harn = ">=0.10,<0.11"
 docs_url = "README.md"
 
 [[contributes]]

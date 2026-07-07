@@ -1,44 +1,44 @@
-let _EVIDENCE_TAGGING = [
+const _EVIDENCE_TAGGING = [
   "https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/tagging-best-practices.html",
   "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-tagging",
   "https://cloud.google.com/resource-manager/docs/tags/tags-overview",
   "https://developer.hashicorp.com/terraform/language/providers/configuration",
 ]
 
-let _EVIDENCE_VAR_TYPES = [
+const _EVIDENCE_VAR_TYPES = [
   "https://developer.hashicorp.com/terraform/language/values/variables",
   "https://developer.hashicorp.com/terraform/language/expressions/types",
 ]
 
-let _EVIDENCE_BACKEND = [
+const _EVIDENCE_BACKEND = [
   "https://developer.hashicorp.com/terraform/language/backend",
   "https://developer.hashicorp.com/terraform/language/state/remote",
   "https://developer.hashicorp.com/terraform/cloud-docs/recommended-practices/part1",
 ]
 
-let _EVIDENCE_MODULE_VERSION = [
+const _EVIDENCE_MODULE_VERSION = [
   "https://developer.hashicorp.com/terraform/language/modules/syntax",
   "https://developer.hashicorp.com/terraform/language/modules/sources",
   "https://developer.hashicorp.com/terraform/language/expressions/version-constraints",
 ]
 
-let _EVIDENCE_PROVIDER_VERSION = [
+const _EVIDENCE_PROVIDER_VERSION = [
   "https://developer.hashicorp.com/terraform/language/providers/requirements",
   "https://developer.hashicorp.com/terraform/language/expressions/version-constraints",
 ]
 
-let _EVIDENCE_OUTPUT_SENSITIVE = [
+const _EVIDENCE_OUTPUT_SENSITIVE = [
   "https://developer.hashicorp.com/terraform/language/values/outputs",
   "https://developer.hashicorp.com/terraform/language/state/sensitive-data",
 ]
 
-let _EVIDENCE_SECRETS = [
+const _EVIDENCE_SECRETS = [
   "https://developer.hashicorp.com/terraform/language/state/sensitive-data",
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
 ]
 
-let _EVIDENCE_IAM_LEAST_PRIV = [
+const _EVIDENCE_IAM_LEAST_PRIV = [
   "https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html",
   "https://learn.microsoft.com/en-us/entra/identity-platform/secure-least-privileged-access",
   "https://cloud.google.com/iam/docs/using-iam-securely",
@@ -66,7 +66,7 @@ fn production_tf_files(slice) {
 }
 
 fn scan_files(files, pattern) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -76,7 +76,7 @@ fn scan_files(files, pattern) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file.text) {
       findings = findings.push({path: file.path})
@@ -118,7 +118,7 @@ fn warn_on_findings(rule, remediation, findings) {
  * Warns when changed Terraform files declare cloud resources without Owner, Env, and CostCenter tags.
  */
 pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match("(?m)^\\s*resource\\s+\"(aws_|azurerm_|google_)", text, "m") != nil
       && (regex_match(r"(?i)\bowner\b", text, "s") == nil
@@ -139,7 +139,7 @@ pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
  * Warns when changed Terraform files declare variable blocks without an explicit type constraint.
  */
 pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match("(?m)^\\s*variable\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
       && regex_match(r"(?m)^\s*type\s*=", text, "m") == nil },
@@ -158,7 +158,7 @@ pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
  * Warns when a root-module file declares required_providers without configuring a remote state backend.
  */
 pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in production_tf_files(slice) {
     if !contains(file.path, "/modules/")
       && regex_match(r"required_providers\s*\{", file.text, "s") != nil
@@ -178,7 +178,7 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MODULE_VERSION, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks module blocks that pull from a registry source without pinning a version constraint. */
 pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match("(?m)^\\s*module\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
       && regex_match("source\\s*=\\s*\"[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+){2,3}\"", text, "s")
@@ -205,7 +205,7 @@ pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
  * Blocks required_providers declarations that omit a version constraint for at least one provider.
  */
 pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match(r"required_providers\s*\{", text, "s") != nil
       && regex_match(r"(?m)^\s*version\s*=", text, "m") == nil },
@@ -222,7 +222,7 @@ pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_OUTPUT_SENSITIVE, confidence: 0.74, source_date: "2026-05-09")
 /** Blocks output blocks whose names suggest secrets when sensitive = true is missing. */
 pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     production_tf_files(slice),
     { text -> regex_match(
       "(?im)^\\s*output\\s+\"[A-Za-z0-9_-]*(?:password|secret|token|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*\"\\s*\\{",
@@ -244,8 +244,8 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in Terraform source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
+  const rubric = "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_hardcoded_secrets",
@@ -263,8 +263,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
  * Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification.
  */
 pub fn iam_policies_avoid_wildcard_grants(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
+  const rubric = "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "iam_policies_avoid_wildcard_grants",

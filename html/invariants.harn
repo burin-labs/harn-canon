@@ -1,40 +1,40 @@
-let _EVIDENCE_IMG_ALT = [
+const _EVIDENCE_IMG_ALT = [
   "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/img",
   "https://www.w3.org/WAI/tutorials/images/decision-tree/",
 ]
 
-let _EVIDENCE_HTML_LANG = [
+const _EVIDENCE_HTML_LANG = [
   "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/lang",
   "https://www.w3.org/WAI/WCAG22/Understanding/language-of-page.html",
 ]
 
-let _EVIDENCE_INLINE_HANDLERS = [
+const _EVIDENCE_INLINE_HANDLERS = [
   "https://developer.mozilla.org/en-US/docs/Web/Events/Event_handlers",
   "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
   "https://web.dev/articles/strict-csp",
 ]
 
-let _EVIDENCE_INLINE_STYLES = [
+const _EVIDENCE_INLINE_STYLES = [
   "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Global_attributes/style",
   "https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP",
 ]
 
-let _EVIDENCE_SEMANTIC = [
+const _EVIDENCE_SEMANTIC = [
   "https://html.spec.whatwg.org/multipage/sections.html",
   "https://developer.mozilla.org/en-US/docs/Glossary/Semantics",
 ]
 
-let _EVIDENCE_TARGET_BLANK = [
+const _EVIDENCE_TARGET_BLANK = [
   "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/noopener",
   "https://web.dev/articles/external-anchors-use-rel-noopener",
 ]
 
-let _EVIDENCE_FORM_LABELS = [
+const _EVIDENCE_FORM_LABELS = [
   "https://www.w3.org/WAI/tutorials/forms/labels/",
   "https://www.w3.org/WAI/WCAG22/Understanding/labels-or-instructions.html",
 ]
 
-let _EVIDENCE_LINK_PURPOSE = [
+const _EVIDENCE_LINK_PURPOSE = [
   "https://www.w3.org/WAI/WCAG22/Understanding/link-purpose-in-context.html",
   "https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/a",
 ]
@@ -74,7 +74,7 @@ fn html_files(slice) {
 }
 
 fn scan_files(files, pattern, flags) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -84,7 +84,7 @@ fn scan_files(files, pattern, flags) {
 }
 
 fn scan_files_if(files, predicate) {
-  var findings = []
+  let findings = []
   for file in files {
     if predicate(file) {
       findings = findings.push({path: file.path})
@@ -124,7 +124,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_IMG_ALT, confidence: 0.86, source_date: "2026-05-09")
 /** Blocks <img> elements that omit an alt attribute. */
 pub fn images_have_alt_text(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in html_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(?i)<img\b", line, "") != nil
@@ -145,7 +145,7 @@ pub fn images_have_alt_text(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_HTML_LANG, confidence: 0.84, source_date: "2026-05-09")
 /** Blocks full HTML documents that omit a lang attribute on the root element. */
 pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
-  let findings = scan_files_if(
+  const findings = scan_files_if(
     html_files(slice),
     { file -> regex_match(r"(?i)<html\b", file.text, "s") != nil
       && regex_match(r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=", file.text, "s") == nil },
@@ -162,7 +162,7 @@ pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INLINE_HANDLERS, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks inline event-handler attributes such as onclick, onload, or onerror. */
 pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\son[a-z]+\\s*=\\s*[\"']", "s")
+  const findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\son[a-z]+\\s*=\\s*[\"']", "s")
   return block_on_findings(
     "no_inline_event_handlers",
     "Bind handlers in JavaScript with addEventListener; inline handlers break under strict CSP.",
@@ -175,7 +175,7 @@ pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INLINE_STYLES, confidence: 0.7, source_date: "2026-05-09")
 /** Warns on style attributes set directly on elements in production HTML. */
 pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\sstyle\\s*=\\s*[\"']", "s")
+  const findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\sstyle\\s*=\\s*[\"']", "s")
   return warn_on_findings(
     "no_inline_styles",
     "Move declarations to a stylesheet or scoped class; inline styles defeat caching and strict CSP.",
@@ -188,7 +188,7 @@ pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SEMANTIC, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when divs use class or id names that match HTML5 landmark elements. */
 pub fn prefer_semantic_landmarks(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     html_files(slice),
     "(?i)<div\\b[^>]*\\b(?:class|id)\\s*=\\s*[\"'][^\"']*\\b(?:nav|navbar|navigation|header|main-?content|main|footer|sidebar|article|aside)\\b[^\"']*[\"']",
     "s",
@@ -205,7 +205,7 @@ pub fn prefer_semantic_landmarks(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TARGET_BLANK, confidence: 0.84, source_date: "2026-05-09")
 /** Blocks <a target="_blank"> anchors that omit rel="noopener" or rel="noreferrer". */
 pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
-  var findings = []
+  let findings = []
   for file in html_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(?i)<a\b", line, "") != nil
@@ -229,8 +229,8 @@ pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
  * Blocks form controls that lack an accessible name from a label, aria-label, or aria-labelledby.
  */
 pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed HTML introduces or modifies a form control such as <input> (other than type=\"hidden\", \"submit\", \"button\", \"reset\", or \"image\" with alt), <select>, or <textarea>, and the control has no associated <label> (wrapping or with for=id), no aria-label, no aria-labelledby pointing at visible text, and no title attribute carrying the name."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
+  const rubric = "Block only when changed HTML introduces or modifies a form control such as <input> (other than type=\"hidden\", \"submit\", \"button\", \"reset\", or \"image\" with alt), <select>, or <textarea>, and the control has no associated <label> (wrapping or with for=id), no aria-label, no aria-labelledby pointing at visible text, and no title attribute carrying the name."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "form_controls_have_accessible_names",
@@ -248,8 +248,8 @@ pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
  * Blocks generic anchor text such as "click here" or "read more" without disambiguating context.
  */
 pub fn link_purpose_is_clear(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed HTML introduces an anchor whose visible text is generic placeholder phrasing such as \"click here\", \"here\", \"more\", \"read more\", or \"learn more\", and the anchor lacks a programmatic accessible name from aria-label or aria-labelledby and has no descriptive surrounding text in the same paragraph, list item, table cell, or heading that disambiguates the link target."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
+  const rubric = "Block only when changed HTML introduces an anchor whose visible text is generic placeholder phrasing such as \"click here\", \"here\", \"more\", \"read more\", or \"learn more\", and the anchor lacks a programmatic accessible name from aria-label or aria-labelledby and has no descriptive surrounding text in the same paragraph, list item, table cell, or heading that disambiguates the link target."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "link_purpose_is_clear",

@@ -1,54 +1,54 @@
-let _EVIDENCE_FLOATING_PROMISES = [
+const _EVIDENCE_FLOATING_PROMISES = [
   "https://developer.mozilla.org/en-US/docs/Web/API/Window/fetch",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch",
 ]
 
-let _EVIDENCE_EVAL = [
+const _EVIDENCE_EVAL = [
   "https://eslint.org/docs/latest/rules/no-eval",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval",
 ]
 
-let _EVIDENCE_IMPLIED_EVAL = [
+const _EVIDENCE_IMPLIED_EVAL = [
   "https://eslint.org/docs/latest/rules/no-implied-eval",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/eval",
 ]
 
-let _EVIDENCE_STRICT_EQUALITY = [
+const _EVIDENCE_STRICT_EQUALITY = [
   "https://eslint.org/docs/latest/rules/eqeqeq",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Strict_equality",
 ]
 
-let _EVIDENCE_NO_VAR = [
+const _EVIDENCE_NO_VAR = [
   "https://eslint.org/docs/latest/rules/no-var",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Statements/var",
 ]
 
-let _EVIDENCE_NO_CONSOLE = [
+const _EVIDENCE_NO_CONSOLE = [
   "https://eslint.org/docs/latest/rules/no-console",
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
 ]
 
-let _EVIDENCE_NO_WITH = [
+const _EVIDENCE_NO_WITH = [
   "https://eslint.org/docs/latest/rules/no-with",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode",
 ]
 
-let _EVIDENCE_NO_IMPLICIT_GLOBALS = [
+const _EVIDENCE_NO_IMPLICIT_GLOBALS = [
   "https://eslint.org/docs/latest/rules/no-implicit-globals",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode",
 ]
 
-let _EVIDENCE_RUNTIME_VALIDATION = [
+const _EVIDENCE_RUNTIME_VALIDATION = [
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/JSON/parse",
   "https://cheatsheetseries.owasp.org/cheatsheets/Input_Validation_Cheat_Sheet.html",
 ]
 
-let _EVIDENCE_SECRETS = [
+const _EVIDENCE_SECRETS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
   "https://docs.github.com/en/code-security/concepts/secret-security/about-secret-scanning",
 ]
 
-let _EVIDENCE_SENSITIVE_LOGS = [
+const _EVIDENCE_SENSITIVE_LOGS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Logging_Cheat_Sheet.html",
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
 ]
@@ -88,7 +88,7 @@ fn production_javascript_files(slice) {
 }
 
 fn scan_files(files, pattern) {
-  var findings = []
+  let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
       findings = findings.push({path: file.path, pattern: pattern})
@@ -130,7 +130,7 @@ fn warn_on_findings(rule, remediation, findings) {
  * Blocks obvious Promise-returning calls that are started as bare statements without await, return, void, or catch.
  */
 pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     javascript_files(slice),
     r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
   )
@@ -146,7 +146,7 @@ pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EVAL, confidence: 0.86, source_date: "2026-05-08")
 /** Blocks direct eval calls in JavaScript source. */
 pub fn no_eval(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     javascript_files(slice),
     r"(?m)(^|[^._A-Za-z0-9])(eval|globalThis\.eval|window\.eval|global\.eval)\s*\(",
   )
@@ -162,7 +162,7 @@ pub fn no_eval(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_IMPLIED_EVAL, confidence: 0.82, source_date: "2026-05-08")
 /** Blocks string arguments to timer APIs that evaluate code. */
 pub fn no_implied_eval(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     javascript_files(slice),
     r"(?m)\b(window\.)?(setTimeout|setInterval|execScript)\s*\(\s*['\x22]",
   )
@@ -178,7 +178,7 @@ pub fn no_implied_eval(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_STRICT_EQUALITY, confidence: 0.8, source_date: "2026-05-08")
 /** Blocks loose equality and inequality operators. */
 pub fn strict_equality(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(javascript_files(slice), r"(?m)(^|[^=!])([!=]=)([^=]|$)")
+  const findings = scan_files(javascript_files(slice), r"(?m)(^|[^=!])([!=]=)([^=]|$)")
   return block_on_findings(
     "strict_equality",
     "Use === or !== so JavaScript does not coerce operands during comparison.",
@@ -191,7 +191,7 @@ pub fn strict_equality(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_VAR, confidence: 0.9, source_date: "2026-05-08")
 /** Blocks var declarations in favor of block-scoped declarations. */
 pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])var\s+[A-Za-z_$]")
+  const findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])var\s+[A-Za-z_$]")
   return block_on_findings("no_var_keyword", "Use let or const so declarations have block scope.", findings)
 }
 
@@ -200,7 +200,7 @@ pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_CONSOLE, confidence: 0.76, source_date: "2026-05-08")
 /** Blocks console debugging calls in production JavaScript paths. */
 pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(production_javascript_files(slice), r"\bconsole\.(log|debug|trace|info)\s*\(")
+  const findings = scan_files(production_javascript_files(slice), r"\bconsole\.(log|debug|trace|info)\s*\(")
   return block_on_findings(
     "no_console_in_prod_path",
     "Use the project logger or remove console debugging from production code.",
@@ -213,7 +213,7 @@ pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_WITH, confidence: 0.9, source_date: "2026-05-08")
 /** Blocks with statements, which are unavailable in strict mode and obscure name resolution. */
 pub fn no_with_statement(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])with\s*\(")
+  const findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])with\s*\(")
   return block_on_findings(
     "no_with_statement",
     "Replace with with explicit property access or object destructuring.",
@@ -226,7 +226,7 @@ pub fn no_with_statement(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_IMPLICIT_GLOBALS, confidence: 0.72, source_date: "2026-05-08")
 /** Warns on top-level var declarations or function declarations in browser scripts. */
 pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
-  let findings = scan_files(
+  const findings = scan_files(
     javascript_files(slice),
     r"(?m)^(var\s+[A-Za-z_$]|function\s+[A-Za-z_$][A-Za-z0-9_$]*\s*\()",
   )
@@ -242,8 +242,8 @@ pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks external data being trusted as domain data without runtime validation. */
 pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed JavaScript trusts external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, postMessage, or URL params without runtime validation, schema parsing, allow-listing, or explicit narrowing."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
+  const rubric = "Block only when changed JavaScript trusts external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, postMessage, or URL params without runtime validation, schema parsing, allow-listing, or explicit narrowing."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "runtime_validate_external_data",
@@ -259,8 +259,8 @@ pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in JavaScript source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed JavaScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
+  const rubric = "Block only when changed JavaScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_hardcoded_secrets",
@@ -276,8 +276,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  let rubric = "Block only when changed JavaScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
-  let judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
+  const rubric = "Block only when changed JavaScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
+  const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(
       "no_sensitive_data_in_logs",
