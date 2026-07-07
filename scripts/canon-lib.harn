@@ -4,7 +4,7 @@ const PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
 
 const INVARIANT_RE = "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
 
-const EVIDENCE_RE = "let\\s+(_EVIDENCE_[A-Za-z0-9_]+)\\s*=\\s*\\[([\\s\\S]*?)\\]"
+const EVIDENCE_RE = "(?:let|const)\\s+(_EVIDENCE_[A-Za-z0-9_]+)\\s*=\\s*\\[([\\s\\S]*?)\\]"
 
 const URL_RE = "\"(https?://[^\"]+)\""
 
