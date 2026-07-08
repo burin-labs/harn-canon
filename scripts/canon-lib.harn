@@ -15,12 +15,20 @@ pub fn repo_root() -> string {
 }
 
 pub fn load_pack_manifest() -> list {
-  const manifest = json_parse(harness.fs.read_text(PACK_MANIFEST_PATH))
+  const manifest = load_pack_manifest_document()
   const packs = manifest?.packs ?? []
   if manifest?.schema_version != 1 || type_of(packs) != "list" {
     throw "canon-packs.json must use schema_version 1 with a packs list"
   }
   return packs
+}
+
+pub fn load_pack_manifest_document() -> dict {
+  const manifest = json_parse(harness.fs.read_text(PACK_MANIFEST_PATH))
+  if type_of(manifest) != "dict" {
+    throw "canon-packs.json must be a JSON object"
+  }
+  return manifest
 }
 
 pub fn expected_packs() -> list<string> {

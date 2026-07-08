@@ -4,6 +4,7 @@ import {
   expected_packs,
   is_normalized_relative_path,
   load_pack_manifest,
+  load_pack_manifest_document,
   parse_invariants,
   parse_ymd,
   repo_root,
@@ -43,6 +44,8 @@ const FIXTURE_KEYS = ["predicate", "cases"]
 const CASE_KEYS = ["name", "expect", "files", "ctx"]
 
 const FILE_KEYS = ["path", "text"]
+
+const PACK_MANIFEST_ROOT_KEYS = ["schema_version", "packs"]
 
 const PACK_MANIFEST_KEYS = ["id", "title", "invariants", "fixtures", "extensions", "file_names"]
 
@@ -130,7 +133,10 @@ fn validate_manifest(errors: list<string>) -> list<string> {
   let out = errors
   let seen = {}
   let packs_by_id = {}
+  const manifest = load_pack_manifest_document()
+  out = validate_allowed_keys("canon-packs.json", "manifest root", manifest, PACK_MANIFEST_ROOT_KEYS, out)
   const packs = load_pack_manifest()
+  let pack_ids: list<string> = []
   for index in range(0, len(packs)) {
     const pack = packs[index]
     if type_of(pack) != "dict" {
@@ -148,6 +154,7 @@ fn validate_manifest(errors: list<string>) -> list<string> {
     }
     seen[pack_id] = true
     packs_by_id[pack_id] = pack
+    pack_ids = pack_ids + [pack_id]
     const expected_invariants = pack_id + "/invariants.harn"
     const expected_fixtures = pack_id + "/fixtures"
     if pack?.invariants != expected_invariants {
@@ -166,6 +173,9 @@ fn validate_manifest(errors: list<string>) -> list<string> {
       out = out + ["canon-packs.json: " + expected_fixtures + " does not exist"]
     }
     out = validate_routing_selectors(pack_id, pack, out)
+  }
+  if pack_ids != pack_ids.sort() {
+    out = out + ["canon-packs.json: packs must be sorted by id"]
   }
   return validate_eval_critical_routes(packs_by_id, out)
 }
