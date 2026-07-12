@@ -3,7 +3,7 @@
 This repo stores Harn canon seed predicate packs. Keep changes small, explicit,
 and evidence-backed.
 
-## Repo Shape
+## Repo shape
 
 - Each pack lives at the repo root, for example `rust/`, `typescript/`, or
   `harn/`.
@@ -12,7 +12,7 @@ and evidence-backed.
 - `docs/` is only an index for shared policy and design notes. Pack-specific
   rationale belongs in the pack README.
 
-## Editing Rules
+## Editing rules
 
 - Keep `invariants.harn`, the pack README, and fixtures in lockstep. Every
   predicate needs a matching fixture file and a README row.
