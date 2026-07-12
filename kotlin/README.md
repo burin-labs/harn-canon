@@ -2,7 +2,7 @@
 
 This pack covers Kotlin JVM, Android, and Kotlin Multiplatform source with an emphasis on null-safety, coroutine structure, API clarity, and value-object idioms. The v0 rules favor simple source-text predicates for concrete failure modes and semantic predicates where platform types or async API design require code context.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.kt` or `.kts` and target Kotlin 2.x-era language and coroutine practices.
 - JVM and Android projects may use Gradle, kotlinx.coroutines, Jetpack lifecycle scopes, Compose, Java interop, detekt, and ktlint-style formatting.
@@ -10,7 +10,7 @@ This pack covers Kotlin JVM, Android, and Kotlin Multiplatform source with an em
 - Semantic predicates use `ctx.semantic_judge(...)` and must cite concrete changed spans before blocking.
 - The pack is a seed canon, not a replacement for the Kotlin compiler, explicit API mode, detekt, Android Lint, ktlint, or coroutine debug tooling.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Evidence scanned on 2026-05-08.
 - Android Open Source Project API guidelines: asynchronous and non-blocking Kotlin API design.
 - detekt documentation: style rules and suppression behavior used as ecosystem lint precedent.
 
-## Known False Positives
+## Known false positives
 
 - `no_bang_bang` is source-text based and can flag rare intentional assertions. Test paths are excluded, but production assertions should usually be replaced or localized with `requireNotNull`.
 - `immutable_by_default` warns on any `var`, including stateful UI and persistence models where mutation is intentional.

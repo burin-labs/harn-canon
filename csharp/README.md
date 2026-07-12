@@ -2,14 +2,14 @@
 
 This pack covers plain C# and .NET library or application code before framework-specific packs such as ASP.NET Core, MAUI, Unity, or Orleans add tighter local rules. It focuses on high-signal defaults for nullable safety, async correctness, analyzer hygiene, exception diagnostics, and security-sensitive data handling.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.cs`; project checks target `.csproj`, `Directory.Build.props`, and `Directory.Build.targets`.
 - Projects use SDK-style .NET builds with nullable reference types enabled centrally or in each changed project file.
 - Deterministic predicates operate over changed source text until Flow exposes stable Roslyn symbols, analyzer configuration, and effective MSBuild property queries.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible with simple syntax checks.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Evidence scanned on 2026-05-08.
 - OWASP cheat sheets for SQL injection prevention, logging, and secrets management.
 - GitHub secret scanning docs for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are intentionally conservative and file-scoped. A file containing both an offending pattern and an allowed pattern may be allowed until Roslyn-level matching lands.
 - `nullable_reference_types_enabled` only inspects changed project/default files. The intended runtime form should resolve the effective nullable context for each touched C# file.

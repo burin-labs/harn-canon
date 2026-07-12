@@ -2,7 +2,7 @@
 
 This pack covers plain HTML markup before framework-specific packs (React, Vue, Astro, server-side templating engines) layer tighter rules on top. It targets high-signal accessibility and security defaults that survive direct inspection of changed HTML files: image alternative text, document language, inline event handlers, inline styles, semantic landmarks, safe new-window anchors, accessible form controls, and accessible link purpose.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source checks target files ending in `.html` or `.htm`. Templating dialects with non-HTML syntax (`.hbs`, `.ejs`, `.liquid`, `.pug`, framework-specific single-file components) are out of scope until per-framework packs land.
 - Build, dependency, and report directories are excluded: `node_modules/`, `dist/`, `build/`, `out/`, `coverage/`, `vendor/`, `.next/`, `.nuxt/`, `.svelte-kit/`, `.cache/`, `target/`, and `test-results/`.
@@ -10,7 +10,7 @@ This pack covers plain HTML markup before framework-specific packs (React, Vue, 
 - Deterministic predicates are regex-driven scans of changed source text. They are intentionally tolerant of whitespace and case, but they do not parse HTML, so attribute order and quoting style matter.
 - Semantic predicates make one cheap judge call over changed HTML files and use only evidence captured at authoring time. They block only when the judge can cite a concrete changed span.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-05-09.
 - W3C WCAG 2.2 Understanding documents: Language of Page (3.1.1), Labels or Instructions (3.3.2), and Link Purpose (In Context) (2.4.4).
 - web.dev guides: strict CSP and external-anchors-use-rel-noopener.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse HTML. Comments, embedded `<script>` or `<style>` blocks, conditional comments, and unusually formatted multi-line tags can confuse deterministic checks.
 - `images_have_alt_text` ignores `<img>` tags that *contain* an `alt` attribute regardless of value. It does not detect placeholder alt text such as the file name; the semantic judge can still flag those when `link_purpose_is_clear` and follow-up accessibility predicates land.

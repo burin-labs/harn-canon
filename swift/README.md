@@ -2,7 +2,7 @@
 
 This pack covers Swift application and package code with an emphasis on crash prevention, UI responsiveness, ARC memory safety, and Swift 6 data-race safety. The v0 rules deliberately prefer simple source-text predicates where a failure mode is concrete, and semantic predicates where Swift syntax and framework lifetime rules are too contextual for regex alone.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use the `.swift` extension and target Swift 5.10 through Swift 6.x.
 - Apple-platform code may use SwiftUI, UIKit, AppKit, Combine, Swift Testing, XCTest, Dispatch, and OSLog.
@@ -10,7 +10,7 @@ This pack covers Swift application and package code with an emphasis on crash pr
 - Semantic predicates use `ctx.semantic_judge(...)` and must cite concrete changed spans before blocking.
 - The pack is a seed canon, not a replacement for SwiftSyntax, SwiftLint, the Swift compiler, Xcode diagnostics, or runtime profiling.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Evidence scanned on 2026-04-26.
 - SwiftLint rule docs: `force_unwrapping`, `force_try`, `force_cast`, and `implicitly_unwrapped_optional` behavior as widely adopted ecosystem lint precedent.
 - Swift Forums: current discussion on accidental retain cycles from strong closure captures.
 
-## Known False Positives
+## Known false positives
 
 - `no_force_unwrap` is source-text based and can flag rare intentional force unwraps or implicitly unwrapped optional declarations outside recognized test/preview paths; it may miss unwraps at the end of a line until SwiftSyntax-backed matching exists.
 - `prefer_structured_concurrency` warns on any new Dispatch, OperationQueue, Thread, or pthread usage, including legitimate low-level adapters.

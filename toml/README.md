@@ -2,13 +2,13 @@
 
 This pack covers TOML configuration documents — Cargo manifests, `pyproject.toml`, tool configs, and any other `.toml` file. TOML has a small surface area, so this v0 focuses on rules drawn directly from the TOML 1.0 specification plus the dominant package-metadata conventions used by the largest TOML ecosystems.
 
-## Stack Assumptions
+## Stack assumptions
 
 - TOML files use the `.toml` extension (covers `Cargo.toml`, `pyproject.toml`, `taplo.toml`, `deny.toml`, and the long tail of tool configs).
 - Predicates run on changed slices and use file-text scans — no separate TOML parser is invoked, so syntactic edge cases that a parser would catch (e.g. unterminated strings) are out of scope here and remain the parser's job.
 - Advisory rules return `Warn` when a project's existing convention may legitimately diverge. Blocking rules are reserved for spec violations and security-sensitive issues.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -30,7 +30,7 @@ Evidence scanned on 2026-05-09 and refreshed on 2026-05-15 for new predicates.
 - RFC 3339 (datetime grammar that TOML inherits, including the meaning of an absent offset).
 - OWASP Secrets Management Cheat Sheet, GitHub secret-scanning docs, and CWE-798 (hardcoded credentials).
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse TOML. Unusual whitespace, comments inside complex values, or inline tables split across (technically invalid) lines may confuse the deterministic checks.
 - `no_duplicate_table_headers` relies on a regex backreference and is intentionally narrow: it catches `[a.b]` repeated verbatim but does not catch the harder case of a dotted key (e.g. `a.b.c = 1`) implicitly redefining a table established with `[a.b]`. Implicit-redefinition detection needs a real parser and is left for a future revision.
@@ -41,7 +41,7 @@ Evidence scanned on 2026-05-09 and refreshed on 2026-05-15 for new predicates.
 - `secrets_not_hardcoded_in_toml` depends on the judge recognizing concrete credential-shaped strings. It should remain high-threshold and cite exact lines before blocking; placeholders, env-var references, and clearly fake fixtures must allow.
 - `package_metadata_declares_license` is intentionally Warn-level because private workspaces, unpublished examples, and inherited workspace metadata can be legitimate.
 
-## Future Predicates
+## Future predicates
 
 These were considered for v0 and deferred until the Harn Flow runtime exposes the needed primitives:
 

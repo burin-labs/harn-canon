@@ -2,7 +2,7 @@
 
 This pack covers vanilla CSS plus the common preprocessor dialects (Sass `.scss`/`.sass`, Less `.less`). It targets review issues that changed stylesheet slices can catch cheaply: cascade hygiene (`!important`, id selectors), internationalization (logical properties), unit hygiene (zero values, absolute font sizes), and accessibility (focus indicators, reduced-motion respect).
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source files end in `.css`, `.scss`, `.sass`, or `.less`. CSS-in-JS, styled-components, and tagged-template stylesheets are out of scope until Harn Flow exposes a stable embedded-CSS extractor.
 - Vendor and build artifacts under `node_modules/`, `vendor/`, `dist/`, `build/`, or matching `*.min.css`/`*.min.scss`/`*.min.less` are skipped.
@@ -11,7 +11,7 @@ This pack covers vanilla CSS plus the common preprocessor dialects (Sass `.scss`
 - Semantic predicates make one cheap judge call over changed stylesheets and use only evidence captured at authoring time.
 - Advisory rules return `Warn` when stylistic exceptions are common (vendor-driven id usage, intentionally physical layouts, decorative micro-transitions). Blocking rules are reserved for `!important` without justification, suppressed focus indicators, and motion that ignores `prefers-reduced-motion`.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-05-09.
 - web.dev: logical-properties learn module, font-size guidance, reduced-motion article.
 - Stylelint docs: `declaration-no-important`, `selector-max-id`, `length-zero-no-unit` rule references for cross-tool calibration of common style issues.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse CSS. Comments, multi-line declarations, Sass interpolation, nested rules, and `@supports` blocks can confuse deterministic checks.
 - `no_important_without_comment` accepts the file as soon as one `!important` is paired with a nearby comment; multiple unjustified overrides in the same file will not all be flagged independently. It also cannot tell whether a comment actually explains the override versus being unrelated.

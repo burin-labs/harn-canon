@@ -2,7 +2,7 @@
 
 This pack covers prose Markdown files used for documentation, READMEs, and design notes. Markdown has a smaller surface area than full programming languages, so the pack stays narrow and focuses on review-slice checks with clear correctness, accessibility, or safety impact: untagged code fences, heading-level discipline, single document title, image alt text, dangerous raw HTML, broken internal links, and link-style consistency.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.md` or `.markdown`. MDX (`.mdx`) is intentionally excluded for v0 because its JSX layer needs separate parsing rules.
 - Documents target CommonMark with GitHub Flavored Markdown extensions; predicates do not assume Pandoc-only or Liquid-templated dialects.
@@ -10,7 +10,7 @@ This pack covers prose Markdown files used for documentation, READMEs, and desig
 - Deterministic predicates run regex scans on changed source text until Harn Flow exposes a Markdown AST query API. Rules with meaningful false-positive risk warn rather than block.
 - Semantic predicates make one cheap judge call and only act when they can cite concrete changed spans.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-05-09.
 - OWASP Cross-Site Scripting Prevention Cheat Sheet: HTML and URL contexts that motivate the dangerous-HTML predicate.
 - GitHub docs: basic writing and formatting syntax, used as the de-facto rendering reference for repository-hosted docs.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse Markdown. Code samples that demonstrate Markdown syntax can be misread; HTML inside fenced code blocks is treated as regular content.
 - `code_fence_language_specified` flags only when a complete bare opener / bare closer pair is detected; a file with all tagged blocks is allowed even if their closers are bare. It does not yet recognize tilde (`~~~`) fences.

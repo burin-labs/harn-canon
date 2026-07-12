@@ -2,14 +2,14 @@
 
 This pack covers plain TypeScript and TSX code before framework-specific packs such as React, Next.js, or Node services add tighter local rules. It focuses on high-signal defaults for type safety, async correctness, production logging, and untrusted boundary handling.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.ts`, `.tsx`, `.mts`, or `.cts`; config checks target `tsconfig.json`.
 - Projects use TypeScript strict mode and type-aware linting where practical.
 - Deterministic predicates operate over changed source text until Flow exposes stable TypeScript AST and tsconfig-resolution queries.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible with simple syntax checks.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Evidence scanned on 2026-04-26.
 - OWASP cheat sheets for input validation, logging, and secrets management.
 - GitHub secret scanning docs for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are intentionally conservative. A few remain file-scoped where structured matching needs AST-level support.
 - `no_floating_promises` only blocks obvious async surfaces such as `fetch`, `Promise.*`, `new Promise`, or `*Async` calls until TypeScript type information is available.

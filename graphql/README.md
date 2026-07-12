@@ -2,7 +2,7 @@
 
 This pack covers GraphQL schema files (`.graphql`, `.graphqls`, `.gql`) and the server wiring that hosts them. The surface area is small relative to a full language pack, so v0 prioritizes high-signal naming, documentation, evolution, and resource-bound rules drawn from the GraphQL spec, the Apollo schema-design tech notes, the Relay connection spec, and the OWASP GraphQL cheat sheet.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Schema checks target `.graphql`, `.graphqls`, and `.gql` files. Generated paths (`/generated/`, `/__generated__/`, `*.generated.*`) are excluded.
 - Schemas are written in GraphQL SDL, not introspected JSON; client document linting belongs in a separate pack.
@@ -10,7 +10,7 @@ This pack covers GraphQL schema files (`.graphql`, `.graphqls`, `.gql`) and the 
 - Deterministic predicates run over changed schema source text. AST queries will replace the regexes once Flow exposes a stable GraphQL query API.
 - Semantic predicates use `ctx.semantic_judge(...)` and must cite concrete changed spans before blocking; schema-evolution checks rely on the judge to reason about the diff until the runtime exposes paired base-and-head schema snapshots.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -36,7 +36,7 @@ Evidence scanned on 2026-05-09.
 - The Guild graphql-inspector docs for diff-based breaking-change detection.
 - OWASP GraphQL Security Cheat Sheet for query-cost and depth-limit guidance.
 
-## Known False Positives
+## Known false positives
 
 - `enum_values_upper_snake_case` is line-anchored: an enum value that starts with an uppercase letter but contains lowercase mid-identifier (`MixedCase`) is not flagged until AST checks land.
 - `no_double_underscore_names` matches type and field declaration sites only; it does not inspect references to introspection types in queries.

@@ -2,7 +2,7 @@
 
 This pack covers `.proto` schemas — proto2, proto3, and the newer Editions syntax. Protobuf has a small surface area but a brutal failure mode: a renumbered field or a deleted-then-reused tag silently corrupts data on the wire across every consumer that has not yet redeployed. The predicates here target the handful of authoring mistakes that are cheap to catch on a slice and expensive to recover from in production.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Schema sources end in `.proto`; generated stubs (`*.pb.go`, `*.pb.cc`, `*_pb2.py`, etc.) are out of scope for this pack — those should be reviewed by the consuming language's pack.
 - Vendored or generated proto trees under `/vendor/`, `/third_party/`, `/node_modules/`, `/generated/`, or `/.proto-cache/` are excluded from first-party scans.
@@ -10,7 +10,7 @@ This pack covers `.proto` schemas — proto2, proto3, and the newer Editions syn
 - Semantic predicates make one cheap judge call over changed `.proto` files and rely on the diff context to compare against the prior schema.
 - Advisory rules return `Warn` when official guidance is style-level. Blocking rules are reserved for declarations the protobuf compiler or wire format outright rejects, and for changes that break wire compatibility for already-deployed consumers.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -32,7 +32,7 @@ Evidence scanned on 2026-05-09.
 - Editions [overview](https://protobuf.dev/editions/overview/) for the post-syntax declaration form.
 - Updating-a-message and deleting-a-field sections of the proto3 and proto2 guides for wire-compat rules.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse protobuf. Block comments, unusual whitespace, and macros (when proto files are templated) can confuse deterministic checks.
 - `field_names_lower_snake_case` looks at simple `optional/repeated/required type field = N` shapes; map fields and `oneof` members with type parameters may not match the same regex and can slip through.

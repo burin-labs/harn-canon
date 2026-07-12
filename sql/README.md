@@ -2,7 +2,7 @@
 
 This pack covers schema, migration, and query safety for raw SQL files. It targets review issues that an Archivist can catch cheaply on changed slices: implicit column lists, comma joins, table-wide DELETE/UPDATE statements, non-idempotent migration DDL, dynamic SQL that concatenates untrusted input, and foreign keys without supporting indexes.
 
-## Stack Assumptions
+## Stack assumptions
 
 - SQL source files use the `.sql` extension.
 - Production paths exclude any path under `test/`, `tests/`, `testdata/`, `fixtures/`, `seed/`, or `seeds/`, and any file ending in `_test.sql`, `_seed.sql`, or `_fixture.sql`.
@@ -10,7 +10,7 @@ This pack covers schema, migration, and query safety for raw SQL files. It targe
 - Deterministic predicates use file-text regex scans because Harn Flow does not yet expose a stable SQL AST query API; semantic predicates make a single judge call over changed SQL files.
 - Predicates are dialect-aware where it matters: `migrations_use_if_not_exists`, `destructive_drops_use_if_exists`, and `index_on_fk` cover PostgreSQL and MySQL syntax variants and tolerate `CONCURRENTLY` for PostgreSQL index DDL.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-05-09.
 - GitLab development docs: SQL guidelines (explicit columns over `SELECT *`).
 - Holywell SQL Style Guide (`sqlstyle.guide`): explicit `JOIN` keyword preferred over comma-separated `FROM`.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse SQL. Comments containing keywords, dollar-quoted bodies, and CTE-heavy statements can fool the deterministic checks.
 - `no_select_star` flags any `SELECT * FROM ...`, including `INSERT INTO target SELECT * FROM staging` patterns that are intentional in copy migrations. Suppress locally once the predicate runtime supports it.

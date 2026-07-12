@@ -2,7 +2,7 @@
 
 This pack covers the R-specific footguns that an Archivist can catch cheaply on a changed slice: search-path pollution, non-reproducible session state, brittle logical literals, ambiguous assignment direction, off-by-one iteration over empty inputs, code injection through `eval(parse(...))`, mutating package-install side effects, and the classic "loop where a vectorized op would do." Two of the three semantic predicates target reproducibility and namespace discipline — both judgement-heavy enough that a single judge call earns its keep over regex.
 
-## Stack Assumptions
+## Stack assumptions
 
 - R source files use `.R`, `.r`, `.Rmd`, `.rmd`, `.qmd`, or `.Rnw` extensions. R Markdown and Quarto files mix prose with code chunks, but the regex predicates fire on full-text matches, so a hit inside a code chunk is treated the same as a hit in a `.R` script.
 - Production paths exclude any path under `tests/`, `testthat/`, `test/`, `inst/extdata/`, `man-roxygen/`, `data-raw/`, or `dev/`.
@@ -10,7 +10,7 @@ This pack covers the R-specific footguns that an Archivist can catch cheaply on 
 - Analysis scripts are R files outside `R/` and outside test directories. The `reproducible_random_seed` predicate scopes there because `set.seed()` inside package source would clobber the caller's RNG state.
 - Deterministic predicates use file-text regex scans because Harn Flow does not yet expose a stable R AST query API; semantic predicates make a single judge call over changed R files.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Evidence scanned on 2026-05-10.
 - *Google R style guide* (google.github.io/styleguide/Rguide.html): assignment operator and logical-constant guidance.
 - *here* (here.r-lib.org), *renv* (rstudio.github.io/renv), and *rlang* (rlang.r-lib.org): canonical alternatives to `setwd()`, `install.packages()`, and `eval(parse(text = ...))`.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse R. Strings, comments, and roxygen blocks containing the matched tokens (e.g. an `attach(` literal in a docstring) will trip the deterministic checks. Suppress locally once the predicate runtime supports it.
 - `use_logical_constants` matches `T` and `F` only when they appear in a logical-literal context (after `=`, `,`, `(`, `<-`, `==`, `&&`, `||`, etc.). It still flags `T`/`F` used as user-defined symbols in those contexts; the canon's stance is that single-letter `T`/`F` as a variable name is itself worth flagging. Conversely, `T` inside a string or comment slips through, which is fine.

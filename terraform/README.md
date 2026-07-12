@@ -2,7 +2,7 @@
 
 This pack covers Terraform configurations (`.tf` files) for AWS, Azure, GCP, and other providers. Terraform's surface area is small enough that a v0 pack can target the highest-signal review issues directly: tagging hygiene, variable typing, remote state, version pinning, sensitive output handling, hardcoded secrets, and over-broad IAM grants.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source checks target HCL `.tf` files; `.tf.json`, `.tfvars`, override files, and `.terraform.lock.hcl` are out of scope for v0.
 - Production paths exclude `examples/`, `test/`, `tests/`, `testdata/`, and `.terraform/` working directories.
@@ -11,7 +11,7 @@ This pack covers Terraform configurations (`.tf` files) for AWS, Azure, GCP, and
 - Deterministic predicates operate over changed source text until Flow exposes a stable HCL AST query API. Regex-based matching is intentionally conservative.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible as a syntactic check.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -36,7 +36,7 @@ Evidence scanned on 2026-05-09.
 - OWASP Secrets Management Cheat Sheet and GitHub secret scanning documentation for hardcoded-credential risk.
 - AWS IAM, Microsoft Entra, and Google Cloud IAM least-privilege guidance for wildcard-grant avoidance.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse HCL. Multi-block files where some blocks satisfy a check and others do not may slip past file-scoped predicates until AST-level matching lands.
 - `required_tags_on_resources` is a Warn-level word-boundary check. Files that mention "owner", "env", or "costcenter" outside of tags (variable names, comments, locals) will silence the warning. Orgs with different tag standards should override this predicate locally.

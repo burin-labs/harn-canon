@@ -2,14 +2,14 @@
 
 This pack covers raw XML payloads, schemas (XSD), stylesheets (XSLT), and related XML-shaped formats (WSDL, SVG, RSS, Atom). XML has a smaller surface area than a full programming language, so the pack focuses on the few defaults that consistently catch real shipping incidents: external entity injection, encoding ambiguity, namespace discipline, schema hygiene, stylesheet resource loading, and credential leaks in config files.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source checks target `.xml`, `.xsd`, `.xsl`, `.xslt`, `.wsdl`, `.svg`, `.rss`, and `.atom` files.
 - Payload-only checks (DOCTYPE block) exclude `.xsd`, `.xsl`, and `.xslt` because schemas and stylesheets routinely declare types the parser never needs to expand.
 - Deterministic predicates operate on changed source text. Until Flow exposes an XML AST and parser-configuration query, parser-side defenses (`FEATURE_SECURE_PROCESSING`, `XMLConstants.ACCESS_EXTERNAL_DTD`, `defusedxml`, etc.) live in language packs rather than this format pack.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible with simple syntax checks.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Evidence scanned on 2026-05-09.
 - MITRE CWE-611 (Improper Restriction of XML External Entity Reference) and CWE-776 (Recursive Entity Expansion).
 - GitHub secret scanning documentation for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are intentionally conservative and file-scoped. Files containing both an offending pattern and an allowed one may be allowed or warned imprecisely until AST-level matching lands.
 - `no_inline_doctype` blocks every DOCTYPE in payload files, including legitimate uses such as XHTML documents that intentionally reference a public DTD. Move to an external schema or a XHTML-specific override pack if needed.

@@ -2,7 +2,7 @@
 
 This pack covers Dart application, package, and Flutter source with an emphasis on null safety, public-API hygiene, async correctness, and Flutter widget immutability. The v0 rules favor simple source-text predicates for concrete failure modes and semantic predicates where Dart and Flutter framework contracts require code context the regex layer cannot infer.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use the `.dart` extension and target Dart 3.x (sound null safety required) and current Flutter stable.
 - Projects may use the standard `pub` package layout (`lib/`, `bin/`, `test/`, `integration_test/`, `example/`) and code generation tools that emit `*.g.dart`, `*.freezed.dart`, `*.gr.dart`, `*.config.dart`, `*.mocks.dart`, `*.chopper.dart`, and protobuf `*.pb.dart` files.
@@ -11,7 +11,7 @@ This pack covers Dart application, package, and Flutter source with an emphasis 
 - Semantic predicates use `ctx.semantic_judge(...)` and must cite concrete changed spans before blocking.
 - The pack is a seed canon, not a replacement for `dart analyze`, `flutter analyze`, the official lint rule sets in `package:lints` or `package:flutter_lints`, or `dart format`.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -38,7 +38,7 @@ Evidence scanned on 2026-05-10.
 - api.flutter.dev: `StatelessWidget` class docs and the `@immutable` annotation as the framework contract behind widget immutability.
 - dart.dev tooling: pub package layout and the analyzer overview that govern import-path expectations and `// ignore_for_file` directives.
 
-## Known False Positives
+## Known false positives
 
 - `no_force_null_assertion` is source-text based. It can flag legitimate `expr!` uses where the type system genuinely cannot prove non-null (for example, a generated `late` field accessed after a documented init step). Until predicate-level suppressions exist, prefer narrowing the regex with a wrapper or refactoring the call site.
 - `no_dynamic_in_signatures` warns on any function whose return or parameter type is the keyword `dynamic`. It does not currently detect `dynamic` inside generic positions like `List<dynamic>`, and it may catch generated adapters that legitimately return `dynamic`; route those files through `is_generated_path` or rename them to a generated suffix.

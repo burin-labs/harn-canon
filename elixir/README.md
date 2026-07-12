@@ -2,7 +2,7 @@
 
 This pack covers general-purpose Elixir application and library code on top of the BEAM. It targets review-slice issues with clear correctness, debuggability, or convention impact: stray debug helpers committed by accident, unbounded atom creation that can exhaust the BEAM atom table, idiomatic flow-control choices, predicate naming, exception handling that drops stacktraces, pipeline readability, error contract drift, GenServer state-shape leakage, and case/cond bodies that should be function clauses.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source files use the `.ex` and `.exs` extensions.
 - Production paths exclude any path under `test/`, `tests/`, `_build/`, `deps/`, `cover/`, or `.elixir_ls/`, and any file ending in `_test.exs`.
@@ -10,7 +10,7 @@ This pack covers general-purpose Elixir application and library code on top of t
 - Deterministic predicates run over changed source text until Flow exposes a stable Elixir AST query API. Rules with meaningful false-positive risk warn rather than block.
 - Semantic predicates make a single judge call over changed Elixir files and stay conservative — they should only fire when they can cite concrete changed spans.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-05-10.
 - Elixir official documentation (HexDocs `main`): code anti-patterns, process anti-patterns, naming conventions, library guidelines, the `IO`, `Kernel`, `String`, `IEx`, `Process`, and `GenServer` modules, and the case/cond/if guide.
 - Credo static analysis checks: `Warning.IoInspect`, `Warning.Dbg`, `Warning.IExPry`, `Warning.UnsafeToAtom`, `Warning.RaiseInsideRescue`, `Refactor.UnlessWithElse`, `Refactor.PipeChainStart`, `Refactor.Nesting`, `Readability.PredicateFunctionNames`.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are source-text checks. Comments, heredocs, string literals, and metaprogramming can fool them until AST-backed matching lands.
 - `no_io_inspect`, `no_dbg_macro`, and `no_iex_pry` may flag intentional production diagnostics. Prefer `Logger` with explicit levels; suppress narrowly once the runtime supports it.
