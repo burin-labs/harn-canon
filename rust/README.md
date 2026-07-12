@@ -2,7 +2,7 @@
 
 This pack covers Rust crates and workspaces. It targets high-signal issues that are cheap to catch from changed source slices: accidental panics, undocumented unsafe code, blocking work in async functions, dependency-advisory drift, and public API contracts that callers can otherwise misuse.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Rust source files use `.rs`; Cargo metadata uses `Cargo.toml` and `Cargo.lock`.
 - Production paths exclude `tests/`, `benches/`, and `examples/` fixtures or sample programs.
@@ -10,7 +10,7 @@ This pack covers Rust crates and workspaces. It targets high-signal issues that 
 - Semantic predicates make one cheap judge call over changed Rust/Cargo files and use only evidence captured at authoring time.
 - The pack is advisory-first where regex matching has likely false positives. Blocking rules are reserved for unfinished code, bare production unwraps, undocumented unsafe blocks, obvious blocking calls inside `async fn`, and missing semantic dependency/FFI safety evidence.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Evidence scanned on 2026-04-26.
 - Tokio and Async Book docs: blocking work in async contexts, `spawn_blocking`, and async `sleep`.
 - RustSec, cargo-deny, and Cargo docs: advisory databases, dependency checks, and `Cargo.lock` reproducibility.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse Rust. Macro-generated functions, nested blocks, raw strings, comments, and multi-line signatures can confuse the deterministic checks.
 - `no_unwrap_in_prod` ignores test, bench, and example paths, but it can still catch intentional invariant unwraps in production code. Prefer `expect("why this is impossible")` or a local allow once the predicate runtime supports suppressions.

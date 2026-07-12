@@ -2,14 +2,14 @@
 
 This pack covers plain YAML configuration before stack-specific packs (Kubernetes, GitHub Actions, Ansible, Helm) layer tighter rules on top. YAML's surface area is small but its parser quirks are loud, so the v0 set focuses on long-known footguns: tab indentation, the YAML 1.1 vs 1.2 boolean drift (the "Norway problem"), bare scalars that parsers re-type, the cross-document anchor scope rule, and language-specific object tags that are remote-code-execution sinks.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source checks target `.yaml` and `.yml` files.
 - Syntactic predicates skip YAML living under `fixtures/`, `__fixtures__/`, `testdata/`, `test-data/`, `test/`, `tests/`, and `spec/` paths because parser fixtures intentionally include malformed input. Security predicates (`no_unsafe_yaml_tags`, `no_hardcoded_secrets`) and `yamllint_compliance` still check those paths.
 - Deterministic predicates run over changed source text until Flow exposes a stable YAML AST query API. Rules with meaningful false-positive risk warn rather than block.
 - Semantic predicates use one cheap judge call and should block only when they can cite a concrete changed span.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -31,7 +31,7 @@ Evidence scanned on 2026-05-09.
 - PyYAML documentation on safe vs full loaders, and the OWASP Deserialization Cheat Sheet for unsafe-tag risk and remediation.
 - OWASP Secrets Management Cheat Sheet and GitHub secret-scanning documentation for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - All deterministic predicates run on raw source text. Comments, block scalars, multi-line quoted strings, and flow-style mappings can fool simple regexes until AST-level matching lands.
 - `no_tabs_for_indent` does not distinguish a tab inside a quoted string from a tab used as indentation; tabs inside string content are rare in practice but will trigger the block.

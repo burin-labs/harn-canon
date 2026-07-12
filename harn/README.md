@@ -2,14 +2,14 @@
 
 This pack covers Harn scripts, Flow workflows, and agent-facing Harn modules. It is intentionally focused on the mistakes most likely to create nondeterminism, runaway cost, schema drift, or unsafe agent behavior.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use the `.harn` extension and current Harn syntax.
 - The Flow predicate runtime provides `Slice`, `Context`, `Repo`, and `ctx.semantic_judge(...)` through Harn.
 - Deterministic predicates run over changed Harn source text. They prefer conservative warnings when regex matching can produce false positives.
 - Semantic predicates are strict-gate candidates only when the judge can cite a concrete changed span.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Evidence scanned on 2026-04-26 and refreshed for Harn channel/OAuth surfaces on 
 - RFC 7591 and RFC 8252: OAuth dynamic client registration validation and native-app loopback redirect exceptions.
 - OWASP Logging Cheat Sheet: data that should be excluded from application logs.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are syntax-aware only at the source-text level until Flow exposes a stable Harn AST query API.
 - `parallel_io_sets_max_concurrent` warns on helper calls whose names look like external IO, even when a wrapper has its own limiter.

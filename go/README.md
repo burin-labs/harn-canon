@@ -2,7 +2,7 @@
 
 This pack covers Go modules, command packages, and reusable libraries. It targets high-signal review issues that changed source slices can catch cheaply: ignored errors, context propagation mistakes, library panics, overly broad exported APIs, lossy error wrapping, duplicate declarations, HTTP response leaks, weak randomness, goroutine lifetime leaks, and dependency vulnerability review.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Go source files use `.go`; module metadata uses `go.mod` and `go.sum`.
 - Production paths exclude `_test.go`, `test/`, `tests/`, and `testdata/` files.
@@ -11,7 +11,7 @@ This pack covers Go modules, command packages, and reusable libraries. It target
 - Semantic predicates make one cheap judge call over changed Go/module files and use only evidence captured at authoring time.
 - Advisory rules return `Warn` when idiomatic exceptions are common. Blocking rules are reserved for ignored errors, library panics, duplicate declarations, likely response-body leaks, security-sensitive randomness, goroutine leaks, and missing dependency-vulnerability evidence.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -39,7 +39,7 @@ Most evidence was scanned on 2026-05-08. The Go language spec declaration and me
 - Go vulnerability tooling and dependency docs: module dependency management and `govulncheck`.
 - GitHub Dependabot docs: dependency update and security automation paths.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse Go. Comments, raw strings, nested function literals, unusual formatting, and aliases can confuse deterministic checks.
 - `no_ignored_errors` intentionally catches obvious `_ = call()` and `value, _ := call()` shapes, but it cannot prove the discarded result has type `error`.

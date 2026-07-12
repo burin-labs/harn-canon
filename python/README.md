@@ -2,7 +2,7 @@
 
 This pack covers general-purpose Python application and library code. It is intentionally focused on mistakes that are cheap to detect in review slices and have a clear operational or security cost: swallowed exceptions, shared mutable defaults, leaked debug output, unsafe dynamic execution, unclosed files, shell injection, production asserts, SQL injection, and hardcoded secrets.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use the `.py` extension and target modern Python 3.
 - Deterministic predicates run over changed Python source text. They are regex-backed until Flow exposes a stable Python AST query API, so lower-confidence checks warn instead of block.
@@ -10,7 +10,7 @@ This pack covers general-purpose Python application and library code. It is inte
 - Semantic predicates use one cheap judge call and should block only when they can cite a concrete changed span.
 - Existing project linters such as Ruff, mypy, pyright, Bandit, pytest, and framework-specific checks remain the primary local enforcement tools; this pack seeds portable defaults for Flow.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -33,7 +33,7 @@ Evidence scanned on 2026-04-30.
 - Ruff rule documentation: E722 bare except, ANN201 public function annotations, T201 print, B006 mutable argument defaults, S307 eval, S102 exec, S101 assert, S602 subprocess shell, and hardcoded password rules.
 - OWASP, CWE-78, and CWE-798 guidance: SQL injection, OS command injection, credential hygiene, and hardcoded credentials.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are syntax-aware only at the source-text level; comments, string literals, aliases, and multiline formatting can fool them.
 - `type_hints_on_pub_fn` only catches unannotated top-level functions on a single signature span. It does not fully validate every parameter annotation.

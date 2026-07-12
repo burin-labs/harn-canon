@@ -2,7 +2,7 @@
 
 This pack covers Scala 2.13 and Scala 3 source on the JVM, with an emphasis on null safety, immutability, total function shape, effect-system hygiene, and pattern-match exhaustiveness. The v0 rules favor simple source-text predicates for concrete failure modes and semantic predicates where effect-system boundaries or exhaustiveness require code context.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.scala`. Worksheets (`.sc`) and sbt build files (`.sbt`) are out of scope; the v0 pack reads only compiled-source `.scala` files.
 - Projects may use sbt, Mill, Bloop, Metals, ScalaTest, MUnit, ZIO, cats-effect, Akka, Pekko, or Spark; predicates target idioms that are common across these stacks rather than framework-specific patterns.
@@ -11,7 +11,7 @@ This pack covers Scala 2.13 and Scala 3 source on the JVM, with an emphasis on n
 - Semantic predicates use `ctx.semantic_judge(...)` and must cite concrete changed spans before blocking.
 - The pack is a seed canon, not a replacement for the Scala compiler, scalac `-Xfatal-warnings`, scalafix, scalafmt, or WartRemover.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -40,7 +40,7 @@ Evidence scanned on 2026-05-10.
 - ZIO documentation: the `ZIO[R, E, A]` effect type and runtime entry points.
 - WartRemover wart catalogue: `Any`, `Null`, `Var`, `Return`, `OptionPartial`, `TryPartial`, `AsInstanceOf`, `IsInstanceOf` as ecosystem precedent.
 
-## Known False Positives
+## Known false positives
 
 - `no_any_in_public_api` matches return-type position only; `Any` in parameter types or as a generic upper bound (`[T <: Any]`) is not flagged. Method overloading on `Any` is occasionally intentional and the rule is Warn-level.
 - `no_null` is source-text based and may flag the literal token inside string content (`"value is null"`). Test paths and Java-interop suppressions are out of scope; scope `null` to a local interop helper if you genuinely need it.

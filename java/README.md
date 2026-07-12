@@ -2,7 +2,7 @@
 
 This pack covers plain Java application and library code before framework-specific packs such as Spring, Android, or Maven/Gradle policy packs add tighter rules. It focuses on high-signal defaults for generic type safety, nullness contracts, exception handling, logging, immutable data modeling, and untrusted input boundaries.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source checks target `.java` files; production checks exclude common test paths and `*Test.java`, `*Tests.java`, and `*IT.java`.
 - Projects are assumed to target Java 17 or newer, so records are available for simple immutable data carriers.
@@ -10,7 +10,7 @@ This pack covers plain Java application and library code before framework-specif
 - Deterministic predicates operate over changed source text until Flow exposes stable Java AST and build-tool queries.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible with simple syntax checks.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Evidence scanned on 2026-05-08.
 - OWASP cheat sheets for logging, secrets management, and SQL injection prevention.
 - GitHub secret scanning documentation for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are intentionally conservative and file-scoped. A file containing both an offending pattern and a separate allowed pattern may be allowed or warned imprecisely until AST-level matching lands.
 - `no_raw_collection_types` focuses on common collection-like APIs and does not attempt full generic type parsing.

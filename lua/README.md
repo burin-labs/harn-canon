@@ -2,7 +2,7 @@
 
 This pack covers general-purpose Lua application and library code targeting modern Lua (5.2+, including LuaJIT). It focuses on review-slice checks with clear correctness, maintenance, or security impact: implicit globals, dynamic source loading, removed-API usage (`setfenv`/`getfenv`), shell-execution hygiene, module-return convention, `require` binding style, tail-call recursion, metatable-boundary documentation, and hardcoded secrets.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use the `.lua` extension. LuaRocks `.rockspec` files are intentionally excluded — they are written as bare-name globals (a Lua-as-DSL pattern) and would trip the implicit-globals heuristic.
 - Projects target Lua 5.2 or newer (or LuaJIT) — `setfenv` and `getfenv` were removed in Lua 5.2 and `loadstring` was folded into `load`. Code that needs Lua 5.1 compatibility should suppress the affected predicates locally.
@@ -11,7 +11,7 @@ This pack covers general-purpose Lua application and library code targeting mode
 - Deterministic predicates run over changed source text until Flow exposes a stable Lua AST query API. Rules with meaningful false-positive risk (`no_implicit_globals`, `module_returns_value`, `require_assigned_to_local`) warn rather than block.
 - Semantic predicates use one cheap judge call and should block only when they can cite concrete changed spans.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Evidence scanned on 2026-05-10.
 - Lua-users wiki tutorials: `ScopeTutorial`, `ModulesTutorial`, `MetatablesTutorial`, and the Lua 5.2 migration page.
 - OWASP cheat sheets and GitHub secret scanning documentation: code injection, OS command injection, secrets management, and hardcoded credential risk.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are source-text checks. Comments, string literals, multiline strings (`[[ ... ]]`), and metaprogramming can fool them until AST-backed matching lands.
 - `no_global_function_definition` flags any `function name(` at the start of a line; the column-zero heuristic misses functions defined inside a `do ... end` block (false negative) and may flag `function name(` lines inside long-strings (false positive).

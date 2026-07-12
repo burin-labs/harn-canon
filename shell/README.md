@@ -2,14 +2,14 @@
 
 This pack covers POSIX shell, Bash, and other Bourne-family scripts that ship inside repositories: build helpers, deploy scripts, CI glue, and one-off operational tools. It targets the small set of high-signal mistakes that turn shell scripts into latent reliability and security incidents — missing strict-mode flags, parsing `ls`, dynamic `eval`, missing tempfile cleanup, blanket `shellcheck` disables, hardcoded secrets, and leaking sensitive data into logs.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files are detected by extension (`.sh`, `.bash`, `.zsh`, `.ksh`, `.dash`) or by a Bourne-family shebang on line 1 (`sh`, `bash`, `zsh`, `ksh`, `dash`, `ash`).
 - Strict-mode enforcement targets *executable* scripts (those with a shebang). Files without a shebang are assumed to be sourced libraries where `set -e`/`set -u` semantics may be inappropriate.
 - Deterministic predicates run over changed source text until Flow exposes a stable shell AST query API; rules with meaningful false-positive risk warn rather than block.
 - Semantic predicates make one cheap judge call over the changed shell files and rely on the rubric to cite concrete spans before blocking.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -32,7 +32,7 @@ Evidence scanned on 2026-05-09.
 - Greg's Wiki (`mywiki.wooledge.org`): `ParsingLs`, `BashFAQ/048` (eval pitfalls), and `SignalTrap`.
 - OWASP cheat sheets: Secrets Management and Logging guidance; GitHub secret-scanning documentation for the hardcoded-credential surface area.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse shell. Heredocs, single-quoted literals, and string interpolation can fool them until a real shell AST is wired in.
 - `set_euo_pipefail` only inspects files with a Bourne-family shebang. Sourced libraries (no shebang) are skipped because they typically inherit the caller's options.

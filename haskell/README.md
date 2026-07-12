@@ -2,7 +2,7 @@
 
 This pack covers general-purpose Haskell application and library code. It targets the well-known footguns that an Archivist can catch cheaply on a changed slice: Prelude partial functions in the public API, `undefined` and `error` stubs, unsafe IO escapes, open imports, missing export lists, single-field records that should be `newtype`s, non-exhaustive pattern matches, orphan typeclass instances, and hardcoded secrets.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source files use the `.hs` (Haskell) or `.lhs` (literate Haskell) extension.
 - Production paths exclude any path under `test/`, `tests/`, `spec/`, `bench/`, `benches/`, or `examples/`, and any file whose name ends in `Spec.hs`, `Test.hs`, `_spec.hs`, or `_test.hs`.
@@ -10,7 +10,7 @@ This pack covers general-purpose Haskell application and library code. It target
 - Deterministic predicates use file-text regex scans because Harn Flow does not yet expose a stable Haskell AST query API; rules with meaningful false-positive risk warn rather than block. Semantic predicates make a single judge call over changed Haskell files.
 - Predicates are GHC2024-aware: `total_function_semantic_check` and `prefer_newtype_for_single_field` reflect modern GHC defaults (`-Wincomplete-patterns`, `-Wmissing-export-lists`, `-Wmissing-import-lists`).
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -36,7 +36,7 @@ Evidence scanned on 2026-05-10.
 - Haskell 2010 Report §5: module export lists and visibility semantics.
 - OWASP Cheat Sheet Series and GitHub secret-scanning documentation: hardcoded-credential risk and remediation patterns.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse Haskell. Comments, string literals, Template Haskell quasi-quotes, and identifier ticks (`head'`) can fool the deterministic checks until AST-backed matching lands.
 - `no_partial_functions_in_pub_api` flags bare uses of `head`/`tail`/`init`/`last`/`fromJust` and the `(!!)` operator. Fully qualified references (`Data.List.head`) are not caught because the leading `.` confuses the boundary heuristic; qualified `Prelude` partials are rare in practice because `Prelude` is auto-imported. Move legitimate partial helpers into an `Internal` module to suppress the rule.

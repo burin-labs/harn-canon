@@ -2,7 +2,7 @@
 
 This pack covers plain C++ application and library code with an emphasis on memory safety, modern initialization, header hygiene, and special-member discipline. The v0 rules deliberately use simple source-text predicates where a failure mode is concrete (raw `new`/`delete`, `malloc`/`free`, `NULL`, missing include guards, `using namespace` in headers, C-style casts, `typedef`) and lean on semantic predicates where C++ class context is too rich for regex alone (Rule of Five, member initialization, const correctness).
 
-## Stack Assumptions
+## Stack assumptions
 
 - C++ source files use `.cpp`, `.cxx`, `.cc`, or `.c++`. Headers use `.h`, `.hpp`, `.hh`, `.hxx`, `.h++`, `.ipp`, `.tpp`, or `.inl`.
 - The pack targets C++17 and later. `nullptr`, `=default`/`=delete`, in-class member initializers, `using` aliases, and named casts are all assumed available.
@@ -11,7 +11,7 @@ This pack covers plain C++ application and library code with an emphasis on memo
 - Deterministic predicates run over changed source text until Flow exposes a stable Clang/`libclang` AST query API; semantic predicates make a single judge call over the changed slice.
 - The pack is a seed canon, not a replacement for clang-tidy, the C++ compiler, AddressSanitizer/UBSan, or runtime profiling.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -35,7 +35,7 @@ Evidence scanned on 2026-05-10.
 - cppreference: `nullptr`, `unique_ptr`, the rule of three/five, and the `#include` and `#pragma once` preprocessor reference pages.
 - Google C++ Style Guide: namespaces section on `using namespace` discipline.
 
-## Known False Positives
+## Known false positives
 
 - All deterministic predicates scan raw file text. Source comments, raw string literals, and `#define` bodies that contain `new`, `delete`, `malloc`, `NULL`, `typedef`, or `using namespace` token sequences will be flagged until the pack runs against an AST query layer.
 - `no_raw_new_delete` matches `new T` and `delete ptr` in any context. Placement `new` (`new (mem) T`) deliberately bypasses the regex (`new` is followed by `(`, not an identifier); flag-and-grep is the recommended audit until placement new gets first-class detection.

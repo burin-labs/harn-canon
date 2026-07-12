@@ -2,7 +2,7 @@
 
 This pack covers plain C source and header files for hosted application and library code. It targets the high-signal review issues an Archivist can catch cheaply on changed slices: classic memory and string-handling footguns (`gets`, unbounded copies, format-string vulns), unsafe entry points (`void main`, `tmpnam`/`mktemp`), parsing helpers that swallow errors (`atoi`/`atol`/`atof`), header hygiene, and stack-allocation hazards. Three semantic predicates carry the load that regex cannot: NULL-return checks on heap allocations, evidence of a static-analyzer or sanitizer pipeline, and vulnerability-check evidence for native dependency changes.
 
-## Stack Assumptions
+## Stack assumptions
 
 - C source files use `.c`; C headers use `.h`. Files containing only C++ (`.cc`, `.cpp`, `.cxx`, `.hpp`) are out of scope for this pack; use the C++ pack for those.
 - Production paths exclude any path under `test/`, `tests/`, `unittest/`, `unittests/`, and any file matching `*_test.c`, `*_tests.c`, or `test_main.c`.
@@ -11,7 +11,7 @@ This pack covers plain C source and header files for hosted application and libr
 - Semantic predicates make a single judge call over changed C and project files using only evidence captured at authoring time.
 - Hosted environment is assumed (i.e., `int main` is required). Freestanding builds (kernel, embedded firmware, microcontrollers) should suppress `no_void_main` locally once the predicate runtime supports suppressions.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -41,7 +41,7 @@ Evidence scanned on 2026-05-10.
 - **Style guides**: Google C++ Style Guide on `#define` header guards (applies cleanly to C).
 - **Dependency security**: OSV.dev, Microsoft `vcpkg` docs, Conan 2.x requirements docs, GitHub Dependabot configuration docs.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse C. Macro-expanded names, comments containing the function names, string-literal arguments quoting the names, and unusual whitespace can confuse deterministic checks.
 - `no_format_string_from_variable` matches conservative patterns: a bare identifier as the format argument for `printf`/`vprintf`/`sprintf`/`vsprintf`, the second argument for `fprintf`/`dprintf`/`vfprintf`/`syslog`, and the third argument for `snprintf`/`vsnprintf`. Helper wrappers that take a `va_list` and call-expression format arguments such as `printf(get_msg())` are false negatives this predicate intentionally does not cover; rely on `static_analyzer_clean` (clang-analyzer's `-Wformat-nonliteral`) for those. Calls that build the format via `strcat` and then pass the buffer are likewise covered by `static_analyzer_clean` or `bounded_string_ops`.

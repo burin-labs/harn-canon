@@ -2,7 +2,7 @@
 
 This pack covers `Dockerfile` and `Containerfile` build recipes. It targets high-signal review issues that changed Dockerfile slices can catch cheaply: floating base-image tags, noisy or leaky `apt-get` invocations, `ADD` misuse, supply-chain-unsafe `curl | sh` installs, missing non-root user, secret-shaped values baked into image layers, shell-form `CMD`/`ENTRYPOINT`, single-stage builds that ship build toolchains, and unnecessary layer fragmentation.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Build recipes are named `Dockerfile`, `Dockerfile.<variant>`, `<name>.Dockerfile`, or `Containerfile` (Podman/Buildah convention).
 - Dockerfiles are linted as build-system source, so every changed file flows through this pack regardless of subdirectory.
@@ -10,7 +10,7 @@ This pack covers `Dockerfile` and `Containerfile` build recipes. It targets high
 - Semantic predicates make one cheap judge call over changed Dockerfiles and use only evidence captured at authoring time.
 - Advisory rules return `Warn` when idiomatic exceptions are common (slim base images that already drop privileges, `apt-get`-free distros, single-stage debug images). Blocking rules are reserved for floating base-image tags, `curl | sh` installs, and secrets baked into `ENV`/`ARG`.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -36,7 +36,7 @@ Evidence scanned on 2026-05-09.
 - OWASP Secrets Management Cheat Sheet for hardcoded credential risk.
 - Debian `apt-get` manpage for `--no-install-recommends` semantics.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse Dockerfiles. Inline comments, `\` line continuations across many lines, heredocs, and multi-stage `FROM ... AS build` aliases can confuse deterministic checks.
 - `no_latest_or_unpinned_base_image` allows digest pins (`@sha256:...`) and any explicit non-`latest` tag, and exempts `FROM scratch`. It handles common `FROM --flag=value image` forms, but full reference parsing still belongs in a Dockerfile parser. Pin freshness stays in dependency management.

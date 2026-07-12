@@ -2,7 +2,7 @@
 
 This pack covers general-purpose Ruby application and library code before framework-specific packs such as Rails add tighter defaults. It focuses on review-slice checks with clear correctness, maintenance, or security impact: explicit string literal mutability, global mutation, risky core-class changes, legacy options hashes, dynamic evaluation, unsafe deserialization, superclass initialization, RuboCop policy drift, hardcoded secrets, and sensitive logging.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.rb`, `.rake`, `.gemspec`, `Gemfile`, or `Rakefile` Ruby source conventions.
 - Projects target modern Ruby with keyword arguments, Psych safe-loading APIs, and RuboCop available as the local style authority.
@@ -10,7 +10,7 @@ This pack covers general-purpose Ruby application and library code before framew
 - Production-path checks exclude obvious `spec/`, `test/`, `tests/`, `bin/`, `script/`, `scripts/`, `Rakefile`, and `.rake` paths.
 - Semantic predicates use one cheap judge call and should block only when they can cite concrete changed spans.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -34,7 +34,7 @@ Evidence scanned on 2026-05-08.
 - RuboCop documentation: `Style/FrozenStringLiteralComment`, `Style/GlobalVars`, `Style/ClassVars`, `Style/OptionHash`, `Security/Eval`, `Security/YAMLLoad`, `Lint/MissingSuper`, configuration, and the RuboCop project overview.
 - OWASP cheat sheets and GitHub secret scanning documentation: deserialization, secrets management, logging, and hardcoded credential risk.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are source-text checks. Comments, string literals, metaprogramming, and multiline formatting can fool them until AST-backed matching lands.
 - `frozen_string_literal_magic_comment` warns on production Ruby files that intentionally rely on mutable string literals.

@@ -2,14 +2,14 @@
 
 This pack covers plain JavaScript before framework-specific packs such as React, Node services, browser extensions, or build tooling add narrower rules. It focuses on high-signal defaults for async correctness, dynamic-code hazards, production logging, global scope hygiene, and untrusted data handling.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Files use `.js`, `.jsx`, `.mjs`, or `.cjs`.
 - Projects use modern JavaScript, strict mode or modules where practical, and linting compatible with current ESLint rule guidance.
 - Deterministic predicates operate over changed source text until Flow exposes stable JavaScript AST and module-resolution queries.
 - Semantic predicates may block only when the judge can cite a concrete changed span and the issue is not reliably expressible with simple syntax checks.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -34,7 +34,7 @@ Evidence scanned on 2026-05-08.
 - OWASP cheat sheets for input validation, logging, and secrets management.
 - GitHub secret scanning docs for hardcoded credential risk and remediation context.
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates are intentionally conservative and line-oriented until AST-level matching lands.
 - `no_floating_promises` only blocks obvious async surfaces such as `fetch`, `Promise.*`, `new Promise`, or `*Async` calls until promise-aware JavaScript analysis is available.

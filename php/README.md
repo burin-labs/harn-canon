@@ -2,7 +2,7 @@
 
 This pack covers general-purpose PHP application and library code targeting modern PHP (8.1+) before framework-specific packs (Laravel, Symfony, WordPress) layer in tighter defaults. It targets review-slice issues with clear correctness, maintenance, or security impact: missing strict-types declarations, legacy syntax that depends on ini settings, removed extensions, code-injection sinks, register-globals revivals via `extract()`, untyped class state, debug leakage, SQL injection, hardcoded secrets, and PHP object injection through `unserialize()`.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source files use the `.php` extension; templates additionally use `.phtml`. Strict-types and typed-property checks scope to `.php` only because templates frequently open with HTML.
 - Production paths exclude any path under `/tests/`, `/Tests/`, `/test/`, `/spec/`, `/bin/`, `/scripts/`, `/script/`, and any file ending in `Test.php`, `TestCase.php`, or `_test.php`. Vendored paths under `/vendor/`, `/node_modules/`, `/build/`, and `/dist/` are excluded everywhere.
@@ -10,7 +10,7 @@ This pack covers general-purpose PHP application and library code targeting mode
 - Deterministic predicates run regex over changed source text until Flow exposes a stable PHP AST query API. Rules with meaningful false-positive risk warn rather than block.
 - Semantic predicates make a single judge call over changed PHP files; they should only block when they can cite concrete changed spans.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -37,7 +37,7 @@ Evidence scanned on 2026-05-10.
 - OWASP cheat sheets and project pages: SQL Injection Prevention, Secrets Management, Deserialization, Code Injection, PHP Object Injection, PHP File Inclusion, CICD-SEC-06 Insufficient Credential Hygiene.
 - CWE: CWE-95 (eval injection).
 
-## Known False Positives
+## Known false positives
 
 - Regex predicates do not parse PHP. String literals, heredocs, and comments containing keywords can fool deterministic checks until AST-backed matching lands.
 - `declare_strict_types_enforced` only inspects `.php` files that begin with `<?php` (after an optional UTF-8 BOM). Files that open with HTML or other content are intentionally skipped because strict-types must be the first statement of the file. Expect false negatives on files with leading whitespace beyond a BOM.

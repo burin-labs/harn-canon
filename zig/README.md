@@ -2,7 +2,7 @@
 
 This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Zig is a young, rapidly evolving language; v0 focuses on the highest-signal review issues that survive across the recent stable releases and current 0.16 toolchains: silent error-handling shortcuts, stale standard-library API shapes, unjustified unsafe casts, `@panic` in library paths, test-time leak detection, and supply-chain hygiene in the package manifest.
 
-## Stack Assumptions
+## Stack assumptions
 
 - Source predicates target Zig 0.15.x and 0.16.x. Older releases predate `build.zig.zon` and the modern cast/error/container APIs; the predicates here are not expected to be useful below 0.12.
 - Production paths exclude `_test.zig` and `test_*.zig` files plus `tests/`, `test/`, `testdata/`, `examples/`, and `example/` directories. Test-block heuristics rely on the convention that test declarations appear at the top level of a file.
@@ -10,7 +10,7 @@ This pack covers Zig source (`.zig`) and the `build.zig.zon` package manifest. Z
 - Deterministic predicates operate on changed source text. Zig has no published stable AST query API yet, so regex-based matching is intentionally conservative — the pack errs toward false negatives rather than false positives.
 - Semantic predicates are reserved for issues that cannot be reliably expressed as syntactic checks. They block only when the judge can cite a concrete changed span.
 
-## Predicate Coverage
+## Predicate coverage
 
 | Predicate | Mode | Verdict | Purpose |
 |---|---|---|---|
@@ -52,7 +52,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, 2026-07-02, and 2026-07-
 - OWASP Secrets Management and Software Supply Chain Security cheat sheets, plus GitHub secret-scanning documentation, for the secret-handling and dependency-hash predicates.
 - Zig testing docs (`Zig-Test`, `std.testing.expectEqualStrings`) and the zig.guide test chapter for the assertion node kinds the observe-before-assert detector reasons over.
 
-## Known False Positives and Negatives
+## Known false positives and negatives
 
 - Regex predicates do not parse Zig. Casts, `catch unreachable`, and `@panic` calls inside string literals or comments will trigger the deterministic predicates. Adding the comment-based escape valve documented in each predicate (or moving the literal out of the changed region) silences these.
 - `no_silent_error_swallow` only flags syntactically empty bodies. `catch {} // intentional` is treated as the author having opted into the swallow with a documented reason and is not blocked.
@@ -75,7 +75,7 @@ Evidence scanned on 2026-05-10, 2026-06-23, 2026-07-01, 2026-07-02, and 2026-07-
 - `assertion_on_ungrounded_output` is the observe-before-assert grounding detector. It parses the changed test file with the bundled Zig tree-sitter grammar (`std/ast`), maps `const x = <producer(...)>` bindings whose callee role is in the producing family (serialize/format/encode/parse/write/etc.), then blocks an assertion callee (`expect`/`expectEqual*`/`expectStringStartsWith`/…) that carries an author string literal and references a producer-bound variable **when the producing callee is absent from `ctx.observed_symbols`**. The discriminator is provenance, not shape: the identical assertion is allowed once an `observe_output` probe has recorded the producing symbol in `ctx.observed_symbols`, so a run that already grounded is never fought. It keys on the same-file `output = producer(...)` binding, so an assertion on a producer output flowing through a helper in another file is missed. It runs on files the shared `is_test_zig_path` helper recognizes as tests: `_test.zig`, `test_*.zig`, and `tests/`, `test/`, `testdata/`, `examples/`, or `example/` directory segments at any depth. `ctx.observed_symbols` is host-injected (Burin threads it from the agent event stream in follow-on work); with no host it defaults to empty, so the detector treats every producer as unobserved.
 - Semantic predicates depend on a cheap judge. They should stay high-threshold and cite concrete changed spans before blocking.
 
-## Design Notes
+## Design notes
 
 - `const_by_default` is omitted: the Zig compiler already emits a hard error on `var` declarations that are never reassigned. A predicate would be redundant with the toolchain.
 - `error_union_propagation` is partly handled by the compiler, which rejects discarded fallible results outside an explicit `_ = ...` slot. The remaining hand-rolled escapes, `catch {}` and `catch unreachable`, are covered by `no_silent_error_swallow` and `no_catch_unreachable_in_prod`.
