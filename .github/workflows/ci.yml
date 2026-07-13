@@ -52,11 +52,20 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          harn fmt --check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn
-          for script in scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn; do
+          scripts=(
+            scripts/canon-lib.harn
+            scripts/validate-canon.harn
+            scripts/execute-fixtures.harn
+            scripts/canon-boundary-test.harn
+          )
+          harn fmt --check "${scripts[@]}"
+          for script in "${scripts[@]}"; do
             harn check "${script}"
             harn lint --strict "${script}"
           done
+
+      - name: Test typed JSON boundaries
+        run: harn test scripts/canon-boundary-test.harn --timeout 30000
 
       - name: Validate canon packs
         shell: bash

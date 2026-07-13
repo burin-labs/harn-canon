@@ -1,0 +1,245 @@
+import { with_temp_dir } from "std/testing"
+import { read_fixture_document_result, read_pack_manifest_path_result } from "./canon-lib"
+import { __run_pack_at } from "./execute-fixtures"
+import { validate_fixture_value } from "./validate-canon"
+
+fn write_json(path: string, value: unknown) -> nil {
+  harness.fs.write_text(path, json_stringify(value))
+  return nil
+}
+
+fn canonical_manifest() -> dict {
+  return {
+    schema_version: 1,
+    packs: [
+      {
+        id: "rust",
+        title: "Rust",
+        invariants: "rust/invariants.harn",
+        fixtures: "rust/fixtures",
+        extensions: ["rs"],
+        file_names: ["cargo.toml"],
+      },
+    ],
+  }
+}
+
+fn canonical_fixture() -> dict {
+  return {
+    predicate: "safe_rule",
+    cases: [
+      {
+        name: "allows_safe_input",
+        expect: "Allow",
+        files: [{path: "src/main.rs", text: "fn main() {}"}],
+        ctx: {mode: "test"},
+      },
+      {name: "blocks_unsafe_input", expect: "Block", files: [{path: "src/lib.rs", text: "unsafe {}"}]},
+    ],
+  }
+}
+
+@test
+pipeline test_canonical_manifest_and_fixture_decode(task) {
+  with_temp_dir(
+    { root ->
+      const manifest_path = path_join(root, "manifest.json")
+      const fixture_path = path_join(root, "fixture.json")
+      write_json(manifest_path, canonical_manifest())
+      write_json(fixture_path, canonical_fixture())
+      const manifest = read_pack_manifest_path_result(manifest_path)
+      const fixture = read_fixture_document_result(fixture_path)
+      assert(is_ok(manifest), "canonical manifest decodes")
+      assert(is_ok(fixture), "canonical fixture decodes")
+      assert_eq(unwrap(manifest).packs[0]?.id, "rust")
+      assert_eq(unwrap(fixture).cases.count, 2)
+      assert_eq(validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", unwrap(fixture)), [])
+    },
+    "canon-boundary-canonical",
+  )
+}
+
+@test
+pipeline test_manifest_rejects_unknown_root_and_nested_keys(task) {
+  with_temp_dir(
+    { root ->
+      const root_unknown = canonical_manifest() + {extra: true}
+      let pack_unknown = canonical_manifest()
+      pack_unknown.packs[0].extra = true
+      const root_path = path_join(root, "root-unknown.json")
+      const pack_path = path_join(root, "pack-unknown.json")
+      write_json(root_path, root_unknown)
+      write_json(pack_path, pack_unknown)
+      assert_eq(unwrap_err(read_pack_manifest_path_result(root_path)).kind, "schema_invalid")
+      assert_eq(unwrap_err(read_pack_manifest_path_result(pack_path)).kind, "schema_invalid")
+    },
+    "canon-boundary-unknown",
+  )
+}
+
+@test
+pipeline test_manifest_rejects_wrong_nested_types(task) {
+  with_temp_dir(
+    { root ->
+      let manifest = canonical_manifest()
+      manifest.packs[0].extensions = ["rs", 7]
+      const path = path_join(root, "wrong-type.json")
+      write_json(path, manifest)
+      assert_eq(unwrap_err(read_pack_manifest_path_result(path)).kind, "schema_invalid")
+    },
+    "canon-boundary-type",
+  )
+}
+
+@test
+pipeline test_manifest_accepts_file_name_only_pack(task) {
+  with_temp_dir(
+    { root ->
+      const manifest = {
+        schema_version: 1,
+        packs: [
+          {
+            id: "metadata",
+            title: "Metadata",
+            invariants: "metadata/invariants.harn",
+            fixtures: "metadata/fixtures",
+            file_names: ["cargo.toml"],
+          },
+        ],
+      }
+      const path = path_join(root, "file-name-only.json")
+      write_json(path, manifest)
+      const decoded = read_pack_manifest_path_result(path)
+      assert(is_ok(decoded), "file_names is a complete routing selector without extensions")
+      assert_eq(unwrap(decoded).packs[0]?.file_names, ["cargo.toml"])
+    },
+    "canon-boundary-file-name-only",
+  )
+}
+
+@test
+pipeline test_fixture_rejects_invalid_expected_verdict(task) {
+  with_temp_dir(
+    { root ->
+      let fixture = canonical_fixture()
+      fixture.cases[0].expect = "Maybe"
+      const path = path_join(root, "invalid-expect.json")
+      write_json(path, fixture)
+      assert_eq(unwrap_err(read_fixture_document_result(path)).kind, "schema_invalid")
+    },
+    "canon-boundary-expect",
+  )
+}
+
+@test
+pipeline test_fixture_rejects_unknown_keys_at_owned_boundaries(task) {
+  with_temp_dir(
+    { root ->
+      let root_unknown = canonical_fixture()
+      root_unknown.extra = true
+      let case_unknown = canonical_fixture()
+      case_unknown.cases[0].extra = true
+      let file_unknown = canonical_fixture()
+      file_unknown.cases[0].files[0].extra = true
+      const root_path = path_join(root, "root-unknown.json")
+      const case_path = path_join(root, "case-unknown.json")
+      const file_path = path_join(root, "file-unknown.json")
+      write_json(root_path, root_unknown)
+      write_json(case_path, case_unknown)
+      write_json(file_path, file_unknown)
+      assert_eq(unwrap_err(read_fixture_document_result(root_path)).kind, "schema_invalid")
+      assert_eq(unwrap_err(read_fixture_document_result(case_path)).kind, "schema_invalid")
+      assert_eq(unwrap_err(read_fixture_document_result(file_path)).kind, "schema_invalid")
+    },
+    "canon-boundary-fixture-unknown",
+  )
+}
+
+@test
+pipeline test_fixture_rejects_wrong_file_field_type(task) {
+  with_temp_dir(
+    { root ->
+      let fixture = canonical_fixture()
+      fixture.cases[0].files[0].text = 7
+      const path = path_join(root, "wrong-file-type.json")
+      write_json(path, fixture)
+      assert_eq(unwrap_err(read_fixture_document_result(path)).kind, "schema_invalid")
+    },
+    "canon-boundary-fixture-type",
+  )
+}
+
+@test
+pipeline test_executor_reports_malformed_fixture_as_setup_failure(task) {
+  with_temp_dir(
+    { root ->
+      const pack_root = path_join(root, "test-pack")
+      const fixtures_root = path_join(pack_root, "fixtures")
+      harness.fs.mkdir(fixtures_root)
+      harness.fs
+        .write_text(
+        path_join(pack_root, "invariants.harn"),
+        join(
+          [
+            "const _EVIDENCE_TEST = [\"https://example.com/canon-test\"]",
+            "",
+            "@invariant",
+            "@deterministic",
+            "@archivist(evidence: _EVIDENCE_TEST, confidence: 1.0, source_date: \"2026-07-13\")",
+            "pub fn malformed_rule(slice, ctx, repo_at_base) {",
+            "  return {verdict: \"Allow\"}",
+            "}",
+          ],
+          "\n",
+        ),
+      )
+      write_json(
+        path_join(fixtures_root, "malformed_rule.json"),
+        {predicate: "malformed_rule", cases: [], extra: true},
+      )
+      const report = __run_pack_at(root, "test-pack")
+      assert_eq(report.executed, 0)
+      assert_eq(report.failures.count, 1)
+      assert_eq(report.failures[0]?.kind, "setup")
+      assert(
+        report.failures[0]?.error?.contains("malformed_rule.json") ?? false,
+        "typed decoder failure is reported",
+      )
+    },
+    "canon-boundary-executor-setup",
+  )
+}
+
+@test
+pipeline test_fixture_semantics_reject_non_normalized_paths(task) {
+  const fixture = {
+    predicate: "safe_rule",
+    cases: [
+      {
+        name: "allows_safe_input",
+        expect: "Allow",
+        files: [{path: "../src/main.rs", text: "fn main() {}"}],
+      },
+      {name: "blocks_unsafe_input", expect: "Block", files: [{path: "src/lib.rs", text: "unsafe {}"}]},
+    ],
+  }
+  const errors = validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", fixture)
+  assert_eq(errors.count, 1)
+  assert_eq(
+    errors[0],
+    "rust/fixtures/safe_rule.json: case 0 file 0 path must be normalized and relative",
+  )
+}
+
+@test
+pipeline test_fixture_semantics_reject_duplicate_cases(task) {
+  const fixture = {
+    predicate: "safe_rule",
+    cases: [
+      {name: "same_case", expect: "Allow", files: [{path: "src/main.rs", text: "fn main() {}"}]},
+      {name: "same_case", expect: "Warn", files: [{path: "src/lib.rs", text: "unsafe {}"}]},
+    ],
+  }
+  const errors = validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", fixture)
+  assert_eq(errors, ["rust/fixtures/safe_rule.json: duplicate case names: same_case"])
+}
