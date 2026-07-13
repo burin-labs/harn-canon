@@ -1,3 +1,14 @@
+import { JsonReadFailure, SchemaValidationFailure, read_json_typed_result } from "std/fs"
+import {
+  schema_closed_object,
+  schema_dict,
+  schema_enum,
+  schema_field,
+  schema_list,
+  schema_literal,
+  schema_string,
+} from "std/schema"
+
 const ROOT_DIR = path_normalize(path_join(source_dir(), ".."))
 
 const PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
@@ -10,36 +21,146 @@ const URL_RE = "\"(https?://[^\"]+)\""
 
 const SEMANTIC_FALLBACK_RE = "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
 
+pub type CanonPack = {
+  id: string,
+  title: string,
+  invariants: string,
+  fixtures: string,
+  extensions?: list<string>,
+  file_names?: list<string>,
+}
+
+pub type CanonPackManifest = {schema_version: 1, packs: list<CanonPack>}
+
+pub type InvariantMode = "deterministic" | "semantic"
+
+pub type InvariantEntry = {
+  mode: InvariantMode,
+  mode_args: string,
+  fallback?: string,
+  evidence: string,
+  confidence: string,
+  source_date: string,
+  name: string,
+}
+
+pub type ParsedInvariants = {
+  entries: list<InvariantEntry>,
+  evidence_defs: dict<string, list<string>>,
+  errors: list<string>,
+}
+
+pub type CanonDate = {year: int, month: int, day: int, serial: int}
+
+pub type FixtureExpectedVerdict = "Allow" | "Warn" | "Block"
+
+pub type CanonFixtureFile = {path: string, text: string}
+
+pub type CanonFixtureCase = {
+  name: string,
+  expect: FixtureExpectedVerdict,
+  files: list<CanonFixtureFile>,
+  ctx?: dict,
+}
+
+pub type CanonFixtureDocument = {predicate: string, cases: list<CanonFixtureCase>}
+
+pub type CanonJsonReadFailure = JsonReadFailure | SchemaValidationFailure
+
+pub type FixtureCaseFailure = {
+  kind: "case",
+  pack: string,
+  predicate: string,
+  case: string,
+  expect: FixtureExpectedVerdict,
+  actual: string,
+  result: unknown,
+}
+
+pub type FixtureSetupFailure = {kind: "setup", error: string}
+
+pub type FixtureRunFailure = FixtureCaseFailure | FixtureSetupFailure
+
+pub type FixtureCasePass = {kind: "pass"}
+
+pub type FixtureCaseFail = {kind: "fail", failure: FixtureCaseFailure}
+
+pub type FixtureCaseResult = FixtureCasePass | FixtureCaseFail
+
+pub type FixturePackReport = {
+  pack: string,
+  executed: int,
+  skipped_semantic: int,
+  failures: list<FixtureRunFailure>,
+}
+
+/**
+ * Build the closed manifest schema owned by this JSON boundary.
+ *
+ * `schema_of` currently leaves nested record schemas open, so the owner schema
+ * is explicit to reject unknown keys at every manifest record level.
+ */
+pub fn pack_manifest_schema() -> Schema<CanonPackManifest> {
+  const pack_schema = schema_closed_object(
+    {
+      id: schema_string(),
+      title: schema_string(),
+      invariants: schema_string(),
+      fixtures: schema_string(),
+      extensions: schema_field(schema_list(schema_string()), false),
+      file_names: schema_field(schema_list(schema_string()), false),
+    },
+  )
+  return schema_closed_object({schema_version: schema_literal(1), packs: schema_list(pack_schema)})
+}
+
+/**
+ * Build the fixture document schema, closed at every owned record boundary.
+ *
+ * `ctx` remains an intentionally open dictionary because predicate-specific
+ * context keys are owned by each canon pack, not by the fixture envelope.
+ */
+pub fn fixture_document_schema() -> Schema<CanonFixtureDocument> {
+  const file_schema = schema_closed_object({path: schema_string(), text: schema_string()})
+  const case_schema = schema_closed_object(
+    {
+      name: schema_string(),
+      expect: schema_enum(["Allow", "Warn", "Block"]),
+      files: schema_list(file_schema),
+      ctx: schema_field(schema_dict(), false),
+    },
+  )
+  return schema_closed_object({predicate: schema_string(), cases: schema_list(case_schema)})
+}
+
 pub fn repo_root() -> string {
   return ROOT_DIR
 }
 
-pub fn load_pack_manifest() -> list {
-  const manifest = load_pack_manifest_document()
-  const packs = manifest?.packs ?? []
-  if manifest?.schema_version != 1 || type_of(packs) != "list" {
-    throw "canon-packs.json must use schema_version 1 with a packs list"
-  }
-  return packs
+pub fn read_pack_manifest_result() -> Result<CanonPackManifest, CanonJsonReadFailure> {
+  return read_pack_manifest_path_result(PACK_MANIFEST_PATH)
 }
 
-pub fn load_pack_manifest_document() -> dict {
-  const manifest = json_parse(harness.fs.read_text(PACK_MANIFEST_PATH))
-  if type_of(manifest) != "dict" {
-    throw "canon-packs.json must be a JSON object"
-  }
-  return manifest
+pub fn read_pack_manifest_path_result(path: string) -> Result<CanonPackManifest, CanonJsonReadFailure> {
+  return read_json_typed_result<CanonPackManifest>(path, pack_manifest_schema())
 }
 
-pub fn expected_packs() -> list<string> {
-  return load_pack_manifest().map({ pack -> to_string(pack?.id ?? "") }).filter({ id -> id != "" }).to_list()
+pub fn read_fixture_document_result(path: string) -> Result<CanonFixtureDocument, CanonJsonReadFailure> {
+  return read_json_typed_result<CanonFixtureDocument>(path, fixture_document_schema())
 }
 
-pub fn duplicate_values(values: list) -> list<string> {
+pub fn json_read_failure_message(failure: CanonJsonReadFailure) -> string {
+  return failure.path + ": " + failure.detail
+}
+
+pub fn expected_packs(manifest: CanonPackManifest) -> list<string> {
+  return manifest.packs.map({ pack -> pack.id }).to_list()
+}
+
+pub fn duplicate_values(values: list<string>) -> list<string> {
   let counts = {}
   for value in values {
-    const key = to_string(value)
-    counts[key] = (counts[key] ?? 0) + 1
+    counts[value] = (counts[value] ?? 0) + 1
   }
   let out: list<string> = []
   for key in keys(counts).sort() {
@@ -77,20 +198,6 @@ pub fn set_intersects(left: list<string>, right: list<string>) -> bool {
   return false
 }
 
-pub fn validate_allowed_keys(
-  rel_path: string,
-  location: string,
-  value,
-  allowed: list<string>,
-  errors: list<string>,
-) -> list<string> {
-  const unknown = set_difference(keys(value ?? {}).sort(), allowed)
-  if len(unknown) > 0 {
-    return errors + [rel_path + ": " + location + " has unknown keys: " + join(unknown, ", ")]
-  }
-  return errors
-}
-
 pub fn is_normalized_relative_path(value: string) -> bool {
   if value.starts_with("/") || value.contains("\\") {
     return false
@@ -103,7 +210,7 @@ pub fn is_normalized_relative_path(value: string) -> bool {
   return true
 }
 
-fn first_group(pattern: string, text: string) {
+fn first_group(pattern: string, text: string) -> string? {
   const captures = regex_captures(pattern, text ?? "") ?? []
   if len(captures) == 0 {
     return nil
@@ -117,16 +224,20 @@ fn first_group(pattern: string, text: string) {
   return nil
 }
 
-fn fallback_name(mode_args: string) {
+fn fallback_name(mode_args: string) -> string? {
   return first_group(SEMANTIC_FALLBACK_RE, mode_args)
 }
 
-pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
+pub fn parse_invariants(path: string, errors: list<string> = []) -> ParsedInvariants {
   const text = harness.fs.read_text(path)
-  let entries: list<dict> = []
+  let entries: list<InvariantEntry> = []
   for capture in regex_captures(INVARIANT_RE, text) ?? [] {
     const groups = capture?.groups ?? []
-    const mode = to_string(groups[0] ?? "")
+    const mode: InvariantMode = if to_string(groups[0] ?? "") == "deterministic" {
+      "deterministic"
+    } else {
+      "semantic"
+    }
     const mode_args = to_string(groups[1] ?? "")
     entries = entries
       + [
@@ -154,7 +265,7 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
         + " @invariant markers",
     ]
   }
-  let evidence_defs = {}
+  let evidence_defs: dict<string, list<string>> = {}
   for capture in regex_captures(EVIDENCE_RE, text) ?? [] {
     const groups = capture?.groups ?? []
     const name = to_string(groups[0] ?? "")
@@ -171,7 +282,7 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> dict {
   return {entries: entries, evidence_defs: evidence_defs, errors: out_errors}
 }
 
-pub fn parse_ymd(value: string) {
+pub fn parse_ymd(value: string) -> CanonDate? {
   const captures = regex_captures("^(\\d{4})-(\\d{2})-(\\d{2})$", value) ?? []
   if len(captures) == 0 {
     return nil
@@ -206,7 +317,7 @@ fn days_in_month(year: int, month: int) -> int {
   return 28
 }
 
-pub fn shifted_months(day: dict, months: int) -> dict {
+pub fn shifted_months(day: CanonDate, months: int) -> CanonDate {
   const zero_based = day.year * 12 + (day.month - 1) + months
   const year = floor(to_float(zero_based) / 12.0)
   const month = zero_based - to_int(year) * 12 + 1
@@ -219,7 +330,7 @@ pub fn shifted_months(day: dict, months: int) -> dict {
   }
 }
 
-pub fn today_from_env_or_args(today_arg = nil) {
+pub fn today_from_env_or_args(today_arg: unknown = nil) -> CanonDate {
   const raw = trim(to_string(today_arg ?? harness.env.get("HARN_CANON_TODAY") ?? ""))
   if raw == "" {
     throw "set HARN_CANON_TODAY=YYYY-MM-DD or pass --today YYYY-MM-DD"
@@ -231,7 +342,7 @@ pub fn today_from_env_or_args(today_arg = nil) {
   return parsed
 }
 
-pub fn fixture_verdict(record) -> string {
+pub fn fixture_verdict(record: dict) -> string {
   const kind = to_string(record?.result?.verdict?.kind ?? record?.raw_result?.verdict ?? "")
   const normalized = kind.lower()
   if normalized == "allow" {
