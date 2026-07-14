@@ -1,4 +1,4 @@
-import { JsonReadFailure, SchemaValidationFailure, read_json_typed_result } from "std/fs"
+import { SchemaValidationFailure, StructuredReadFailure, read_json_typed_result } from "std/fs"
 import {
   schema_closed_object,
   schema_dict,
@@ -65,7 +65,7 @@ pub type CanonFixtureCase = {
 
 pub type CanonFixtureDocument = {predicate: string, cases: list<CanonFixtureCase>}
 
-pub type CanonJsonReadFailure = JsonReadFailure | SchemaValidationFailure
+pub type CanonJsonReadFailure = StructuredReadFailure | SchemaValidationFailure
 
 pub type FixtureCaseFailure = {
   kind: "case",
