@@ -31,8 +31,30 @@ jobs:
           asset_url="https://github.com/burin-labs/harn/releases/download/${tag}/${asset_name}"
           sums_url="https://github.com/burin-labs/harn/releases/download/${tag}/SHA256SUMS"
           tmpdir="$(mktemp -d)"
-          curl -fsSL "${asset_url}" -o "${tmpdir}/harn.tar.gz"
-          curl -fsSL "${sums_url}" -o "${tmpdir}/SHA256SUMS"
+          download_release_asset() {
+            local url="$1"
+            local output="$2"
+            local label="$3"
+            local max_attempts=20
+            local delay_seconds=15
+
+            for attempt in $(seq 1 "${max_attempts}"); do
+              if curl -fsSL "${url}" -o "${output}"; then
+                return 0
+              fi
+              if [ "${attempt}" -eq "${max_attempts}" ]; then
+                break
+              fi
+              echo "::notice::${label} is not available yet for ${tag}; retry ${attempt}/${max_attempts}" >&2
+              sleep "${delay_seconds}"
+            done
+
+            echo "::error::Timed out waiting for ${label} at ${url}" >&2
+            return 1
+          }
+
+          download_release_asset "${asset_url}" "${tmpdir}/harn.tar.gz" "${asset_name}"
+          download_release_asset "${sums_url}" "${tmpdir}/SHA256SUMS" "SHA256SUMS"
           expected_sum="$(awk -v name="${asset_name}" '$2 == name { print $1 }' "${tmpdir}/SHA256SUMS")"
           if [ -z "${expected_sum}" ]; then
             echo "::error::${asset_name} not listed in SHA256SUMS for ${tag}" >&2
