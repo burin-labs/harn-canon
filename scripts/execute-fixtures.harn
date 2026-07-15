@@ -6,11 +6,11 @@ import {
   FixtureRunFailure,
   expected_packs,
   fixture_verdict,
-  json_read_failure_message,
   parse_invariants,
   read_fixture_document_result,
   read_pack_manifest_result,
   repo_root,
+  structured_read_failure_message,
 } from "./canon-lib"
 
 const arg_spec = [{kind: "option", name: "pack", flags: ["--pack"], multi: true, default: []}]
@@ -80,7 +80,7 @@ pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
     const fixture_result = read_fixture_document_result(fixture_path)
     if !is_ok(fixture_result) {
       failures = failures
-        + [{kind: "setup", error: json_read_failure_message(unwrap_err(fixture_result))}]
+        + [{kind: "setup", error: structured_read_failure_message(unwrap_err(fixture_result))}]
       continue
     }
     const fixture = unwrap(fixture_result)
@@ -107,7 +107,7 @@ fn main(harness: Harness) {
   }
   const manifest_result = read_pack_manifest_result()
   if !is_ok(manifest_result) {
-    harness.stdio.println(json_read_failure_message(unwrap_err(manifest_result)))
+    harness.stdio.println(structured_read_failure_message(unwrap_err(manifest_result)))
     exit(1)
   }
   const all_packs = expected_packs(unwrap(manifest_result))
