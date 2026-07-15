@@ -11,7 +11,6 @@ import {
   duplicate_values,
   expected_packs,
   is_normalized_relative_path,
-  json_read_failure_message,
   parse_invariants,
   parse_ymd,
   read_fixture_document_result,
@@ -20,6 +19,7 @@ import {
   set_difference,
   set_intersects,
   shifted_months,
+  structured_read_failure_message,
   today_from_env_or_args,
 } from "./canon-lib"
 
@@ -444,7 +444,7 @@ fn main(harness: Harness) {
   if !is_ok(manifest_result) {
     harness.stdio
       .println(
-      "Canon validation failed:\n- " + json_read_failure_message(unwrap_err(manifest_result)),
+      "Canon validation failed:\n- " + structured_read_failure_message(unwrap_err(manifest_result)),
     )
     exit(1)
   }

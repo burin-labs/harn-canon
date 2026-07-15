@@ -1,4 +1,9 @@
-import { SchemaValidationFailure, StructuredReadFailure, read_json_typed_result } from "std/fs"
+import {
+  SchemaValidationFailure,
+  StructuredReadFailure,
+  TypedReadResult,
+  read_json_typed_result,
+} from "std/fs"
 import {
   schema_closed_object,
   schema_dict,
@@ -64,8 +69,6 @@ pub type CanonFixtureCase = {
 }
 
 pub type CanonFixtureDocument = {predicate: string, cases: list<CanonFixtureCase>}
-
-pub type CanonJsonReadFailure = StructuredReadFailure | SchemaValidationFailure
 
 pub type FixtureCaseFailure = {
   kind: "case",
@@ -137,19 +140,19 @@ pub fn repo_root() -> string {
   return ROOT_DIR
 }
 
-pub fn read_pack_manifest_result() -> Result<CanonPackManifest, CanonJsonReadFailure> {
+pub fn read_pack_manifest_result() -> TypedReadResult<CanonPackManifest> {
   return read_pack_manifest_path_result(PACK_MANIFEST_PATH)
 }
 
-pub fn read_pack_manifest_path_result(path: string) -> Result<CanonPackManifest, CanonJsonReadFailure> {
+pub fn read_pack_manifest_path_result(path: string) -> TypedReadResult<CanonPackManifest> {
   return read_json_typed_result<CanonPackManifest>(path, pack_manifest_schema())
 }
 
-pub fn read_fixture_document_result(path: string) -> Result<CanonFixtureDocument, CanonJsonReadFailure> {
+pub fn read_fixture_document_result(path: string) -> TypedReadResult<CanonFixtureDocument> {
   return read_json_typed_result<CanonFixtureDocument>(path, fixture_document_schema())
 }
 
-pub fn json_read_failure_message(failure: CanonJsonReadFailure) -> string {
+pub fn structured_read_failure_message(failure: StructuredReadFailure | SchemaValidationFailure) -> string {
   return failure.path + ": " + failure.detail
 }
 
