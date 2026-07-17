@@ -86,9 +86,14 @@ update that file when validating a new runtime.
 
 ## Status
 
-**Early - design-first.** All v0 seed packs are present. The runtime is still evolving in `burin-labs/harn`, so this repo keeps the pack corpus evidence-rich and fixture-backed.
+**Runtime-backed seed library.** This package contributes its pack manifest through
+`harn.canon`. Harn owns root discovery, changed-slice evaluation, and feedback
+delivery; product hosts consume that Harn contract instead of copying predicate
+routing or policy.
 
-Use this repo to review pack shape, evidence, and fixture coverage independently of runtime work in Harn.
+The packs remain v0: each predicate must earn its place with current evidence
+and a fixture-backed behavior contract. Use this repository to improve pack
+quality and coverage without recreating the runtime layer.
 
 ## Contributing
 
