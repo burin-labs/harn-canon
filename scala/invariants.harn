@@ -43,7 +43,10 @@ const _EVIDENCE_AWAIT = [
   "https://typelevel.org/cats-effect/docs/getting-started",
 ]
 
-const _EVIDENCE_EFFECTS = ["https://typelevel.org/cats-effect/docs/getting-started", "https://zio.dev/reference/core/zio/"]
+const _EVIDENCE_EFFECTS = [
+  "https://typelevel.org/cats-effect/docs/getting-started",
+  "https://zio.dev/reference/core/zio/",
+]
 
 const _EVIDENCE_PATTERN_EXHAUSTIVE = [
   "https://docs.scala-lang.org/scala3/reference/changed-features/pattern-matching.html",
@@ -85,11 +88,12 @@ fn is_main_entry_path(path) {
 }
 
 fn production_scala_files(slice) {
-  return slice.files
-    .filter(
-    { file -> is_scala_path(file.path)
-      && !is_test_path(file.path)
-      && !is_generated_path(file.path) },
+  return slice.files.filter(
+    { file ->
+      is_scala_path(file.path)
+        && !is_test_path(file.path)
+        && !is_generated_path(file.path)
+    },
   )
 }
 
@@ -236,7 +240,11 @@ pub fn no_get_on_option_or_try(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TYPE_CASTS, confidence: 0.74, source_date: "2026-05-10")
 /** Warns on asInstanceOf or isInstanceOf type casts in production Scala source. */
 pub fn no_unchecked_type_casts(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_scala_files(slice), r"\.(?:asInstanceOf|isInstanceOf)\b", "s")
+  const findings = scan_files(
+    production_scala_files(slice),
+    r"\.(?:asInstanceOf|isInstanceOf)\b",
+    "s",
+  )
   return warn_on_findings(
     "no_unchecked_type_casts",
     "Replace asInstanceOf/isInstanceOf with pattern matching, sealed hierarchies, or a TypeTest.",
@@ -266,7 +274,11 @@ pub fn no_global_execution_context(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_AWAIT, confidence: 0.82, source_date: "2026-05-10")
 /** Blocks Await.result and Await.ready outside of tests and main entry points. */
 pub fn no_await_in_library_code(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(library_scala_files(slice), r"\bAwait\s*\.\s*(?:result|ready)\s*\(", "s")
+  const findings = scan_files(
+    library_scala_files(slice),
+    r"\bAwait\s*\.\s*(?:result|ready)\s*\(",
+    "s",
+  )
   return block_on_findings(
     "no_await_in_library_code",
     "Compose Futures with map/flatMap/for or expose them in the API; keep Await at the process boundary.",
@@ -279,7 +291,8 @@ pub fn no_await_in_library_code(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks unsafe boundaries between effect types and Future in production Scala. */
 pub fn effect_typed_boundaries(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed production Scala mixes a typed effect (cats-effect IO/Resource, ZIO, Monix Task) with scala.concurrent.Future in a way that defeats cancellation, error channels, or resource scoping. Examples: calling .unsafeRunSync inside a Future or eager block to thread a value back to async code; turning an IO into a Future without IO.fromFuture/IO.fromFutureCancelable or the equivalent ZIO.fromFuture; awaiting a Future inside an IO body instead of suspending it. Allow code that crosses the boundary explicitly through documented adapter APIs."
+  const rubric =
+    "Block only when changed production Scala mixes a typed effect (cats-effect IO/Resource, ZIO, Monix Task) with scala.concurrent.Future in a way that defeats cancellation, error channels, or resource scoping. Examples: calling .unsafeRunSync inside a Future or eager block to thread a value back to async code; turning an IO into a Future without IO.fromFuture/IO.fromFutureCancelable or the equivalent ZIO.fromFuture; awaiting a Future inside an IO body instead of suspending it. Allow code that crosses the boundary explicitly through documented adapter APIs."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -296,7 +309,8 @@ pub fn effect_typed_boundaries(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks unsafe runtime escapes outside of process entry points. */
 pub fn no_unsafe_run_in_library_code(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Scala calls an effect runtime escape hatch (cats-effect unsafeRunSync/unsafeRunAsync/unsafeRunTimed, IORuntime.global.unsafe, ZIO Runtime.default.unsafe.run, Monix runSyncUnsafe) from a file that is not a Main, App, IOApp, ZIOAppDefault, test, or documented Dispatcher boundary. Allow these calls in process entry points and in test setup or teardown."
+  const rubric =
+    "Block only when changed Scala calls an effect runtime escape hatch (cats-effect unsafeRunSync/unsafeRunAsync/unsafeRunTimed, IORuntime.global.unsafe, ZIO Runtime.default.unsafe.run, Monix runSyncUnsafe) from a file that is not a Main, App, IOApp, ZIOAppDefault, test, or documented Dispatcher boundary. Allow these calls in process entry points and in test setup or teardown."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -313,7 +327,8 @@ pub fn no_unsafe_run_in_library_code(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PATTERN_EXHAUSTIVE, confidence: 0.6, source_date: "2026-05-10")
 /** Warns when production match expressions are non-exhaustive without an explicit fallback. */
 pub fn pattern_matches_are_exhaustive(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed production Scala adds a match expression whose subject is not a sealed family, enum, ADT, or otherwise compiler-checked exhaustive type, and the match omits both a `case _ =>` fallback and any defensive Try/Either wrapping. Allow matches over sealed types, enums, tuples decomposed positionally, and explicit `case _ => ...` fallbacks."
+  const rubric =
+    "Block only when changed production Scala adds a match expression whose subject is not a sealed family, enum, ADT, or otherwise compiler-checked exhaustive type, and the match omits both a `case _ =>` fallback and any defensive Try/Either wrapping. Allow matches over sealed types, enums, tuples decomposed positionally, and explicit `case _ => ...` fallbacks."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
   if judgement.verdict == "Block" {
     return warn(

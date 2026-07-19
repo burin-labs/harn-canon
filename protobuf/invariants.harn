@@ -80,8 +80,15 @@ fn scan_files_if(files, predicate) {
 fn scan_files_without(files, include_pattern, exclude_pattern) {
   return scan_files_if(
     files,
-    { file -> regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil },
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(
+        exclude_pattern,
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
 }
 
@@ -118,8 +125,15 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto[23]\"\\s*;", file.text, "m") == nil
-      && regex_match("(?m)^\\s*edition\\s*=\\s*\"\\d{4}\"\\s*;", file.text, "m") == nil },
+    { file ->
+      regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto[23]\"\\s*;", file.text, "m") == nil
+        && regex_match(
+        "(?m)^\\s*edition\\s*=\\s*\"\\d{4}\"\\s*;",
+        file.text,
+        "m",
+      )
+        == nil
+    },
   )
   return block_on_findings(
     "explicit_syntax_version",
@@ -135,7 +149,9 @@ pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
 pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match(r"(?m)^\s*package\s+[A-Za-z_][A-Za-z0-9_.]*\s*;", file.text, "m") == nil },
+    { file ->
+      regex_match(r"(?m)^\s*package\s+[A-Za-z_][A-Za-z0-9_.]*\s*;", file.text, "m") == nil
+    },
   )
   return warn_on_findings(
     "package_declaration_required",
@@ -151,13 +167,15 @@ pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
 pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto3\"\\s*;", file.text, "m") != nil
-      && regex_match(
-      r"(?m)^\s*required\s+[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*\d+",
-      file.text,
-      "m",
-    )
-      != nil },
+    { file ->
+      regex_match("(?m)^\\s*syntax\\s*=\\s*\"proto3\"\\s*;", file.text, "m") != nil
+        && regex_match(
+        r"(?m)^\s*required\s+[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*\d+",
+        file.text,
+        "m",
+      )
+        != nil
+    },
   )
   return block_on_findings(
     "no_required_in_proto3",
@@ -190,18 +208,20 @@ pub fn field_names_lower_snake_case(slice, _ctx, _repo_at_base) {
 pub fn enum_zero_value_unspecified(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
-    { file -> regex_match(
-      r"(?s)enum\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*(?:reserved[^;]*;\s*|option[^;]*;\s*|//[^\n]*\n\s*)*([A-Z][A-Z0-9_]*)\s*=\s*(\d+)",
-      file.text,
-      "s",
-    )
-      != nil
-      && regex_match(
-      r"(?s)enum\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*(?:reserved[^;]*;\s*|option[^;]*;\s*|//[^\n]*\n\s*)*[A-Z][A-Z0-9_]*_UNSPECIFIED\s*=\s*0\b",
-      file.text,
-      "s",
-    )
-      == nil },
+    { file ->
+      regex_match(
+        r"(?s)enum\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*(?:reserved[^;]*;\s*|option[^;]*;\s*|//[^\n]*\n\s*)*([A-Z][A-Z0-9_]*)\s*=\s*(\d+)",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(
+        r"(?s)enum\s+[A-Za-z_][A-Za-z0-9_]*\s*\{\s*(?:reserved[^;]*;\s*|option[^;]*;\s*|//[^\n]*\n\s*)*[A-Z][A-Z0-9_]*_UNSPECIFIED\s*=\s*0\b",
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
   return warn_on_findings(
     "enum_zero_value_unspecified",
@@ -232,7 +252,8 @@ pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FIELD_RENUMBER, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks renumbered or repurposed field tags that would break wire compatibility. */
 pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
+  const rubric =
+    "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -251,7 +272,8 @@ pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
  * Blocks field deletions that omit a matching reserved declaration for the freed number or name.
  */
 pub fn reserved_on_field_removal(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
+  const rubric =
+    "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
   if judgement.verdict == "Block" {
     return block(

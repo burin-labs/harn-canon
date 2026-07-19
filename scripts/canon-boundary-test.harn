@@ -34,7 +34,11 @@ fn canonical_fixture() -> dict {
         files: [{path: "src/main.rs", text: "fn main() {}"}],
         ctx: {mode: "test"},
       },
-      {name: "blocks_unsafe_input", expect: "Block", files: [{path: "src/lib.rs", text: "unsafe {}"}]},
+      {
+        name: "blocks_unsafe_input",
+        expect: "Block",
+        files: [{path: "src/lib.rs", text: "unsafe {}"}],
+      },
     ],
   }
 }
@@ -53,7 +57,10 @@ pipeline test_canonical_manifest_and_fixture_decode(task) {
       assert(is_ok(fixture), "canonical fixture decodes")
       assert_eq(unwrap(manifest).packs[0]?.id, "rust")
       assert_eq(unwrap(fixture).cases.count, 2)
-      assert_eq(validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", unwrap(fixture)), [])
+      assert_eq(
+        validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", unwrap(fixture)),
+        [],
+      )
     },
     "canon-boundary-canonical",
   )
@@ -176,8 +183,7 @@ pipeline test_executor_reports_malformed_fixture_as_setup_failure(task) {
       const pack_root = path_join(root, "test-pack")
       const fixtures_root = path_join(pack_root, "fixtures")
       harness.fs.mkdir(fixtures_root)
-      harness.fs
-        .write_text(
+      harness.fs.write_text(
         path_join(pack_root, "invariants.harn"),
         join(
           [
@@ -220,7 +226,11 @@ pipeline test_fixture_semantics_reject_non_normalized_paths(task) {
         expect: "Allow",
         files: [{path: "../src/main.rs", text: "fn main() {}"}],
       },
-      {name: "blocks_unsafe_input", expect: "Block", files: [{path: "src/lib.rs", text: "unsafe {}"}]},
+      {
+        name: "blocks_unsafe_input",
+        expect: "Block",
+        files: [{path: "src/lib.rs", text: "unsafe {}"}],
+      },
     ],
   }
   const errors = validate_fixture_value("rust/fixtures/safe_rule.json", "safe_rule", fixture)

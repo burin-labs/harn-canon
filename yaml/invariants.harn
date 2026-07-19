@@ -23,7 +23,10 @@ const _EVIDENCE_UNSAFE_TAGS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
 ]
 
-const _EVIDENCE_ANCHORS = ["https://yaml.org/spec/1.2.2/#692-node-anchors", "https://yaml.org/spec/1.2.2/#92-streams"]
+const _EVIDENCE_ANCHORS = [
+  "https://yaml.org/spec/1.2.2/#692-node-anchors",
+  "https://yaml.org/spec/1.2.2/#92-streams",
+]
 
 const _EVIDENCE_YAMLLINT = [
   "https://yamllint.readthedocs.io/en/stable/rules.html",
@@ -170,7 +173,11 @@ pub fn consistent_indent(slice, _ctx, _repo_at_base) {
  * Blocks YAML language-specific object construction tags that map to remote-code-execution sinks.
  */
 pub fn no_unsafe_yaml_tags(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(yaml_files(slice), r"(?m)!{1,2}(?:python|ruby|java|javax|perl|exec)\b", "m")
+  const findings = scan_files(
+    yaml_files(slice),
+    r"(?m)!{1,2}(?:python|ruby|java|javax|perl|exec)\b",
+    "m",
+  )
   return block_on_findings(
     "no_unsafe_yaml_tags",
     "Remove language-specific !!python/!ruby/!!java tags; load this YAML with a safe loader instead.",
@@ -187,8 +194,15 @@ pub fn no_unsafe_yaml_tags(slice, _ctx, _repo_at_base) {
 pub fn no_anchors_across_docs(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     non_test_yaml_files(slice),
-    { file -> regex_match(r"(?ms)^---\s*$.+?^---\s*$", file.text, "ms") != nil
-      && regex_match(r"(?m)(?:^|[^&\\])\*[A-Za-z_][A-Za-z0-9_-]*", file.text, "m") != nil },
+    { file ->
+      regex_match(r"(?ms)^---\s*$.+?^---\s*$", file.text, "ms") != nil
+        && regex_match(
+        r"(?m)(?:^|[^&\\])\*[A-Za-z_][A-Za-z0-9_-]*",
+        file.text,
+        "m",
+      )
+        != nil
+    },
   )
   return warn_on_findings(
     "no_anchors_across_docs",
@@ -204,7 +218,8 @@ pub fn no_anchors_across_docs(slice, _ctx, _repo_at_base) {
  * Blocks changed YAML that yamllint would flag as an error under a sensible default configuration.
  */
 pub fn yamllint_compliance(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed YAML clearly violates a yamllint default rule that yamllint reports as an error: duplicate keys, empty mapping values where a value is required, line-length runaway, missing document start when policy requires it, octal value misuse, or syntax that fails to parse. Do not block on style preferences when yamllint defaults treat them as warnings."
+  const rubric =
+    "Block only when changed YAML clearly violates a yamllint default rule that yamllint reports as an error: duplicate keys, empty mapping values where a value is required, line-length runaway, missing document start when policy requires it, octal value misuse, or syntax that fails to parse. Do not block on style preferences when yamllint defaults treat them as warnings."
   const judgement = ctx.semantic_judge({rubric: rubric, files: yaml_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -221,7 +236,8 @@ pub fn yamllint_compliance(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks credentials, tokens, and private keys committed in YAML configuration. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed YAML embeds an API key, access token, password, private key, signing secret, or production connection string instead of referencing a secret manager, environment variable, or sealed/encrypted secret store."
+  const rubric =
+    "Block only when changed YAML embeds an API key, access token, password, private key, signing secret, or production connection string instead of referencing a secret manager, environment variable, or sealed/encrypted secret store."
   const judgement = ctx.semantic_judge({rubric: rubric, files: yaml_files(slice)})
   if judgement.verdict == "Block" {
     return block(

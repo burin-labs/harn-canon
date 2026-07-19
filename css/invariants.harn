@@ -68,8 +68,9 @@ fn is_test_path(path) {
 }
 
 fn css_files(slice) {
-  return slice.files
-    .filter({ file -> is_css_path(file.path) && !is_vendor_or_generated_path(file.path) })
+  return slice.files.filter(
+    { file -> is_css_path(file.path) && !is_vendor_or_generated_path(file.path) },
+  )
 }
 
 fn production_css_files(slice) {
@@ -80,8 +81,7 @@ fn scan_files(files, pattern, flags) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings
-        .push({path: file.path, pattern: pattern})
+      findings = findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -91,8 +91,7 @@ fn scan_files_if(files, predicate) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings
-        .push({path: file.path})
+      findings = findings.push({path: file.path})
     }
   }
   return findings
@@ -131,10 +130,22 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn no_important_without_comment(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_css_files(slice),
-    { file -> regex_match(r"!important\b", file.text, "s") != nil
-      && regex_match(r"/\*[\s\S]{0,400}?\*/\s*[^;{}]{0,160}!important", file.text, "s") == nil
-      && regex_match(r"//[^\n]*\n\s*[^;{}\n]{0,160}!important", file.text, "s") == nil
-      && regex_match(r"!important[^;\n]{0,80}(/\*|//)", file.text, "s") == nil },
+    { file ->
+      regex_match(r"!important\b", file.text, "s") != nil
+        && regex_match(
+        r"/\*[\s\S]{0,400}?\*/\s*[^;{}]{0,160}!important",
+        file.text,
+        "s",
+      )
+        == nil
+        && regex_match(r"//[^\n]*\n\s*[^;{}\n]{0,160}!important", file.text, "s") == nil
+        && regex_match(
+        r"!important[^;\n]{0,80}(/\*|//)",
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
   return block_on_findings(
     "no_important_without_comment",
@@ -148,7 +159,11 @@ pub fn no_important_without_comment(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ID_SELECTORS, confidence: 0.72, source_date: "2026-05-09")
 /** Warns when stylesheets use `#id` selectors instead of class selectors. */
 pub fn no_id_selectors(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_css_files(slice), r"(^|[, \t])#[A-Za-z_][A-Za-z0-9_-]*[^;{}]*?\{", "m")
+  const findings = scan_files(
+    production_css_files(slice),
+    r"(^|[, \t])#[A-Za-z_][A-Za-z0-9_-]*[^;{}]*?\{",
+    "m",
+  )
   return warn_on_findings(
     "no_id_selectors",
     "Prefer class or attribute selectors so component styles compose; ids spike specificity and resist overrides.",
@@ -197,7 +212,11 @@ pub fn no_zero_with_unit(slice, _ctx, _repo_at_base) {
  * Warns when `font-size` uses absolute units (`px`, `pt`) that ignore user font-size preferences.
  */
 pub fn font_size_uses_relative_units(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_css_files(slice), r"\bfont-size\s*:\s*[+-]?\d+(?:\.\d+)?\s*(?:px|pt)\b", "s")
+  const findings = scan_files(
+    production_css_files(slice),
+    r"\bfont-size\s*:\s*[+-]?\d+(?:\.\d+)?\s*(?:px|pt)\b",
+    "s",
+  )
   return warn_on_findings(
     "font_size_uses_relative_units",
     "Use relative units (`rem`, `em`, `%`) for font-size so users who set a larger default text size are respected (WCAG 1.4.4).",
@@ -210,7 +229,8 @@ pub fn font_size_uses_relative_units(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FOCUS_INDICATOR, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks suppressing the default focus outline without supplying a visible replacement. */
 pub fn accessible_focus_indicator(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed CSS suppresses the keyboard focus indicator (e.g. `outline: none`, `outline: 0`, `outline: 0px`, or sets outline width to 0) on focusable elements and the same slice does not provide a clearly visible replacement focus style for `:focus` or `:focus-visible` (such as a non-transparent box-shadow, border, background, or outline applied via the focus pseudo-classes). Allow suppressions that are paired with an obvious focus-visible replacement, that target non-interactive selectors, or that scope the suppression to `:focus:not(:focus-visible)` while leaving keyboard focus styled."
+  const rubric =
+    "Block only when changed CSS suppresses the keyboard focus indicator (e.g. `outline: none`, `outline: 0`, `outline: 0px`, or sets outline width to 0) on focusable elements and the same slice does not provide a clearly visible replacement focus style for `:focus` or `:focus-visible` (such as a non-transparent box-shadow, border, background, or outline applied via the focus pseudo-classes). Allow suppressions that are paired with an obvious focus-visible replacement, that target non-interactive selectors, or that scope the suppression to `:focus:not(:focus-visible)` while leaving keyboard focus styled."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_css_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -227,7 +247,8 @@ pub fn accessible_focus_indicator(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_REDUCED_MOTION, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks new non-trivial animations or transitions that ignore `prefers-reduced-motion`. */
 pub fn respect_prefers_reduced_motion(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed CSS introduces a non-trivial animation or transition (an `animation`, `@keyframes`, or `transition` longer than ~150ms or that involves transform/translate/scale/rotate/opacity loops) and the slice does not include a `@media (prefers-reduced-motion: reduce)` block that disables, shortens, or removes the offending animation/transition. Allow purely instantaneous transitions, hover-only color tweens shorter than ~150ms, or changes that already gate motion behind the reduced-motion media query."
+  const rubric =
+    "Block only when changed CSS introduces a non-trivial animation or transition (an `animation`, `@keyframes`, or `transition` longer than ~150ms or that involves transform/translate/scale/rotate/opacity loops) and the slice does not include a `@media (prefers-reduced-motion: reduce)` block that disables, shortens, or removes the offending animation/transition. Allow purely instantaneous transitions, hover-only color tweens shorter than ~150ms, or changes that already gate motion behind the reduced-motion media query."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_css_files(slice)})
   if judgement.verdict == "Block" {
     return block(

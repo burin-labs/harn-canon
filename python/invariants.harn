@@ -8,7 +8,10 @@ const _EVIDENCE_TYPE_HINTS = [
   "https://docs.astral.sh/ruff/rules/missing-return-type-undocumented-public-function/",
 ]
 
-const _EVIDENCE_PRINT_LOGGING = ["https://docs.python.org/3/howto/logging.html", "https://docs.astral.sh/ruff/rules/print/"]
+const _EVIDENCE_PRINT_LOGGING = [
+  "https://docs.python.org/3/howto/logging.html",
+  "https://docs.astral.sh/ruff/rules/print/",
+]
 
 const _EVIDENCE_MUTABLE_DEFAULTS = [
   "https://docs.python.org/3.14/tutorial/controlflow.html#default-argument-values",
@@ -55,26 +58,34 @@ fn python_files(slice) {
 
 fn is_test_path(path) {
   return regex_match(r"(^|/)(tests?|test_[^/]*|[^/]*_test)\.py$", path, "") != nil
-    || regex_match(r"(^|/)tests?/", path, "") != nil
+    || regex_match(
+    r"(^|/)tests?/",
+    path,
+    "",
+  )
+    != nil
 }
 
 fn is_cli_path(path) {
   return path.ends_with("__main__.py")
     || regex_match(r"(^|/)(cli|scripts?)/", path, "") != nil
-    || regex_match(r"(^|/)(cli|main)\.py$", path, "") != nil
+    || regex_match(
+    r"(^|/)(cli|main)\.py$",
+    path,
+    "",
+  )
+    != nil
 }
 
 fn production_python_files(slice) {
-  return python_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
+  return python_files(slice).filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
 }
 
 fn scan_files(files, pattern, flags) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings
-        .push({path: file.path, pattern: pattern})
+      findings = findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -128,7 +139,12 @@ pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
   for file in python_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\(", line, "") != nil
-        && (regex_match(r"->", line, "") == nil
+        && (regex_match(
+        r"->",
+        line,
+        "",
+      )
+        == nil
         || regex_match(r"\([^)]*:[^)]*\)", line, "") == nil) {
         findings = findings.push({path: file.path})
       }
@@ -180,7 +196,12 @@ pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
   for file in python_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(^|[^._A-Za-z0-9])open\s*\(", line, "") != nil
-        && regex_match(r"\bwith\s+open\s*\(", line, "") == nil {
+        && regex_match(
+        r"\bwith\s+open\s*\(",
+        line,
+        "",
+      )
+        == nil {
         findings = findings.push({path: file.path})
       }
     }
@@ -240,7 +261,8 @@ pub fn no_assert_in_prod_path(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.66, source_date: "2026-04-30")
 /** Blocks SQL assembled with user-controlled string interpolation. */
 pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when Python code builds a SQL query by interpolating, formatting, concatenating, or f-stringing user-controlled values into the SQL text instead of binding parameters/placeholders."
+  const rubric =
+    "Block only when Python code builds a SQL query by interpolating, formatting, concatenating, or f-stringing user-controlled values into the SQL text instead of binding parameters/placeholders."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -257,7 +279,8 @@ pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SOURCE_SECRETS, confidence: 0.64, source_date: "2026-04-30")
 /** Blocks hardcoded credentials and high-risk secrets in Python source. */
 pub fn secrets_not_hardcoded_in_source(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when Python source hardcodes credentials, API tokens, private keys, database passwords, signing secrets, or production service credentials instead of loading them from a secret manager or environment."
+  const rubric =
+    "Block only when Python source hardcodes credentials, API tokens, private keys, database passwords, signing secrets, or production service credentials instead of loading them from a secret manager or environment."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
   if judgement.verdict == "Block" {
     return block(

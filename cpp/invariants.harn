@@ -129,17 +129,19 @@ fn cpp_files(slice) {
 }
 
 fn cpp_production_files(slice) {
-  return cpp_files(slice)
-    .filter(
-    { file -> !is_test_path(file.path)
-      && !is_third_party_path(file.path)
-      && !is_example_or_bench_path(file.path) },
+  return cpp_files(slice).filter(
+    { file ->
+      !is_test_path(file.path)
+        && !is_third_party_path(file.path)
+        && !is_example_or_bench_path(file.path)
+    },
   )
 }
 
 fn cpp_header_files(slice) {
-  return slice.files
-    .filter({ file -> is_cpp_header_path(file.path) && !is_third_party_path(file.path) })
+  return slice.files.filter(
+    { file -> is_cpp_header_path(file.path) && !is_third_party_path(file.path) },
+  )
 }
 
 fn scan_files(files, pattern, flags) {
@@ -212,7 +214,11 @@ pub fn no_raw_new_delete(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NAKED_MALLOC, confidence: 0.82, source_date: "2026-05-10")
 /** Blocks malloc/calloc/realloc/free in production C++ paths in favor of RAII allocations. */
 pub fn no_naked_malloc_free(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(cpp_production_files(slice), r"\b(?:malloc|calloc|realloc|free)\s*\(", "s")
+  const findings = scan_files(
+    cpp_production_files(slice),
+    r"\b(?:malloc|calloc|realloc|free)\s*\(",
+    "s",
+  )
   return block_on_findings(
     "no_naked_malloc_free",
     "Replace malloc/calloc/realloc/free with std::vector, std::unique_ptr, or std::pmr allocators.",
@@ -244,9 +250,16 @@ pub fn prefer_nullptr_over_null(slice, _ctx, _repo_at_base) {
 pub fn header_include_guard_or_pragma_once(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     cpp_header_files(slice),
-    { file -> regex_match(r"#\s*pragma\s+once", file.text, "i") == nil
-      && (regex_match(r"#\s*ifndef\s+\w+", file.text, "i") == nil
-      || regex_match(r"#\s*define\s+\w+", file.text, "i") == nil) },
+    { file ->
+      regex_match(r"#\s*pragma\s+once", file.text, "i") == nil
+        && (regex_match(
+        r"#\s*ifndef\s+\w+",
+        file.text,
+        "i",
+      )
+        == nil
+        || regex_match(r"#\s*define\s+\w+", file.text, "i") == nil)
+    },
   )
   return block_on_findings(
     "header_include_guard_or_pragma_once",
@@ -305,7 +318,8 @@ pub fn prefer_using_over_typedef(slice, _ctx, _repo_at_base) {
  * Blocks classes that declare some special member functions while leaving others implicit, violating the Rule of Five.
  */
 pub fn rule_of_five_consistency(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed C++ class definition declares one or more of the destructor, copy constructor, copy assignment operator, move constructor, or move assignment operator without explicitly declaring or =default/=delete the remaining special members. Allow classes that follow the Rule of Zero (no special members declared), classes whose remaining special members are inherited unchanged from a base that already declares them, and classes whose declaration carries a comment that documents why a specific member is intentionally implicit."
+  const rubric =
+    "Block only when a changed C++ class definition declares one or more of the destructor, copy constructor, copy assignment operator, move constructor, or move assignment operator without explicitly declaring or =default/=delete the remaining special members. Allow classes that follow the Rule of Zero (no special members declared), classes whose remaining special members are inherited unchanged from a base that already declares them, and classes whose declaration carries a comment that documents why a specific member is intentionally implicit."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -322,7 +336,8 @@ pub fn rule_of_five_consistency(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MEMBER_INIT, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks class members left without an in-class initializer or constructor initialization. */
 pub fn members_initialized(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed C++ class adds or modifies a non-static data member of a non-class fundamental, pointer, enum, or array type that has neither an in-class default initializer nor initialization in every constructor's member initializer list, leaving the field with indeterminate value when an instance is constructed. Allow class-typed members whose own default constructor performs the required initialization, fields explicitly tagged for indeterminate state via a documented placement-new pattern, fields initialized by every base or delegating constructor in the change set, and union members which cannot carry an in-class initializer."
+  const rubric =
+    "Block only when a changed C++ class adds or modifies a non-static data member of a non-class fundamental, pointer, enum, or array type that has neither an in-class default initializer nor initialization in every constructor's member initializer list, leaving the field with indeterminate value when an instance is constructed. Allow class-typed members whose own default constructor performs the required initialization, fields explicitly tagged for indeterminate state via a documented placement-new pattern, fields initialized by every base or delegating constructor in the change set, and union members which cannot carry an in-class initializer."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -341,7 +356,8 @@ pub fn members_initialized(slice, ctx, _repo_at_base) {
  * Warns on public/protected member functions that do not modify *this but are not declared const.
  */
 pub fn const_correctness_on_pub_api(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed C++ public or protected non-static member function does not write to any non-mutable data member of *this and does not call any non-const member function on *this, yet its declaration omits the trailing const qualifier. Allow virtual overrides whose base class signature is non-const, methods that lock a non-mutable mutex or update non-mutable cache state, methods that return *this or a non-const reference to a member to outside callers, and call operators on stateful function objects whose contract is documented as non-const."
+  const rubric =
+    "Block only when a changed C++ public or protected non-static member function does not write to any non-mutable data member of *this and does not call any non-const member function on *this, yet its declaration omits the trailing const qualifier. Allow virtual overrides whose base class signature is non-const, methods that lock a non-mutable mutex or update non-mutable cache state, methods that return *this or a non-const reference to a member to outside callers, and call operators on stateful function objects whose contract is documented as non-const."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
   if judgement.verdict == "Block" {
     return warn(

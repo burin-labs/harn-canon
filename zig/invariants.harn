@@ -90,7 +90,10 @@ const _EVIDENCE_ARRAYLIST_UNMANAGED = [
   "https://github.com/ziglang/zig/blob/master/lib/std/array_list.zig",
 ]
 
-const _EVIDENCE_DEFER_BLOCK = ["https://ziglang.org/documentation/master/#defer", "https://zig.guide/language-basics/defer/"]
+const _EVIDENCE_DEFER_BLOCK = [
+  "https://ziglang.org/documentation/master/#defer",
+  "https://zig.guide/language-basics/defer/",
+]
 
 const _EVIDENCE_DOC_COMMENTS = [
   "https://ziglang.org/documentation/master/#Doc-Comments",
@@ -221,7 +224,12 @@ pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
   for file in zig_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(", line, "") != nil
-        && regex_match(r"//", line, "") == nil {
+        && regex_match(
+        r"//",
+        line,
+        "",
+      )
+        == nil {
         findings = findings.push({path: file.path})
       }
     }
@@ -255,9 +263,16 @@ pub fn no_panic_in_production(slice, _ctx, _repo_at_base) {
 pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     zig_files(slice),
-    { file -> regex_match(r"(?m)^test\b", file.text, "m") != nil
-      && regex_match(r"\b(page_allocator|c_allocator)\b", file.text, "s") != nil
-      && regex_match(r"\btesting\.allocator\b", file.text, "s") == nil },
+    { file ->
+      regex_match(r"(?m)^test\b", file.text, "m") != nil
+        && regex_match(
+        r"\b(page_allocator|c_allocator)\b",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(r"\btesting\.allocator\b", file.text, "s") == nil
+    },
   )
   return warn_on_findings(
     "tests_use_testing_allocator",
@@ -289,8 +304,11 @@ pub fn build_zon_min_zig_version_set(slice, _ctx, _repo_at_base) {
 pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     build_zon_files(slice),
-    { file -> regex_match(r"\.url\s*=", file.text, "s") != nil
-      && regex_match(r"\.hash\s*=", file.text, "s") == nil },
+    { file ->
+      regex_match(r"\.url\s*=", file.text, "s") != nil
+        && regex_match(r"\.hash\s*=", file.text, "s")
+        == nil
+    },
   )
   return block_on_findings(
     "build_zon_dependency_hash_pinned",
@@ -324,32 +342,49 @@ pub fn no_std_json_parser_api(slice, _ctx, _repo_at_base) {
 pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     zig_files(slice),
-    { file -> regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
-      && ((regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s") != nil
-      && regex_match(
-      r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
-      file.text,
-      "s",
-    )
-      != nil)
-      || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
-      && regex_match(
-      r"\.map\.(?:put|putNoClobber|putAssumeCapacity(?:NoClobber)?|fetchPut|getOrPut(?:AssumeCapacity)?)\s*\(",
-      file.text,
-      "s",
-    )
-      != nil
-      && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
-      && regex_match(r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)", file.text, "s") == nil)
-      || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
-      && regex_match(r"\.map\.getOrPut(?:AssumeCapacity)?\s*\(", file.text, "s") != nil
-      && regex_match(r"\.found_existing\b", file.text, "s") != nil
-      && regex_match(
-      r"\bfree\s*\(\s*(?:key|[A-Za-z_][A-Za-z0-9_]*_key|key_[A-Za-z0-9_]*)\s*\)",
-      file.text,
-      "s",
-    )
-      == nil)) },
+    { file ->
+      regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
+        && ((regex_match(
+        r"\bstd\.json\.parseFromSlice\b",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(
+        r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
+        file.text,
+        "s",
+      )
+        != nil)
+        || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+        && regex_match(
+        r"\.map\.(?:put|putNoClobber|putAssumeCapacity(?:NoClobber)?|fetchPut|getOrPut(?:AssumeCapacity)?)\s*\(",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
+        && regex_match(
+        r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)",
+        file.text,
+        "s",
+      )
+        == nil)
+        || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+        && regex_match(
+        r"\.map\.getOrPut(?:AssumeCapacity)?\s*\(",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(r"\.found_existing\b", file.text, "s") != nil
+        && regex_match(
+        r"\bfree\s*\(\s*(?:key|[A-Za-z_][A-Za-z0-9_]*_key|key_[A-Za-z0-9_]*)\s*\)",
+        file.text,
+        "s",
+      )
+        == nil))
+    },
   )
   return block_on_findings(
     "parsed_json_arrayhashmap_has_single_owner",
@@ -365,18 +400,20 @@ pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
 pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     zig_files(slice),
-    { file -> regex_match(
-      r"\bstd\.(?:AutoHashMap|AutoHashMapUnmanaged|HashMap|HashMapUnmanaged|StringHashMap|StringHashMapUnmanaged|ArrayHashMap|ArrayHashMapUnmanaged|StringArrayHashMap|StringArrayHashMapUnmanaged)\b|\bstd\.json\.ArrayHashMap\b",
-      file.text,
-      "s",
-    )
-      != nil
-      && regex_match(
-      r"\b(?:map|hash_map|lookup|table|items|entries|[A-Za-z_][A-Za-z0-9_]*_map)(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}\.size\b",
-      file.text,
-      "s",
-    )
-      != nil },
+    { file ->
+      regex_match(
+        r"\bstd\.(?:AutoHashMap|AutoHashMapUnmanaged|HashMap|HashMapUnmanaged|StringHashMap|StringHashMapUnmanaged|ArrayHashMap|ArrayHashMapUnmanaged|StringArrayHashMap|StringArrayHashMapUnmanaged)\b|\bstd\.json\.ArrayHashMap\b",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(
+        r"\b(?:map|hash_map|lookup|table|items|entries|[A-Za-z_][A-Za-z0-9_]*_map)(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}\.size\b",
+        file.text,
+        "s",
+      )
+        != nil
+    },
   )
   return block_on_findings(
     "hashmap_count_uses_count_method",
@@ -405,20 +442,22 @@ pub fn enum_tags_use_tag_name_builtin(slice, _ctx, _repo_at_base) {
 pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     zig_files(slice),
-    { file -> regex_match(r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(", file.text, "s") != nil
-      || (regex_match(
-      r"\b(?:const|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*std\.ArrayList\s*\([^)\n]+\)\s*=\s*\.empty\b",
-      file.text,
-      "s",
-    )
-      != nil
-      && (regex_match(
-      r"\.(?:append|appendSlice|insert|insertSlice|resize|ensureTotalCapacity|ensureUnusedCapacity)\s*\(\s*[^,\n)]*\s*\)",
-      file.text,
-      "s",
-    )
-      != nil
-      || regex_match(r"\.(?:deinit|toOwnedSlice)\s*\(\s*\)", file.text, "s") != nil)) },
+    { file ->
+      regex_match(r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(", file.text, "s") != nil
+        || (regex_match(
+        r"\b(?:const|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*std\.ArrayList\s*\([^)\n]+\)\s*=\s*\.empty\b",
+        file.text,
+        "s",
+      )
+        != nil
+        && (regex_match(
+        r"\.(?:append|appendSlice|insert|insertSlice|resize|ensureTotalCapacity|ensureUnusedCapacity)\s*\(\s*[^,\n)]*\s*\)",
+        file.text,
+        "s",
+      )
+        != nil
+        || regex_match(r"\.(?:deinit|toOwnedSlice)\s*\(\s*\)", file.text, "s") != nil))
+    },
   )
   return block_on_findings(
     "arraylist_uses_unmanaged_api",
@@ -432,7 +471,11 @@ pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_DEFER_BLOCK, confidence: 0.82, source_date: "2026-06-23")
 /** Blocks `defer { ... };` closers; a Zig defer block closes with `}` only. */
 pub fn defer_block_closes_without_semicolon(slice, _ctx, _repo_at_base) {
-  const findings = scan_files_with_flags(zig_files(slice), r"(?m)^\s*defer\s*\{\s*$[\s\S]*?^\s*\};\s*$", "ms")
+  const findings = scan_files_with_flags(
+    zig_files(slice),
+    r"(?m)^\s*defer\s*\{\s*$[\s\S]*?^\s*\};\s*$",
+    "ms",
+  )
   return block_on_findings(
     "defer_block_closes_without_semicolon",
     "Close `defer { ... }` with `}` only. The extra semicolon after the block is a Zig syntax error.",
@@ -464,14 +507,16 @@ pub fn doc_comments_attach_to_declarations(slice, _ctx, _repo_at_base) {
  * This same role list is copyable into every other `<lang>/invariants.harn`
  * pack; only the assertion node kinds and grammar name are language-specific.
  */
-const _PRODUCER_ROLE_PATTERN = r"(?i)(serialize|serialise|deserialize|deserialise|stringify|format|encode|decode|marshal|unmarshal|render|parse|tojson|fromjson|toString|write|dump|emit|print)"
+const _PRODUCER_ROLE_PATTERN =
+  r"(?i)(serialize|serialise|deserialize|deserialise|stringify|format|encode|decode|marshal|unmarshal|render|parse|tojson|fromjson|toString|write|dump|emit|print)"
 
 /**
  * Zig assertion callees whose asserted value is compared against an author
  * literal. Trailing-segment match so `std.testing.expectEqualStrings` and a
  * bare `expectEqualStrings` both resolve.
  */
-const _ZIG_ASSERT_PATTERN = r"(?i)^(expect|expectEqual|expectEqualStrings|expectEqualSlices|expectEqualDeep|expectStringStartsWith|expectStringEndsWith)$"
+const _ZIG_ASSERT_PATTERN =
+  r"(?i)^(expect|expectEqual|expectEqualStrings|expectEqualSlices|expectEqualDeep|expectStringStartsWith|expectStringEndsWith)$"
 
 /** Trailing path segment of a dotted callee (`writer.serialize` -> `serialize`). */
 fn _last_segment(name) {
@@ -516,7 +561,8 @@ fn _producer_bindings(file_text) {
   const search = ast_search(
     {
       source: file_text,
-      query: "(variable_declaration (identifier) @name (_ (call_expression function: (_) @callee)))",
+      query:
+        "(variable_declaration (identifier) @name (_ (call_expression function: (_) @callee)))",
       language: "zig",
     },
   )
@@ -553,7 +599,10 @@ fn _ungrounded_assertions(file_text, bindings, observed) {
       // Zig identifiers are `[A-Za-z_][A-Za-z0-9_]*`, so no regex escaping is
       // needed to word-boundary-match the bound variable name in the call text.
       if regex_match(r"\b" + binding.variable + r"\b", call_text, "") != nil
-        && !_symbol_observed(binding.callee, observed) {
+        && !_symbol_observed(
+        binding.callee,
+        observed,
+      ) {
         hits = hits.push({assertion: call_text, symbol: binding.callee, variable: binding.variable})
       }
     }
@@ -599,7 +648,8 @@ pub fn assertion_on_ungrounded_output(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ALLOCATOR_LIFETIME, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks heap allocations whose result is not freed, transferred, or guarded by defer/errdefer. */
 pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
+  const rubric =
+    "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
   const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -616,7 +666,8 @@ pub fn allocator_lifetime_hygiene(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials, tokens, and private keys in Zig sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
+  const rubric =
+    "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
   const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -635,7 +686,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
  * Warns when multi-byte integer I/O across a serialization boundary does not name an endianness.
  */
 pub fn integer_endianness_explicit(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
+  const rubric =
+    "Warn only when changed Zig code reads or writes a multi-byte integer across a serialization boundary (file, network socket, on-disk buffer, IPC frame, byte slice from an external source) and the call site does not name an endianness — for example std.mem.readInt/writeInt called without a `.little`, `.big`, or `.native` argument; @bitCast over a []u8 slice without an endianness comment; or @ptrCast on byte arrays going to or from network/file I/O. Allow purely in-memory @bitCast that does not cross a serialization boundary, and allow code that already calls std.mem.nativeTo* / *ToNative or @byteSwap with a documented byte order."
   const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(

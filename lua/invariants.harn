@@ -41,7 +41,10 @@ const _EVIDENCE_REQUIRE_LOCAL = [
   "http://lua-users.org/wiki/ModulesTutorial",
 ]
 
-const _EVIDENCE_TAIL_CALLS = ["https://www.lua.org/manual/5.4/manual.html#3.4.10", "https://www.lua.org/pil/6.3.html"]
+const _EVIDENCE_TAIL_CALLS = [
+  "https://www.lua.org/manual/5.4/manual.html#3.4.10",
+  "https://www.lua.org/pil/6.3.html",
+]
 
 const _EVIDENCE_METATABLES = [
   "https://www.lua.org/manual/5.4/manual.html#2.4",
@@ -78,13 +81,11 @@ fn lua_files(slice) {
 }
 
 fn production_lua_files(slice) {
-  return lua_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+  return lua_files(slice).filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
 }
 
 fn module_lua_files(slice) {
-  return production_lua_files(slice)
-    .filter({ file -> regex_match(r"\A#!", file.text, "s") == nil })
+  return production_lua_files(slice).filter({ file -> regex_match(r"\A#!", file.text, "s") == nil })
 }
 
 fn scan_files(files, pattern, flags) {
@@ -110,8 +111,15 @@ fn scan_files_if(files, predicate) {
 fn scan_files_without(files, include_pattern, exclude_pattern) {
   return scan_files_if(
     files,
-    { file -> regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil },
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(
+        exclude_pattern,
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
 }
 
@@ -146,7 +154,11 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_GLOBAL_FUNCTION, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks top-level `function name(...)` definitions that create implicit globals. */
 pub fn no_global_function_definition(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_lua_files(slice), r"(?m)^[ \t]*function\s+[A-Za-z_][A-Za-z0-9_]*\s*\(", "m")
+  const findings = scan_files(
+    production_lua_files(slice),
+    r"(?m)^[ \t]*function\s+[A-Za-z_][A-Za-z0-9_]*\s*\(",
+    "m",
+  )
   return block_on_findings(
     "no_global_function_definition",
     "Use `local function name(...)` or attach the function to a module table (`function M.name(...)`).",
@@ -195,7 +207,11 @@ pub fn no_loadstring_or_loadfile(slice, _ctx, _repo_at_base) {
  * Blocks setfenv/getfenv usage that was removed in Lua 5.2 and is unavailable on modern runtimes.
  */
 pub fn no_setfenv_or_getfenv(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(lua_files(slice), r"(?m)(^|[^A-Za-z0-9_.:])(setfenv|getfenv)\s*\(", "m")
+  const findings = scan_files(
+    lua_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.:])(setfenv|getfenv)\s*\(",
+    "m",
+  )
   return block_on_findings(
     "no_setfenv_or_getfenv",
     "Use the Lua 5.2+ `_ENV` upvalue or an explicit environment table; setfenv/getfenv were removed.",
@@ -241,7 +257,11 @@ pub fn module_returns_value(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_REQUIRE_LOCAL, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on `require` calls at top-level that are not assigned to a local binding. */
 pub fn require_assigned_to_local(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_lua_files(slice), "(?m)^[ \\t]*require\\s*[\\(\"'\\[]", "m")
+  const findings = scan_files(
+    production_lua_files(slice),
+    "(?m)^[ \\t]*require\\s*[\\(\"'\\[]",
+    "m",
+  )
   return warn_on_findings(
     "require_assigned_to_local",
     "Bind require results to a local: `local mod = require('mod')`; bare `require` calls leak through package.loaded only.",
@@ -254,7 +274,8 @@ pub fn require_assigned_to_local(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_TAIL_CALLS, confidence: 0.6, source_date: "2026-05-10")
 /** Warns on recursive Lua functions whose recursive call is not in tail position. */
 pub fn tail_call_recursion(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when changed Lua source defines a function that calls itself recursively and the recursive call is not in tail position — that is, the result is consumed by an arithmetic, logical, indexing, or wrapping expression before being returned. A call is in tail position when it is the entire return expression (e.g., `return f(...)`). Allow when recursion depth is bounded by a small literal, when the recursive call is wrapped in pcall/xpcall for protected execution, or when the function is iterative."
+  const rubric =
+    "Warn only when changed Lua source defines a function that calls itself recursively and the recursive call is not in tail position — that is, the result is consumed by an arithmetic, logical, indexing, or wrapping expression before being returned. A call is in tail position when it is the entire return expression (e.g., `return f(...)`). Allow when recursion depth is bounded by a small literal, when the recursive call is wrapped in pcall/xpcall for protected execution, or when the function is iterative."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
   if judgement.verdict == "Block" {
     return warn(
@@ -273,7 +294,8 @@ pub fn tail_call_recursion(slice, ctx, _repo_at_base) {
  * Blocks metatable mutations that change reads, writes, or identity without an adjacent comment.
  */
 pub fn metatable_boundary_documented(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Lua source assigns to a metatable field that crosses a behavior boundary — `__index`, `__newindex`, `__metatable`, `__call`, `__eq`, `__lt`, `__le`, `__add`, `__concat`, `__tostring`, or `__gc` — without an adjacent comment, docstring, or annotation that names the target type and explains the new behavior. Allow purely additive helper assignments inside a class-builder helper that already documents the pattern."
+  const rubric =
+    "Block only when changed Lua source assigns to a metatable field that crosses a behavior boundary — `__index`, `__newindex`, `__metatable`, `__call`, `__eq`, `__lt`, `__le`, `__add`, `__concat`, `__tostring`, or `__gc` — without an adjacent comment, docstring, or annotation that names the target type and explains the new behavior. Allow purely additive helper assignments inside a class-builder helper that already documents the pattern."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -290,7 +312,8 @@ pub fn metatable_boundary_documented(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-10")
 /** Blocks hardcoded credentials and high-risk secrets in Lua source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Lua source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment variable."
+  const rubric =
+    "Block only when changed Lua source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment variable."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
   if judgement.verdict == "Block" {
     return block(

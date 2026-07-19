@@ -1,4 +1,7 @@
-const _EVIDENCE_NULL_SAFETY = ["https://dart.dev/null-safety", "https://dart.dev/language/versioning"]
+const _EVIDENCE_NULL_SAFETY = [
+  "https://dart.dev/null-safety",
+  "https://dart.dev/language/versioning",
+]
 
 const _EVIDENCE_NULL_ASSERTION = [
   "https://dart.dev/null-safety/understanding-null-safety",
@@ -15,9 +18,15 @@ const _EVIDENCE_PRINT = [
   "https://api.dart.dev/stable/dart-developer/log.html",
 ]
 
-const _EVIDENCE_MUTABILITY = ["https://dart.dev/tools/linter-rules/prefer_final_fields", "https://dart.dev/effective-dart/usage"]
+const _EVIDENCE_MUTABILITY = [
+  "https://dart.dev/tools/linter-rules/prefer_final_fields",
+  "https://dart.dev/effective-dart/usage",
+]
 
-const _EVIDENCE_LINT_IGNORES = ["https://dart.dev/tools/analysis", "https://dart.dev/tools/linter-rules"]
+const _EVIDENCE_LINT_IGNORES = [
+  "https://dart.dev/tools/analysis",
+  "https://dart.dev/tools/linter-rules",
+]
 
 const _EVIDENCE_CONST_WIDGETS = [
   "https://dart.dev/tools/linter-rules/prefer_const_constructors_in_immutables",
@@ -78,17 +87,19 @@ fn is_example_path(path) {
 }
 
 fn production_dart_files(slice) {
-  return dart_files(slice)
-    .filter(
-    { file -> !is_test_path(file.path)
-      && !is_generated_path(file.path)
-      && !is_example_path(file.path) },
+  return dart_files(slice).filter(
+    { file ->
+      !is_test_path(file.path)
+        && !is_generated_path(file.path)
+        && !is_example_path(file.path)
+    },
   )
 }
 
 fn lib_dart_files(slice) {
-  return production_dart_files(slice)
-    .filter({ file -> contains(file.path, "/lib/") || file.path.starts_with("lib/") })
+  return production_dart_files(slice).filter(
+    { file -> contains(file.path, "/lib/") || file.path.starts_with("lib/") },
+  )
 }
 
 fn scan_files(files, pattern, flags) {
@@ -159,7 +170,11 @@ pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NULL_ASSERTION, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks the postfix null assertion operator in production Dart sources. */
 pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_dart_files(slice), r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]", "s")
+  const findings = scan_files(
+    production_dart_files(slice),
+    r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]",
+    "s",
+  )
   return block_on_findings(
     "no_force_null_assertion",
     "Replace expr! with explicit null handling: if-null (??), pattern matching, ArgumentError, or a typed non-null contract.",
@@ -221,9 +236,12 @@ pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
 pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_dart_files(slice),
-    { file -> regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m")
-      != nil
-      || regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*type\s*=\s*[a-z]+", file.text, "m") != nil },
+    { file ->
+      regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m")
+        != nil
+        || regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*type\s*=\s*[a-z]+", file.text, "m")
+        != nil
+    },
   )
   return warn_on_findings(
     "no_broad_lint_ignores",
@@ -239,13 +257,15 @@ pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
 pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_dart_files(slice),
-    { file -> regex_match(
-      r"class\s+\w+\s+extends\s+(StatelessWidget|StatefulWidget|InheritedWidget|InheritedNotifier|RenderObjectWidget)\b",
-      file.text,
-      "s",
-    )
-      != nil
-      && regex_match(r"(?m)^\s{2}const\s+[A-Z]\w*\s*\(", file.text, "m") == nil },
+    { file ->
+      regex_match(
+        r"class\s+\w+\s+extends\s+(StatelessWidget|StatefulWidget|InheritedWidget|InheritedNotifier|RenderObjectWidget)\b",
+        file.text,
+        "s",
+      )
+        != nil
+        && regex_match(r"(?m)^\s{2}const\s+[A-Z]\w*\s*\(", file.text, "m") == nil
+    },
   )
   return warn_on_findings(
     "prefer_const_constructor_for_widgets",
@@ -272,7 +292,8 @@ pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_IMMUTABLE_WIDGET, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks Flutter Widget subclasses that hold mutable instance state. */
 pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
+  const rubric =
+    "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -289,7 +310,8 @@ pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNAWAITED_FUTURES, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks discarded Futures inside async bodies without intentional fire-and-forget. */
 pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
+  const rubric =
+    "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -306,7 +328,8 @@ pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EFFECTIVE_DART_DOCS, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks new public Dart APIs in lib/ that lack /// doc comments. */
 pub fn effective_dart_documents_public_apis(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
+  const rubric =
+    "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lib_dart_files(slice)})
   if judgement.verdict == "Block" {
     return block(

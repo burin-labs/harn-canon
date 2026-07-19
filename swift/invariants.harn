@@ -52,13 +52,14 @@ fn swift_files(slice) {
 }
 
 fn production_swift_files(slice) {
-  return swift_files(slice)
-    .filter(
-    { file -> !contains(file.path, "/Tests/")
-      && !contains(file.path, "/TestSupport/")
-      && !file.path.ends_with("Tests.swift")
-      && !file.path.ends_with("Preview.swift")
-      && !file.path.ends_with("Previews.swift") },
+  return swift_files(slice).filter(
+    { file ->
+      !contains(file.path, "/Tests/")
+        && !contains(file.path, "/TestSupport/")
+        && !file.path.ends_with("Tests.swift")
+        && !file.path.ends_with("Preview.swift")
+        && !file.path.ends_with("Previews.swift")
+    },
   )
 }
 
@@ -113,7 +114,10 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_OPTIONAL_SAFETY, confidence: 0.78, source_date: "2026-04-26")
 /** Blocks force-unwrapping optionals in production Swift sources. */
 pub fn no_force_unwrap(slice, _ctx, _repo_at_base) {
-  const findings = scan_swift(slice, r"([A-Za-z_][A-Za-z0-9_]*\.)?[A-Za-z_][A-Za-z0-9_]*\s*![\.\[\)\]\}\,;]")
+  const findings = scan_swift(
+    slice,
+    r"([A-Za-z_][A-Za-z0-9_]*\.)?[A-Za-z_][A-Za-z0-9_]*\s*![\.\[\)\]\}\,;]",
+  )
   return block_on_findings(
     "no_force_unwrap",
     "Use optional binding, guard let, nil coalescing, or optional chaining instead of force unwrap.",
@@ -165,7 +169,10 @@ pub fn no_dispatch_main_sync(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_STRUCTURED_CONCURRENCY, confidence: 0.72, source_date: "2026-04-26")
 /** Warns on new low-level concurrency primitives in production Swift sources. */
 pub fn prefer_structured_concurrency(slice, _ctx, _repo_at_base) {
-  const findings = scan_swift(slice, r"\b(DispatchQueue|DispatchWorkItem|OperationQueue|Thread|pthread_)\b")
+  const findings = scan_swift(
+    slice,
+    r"\b(DispatchQueue|DispatchWorkItem|OperationQueue|Thread|pthread_)\b",
+  )
   return warn_on_findings(
     "prefer_structured_concurrency",
     "Prefer async/await, Task, actors, or AsyncSequence unless low-level scheduling is required.",
@@ -180,11 +187,21 @@ pub fn prefer_structured_concurrency(slice, _ctx, _repo_at_base) {
 pub fn main_actor_on_ui_observable_state(slice, _ctx, _repo_at_base) {
   const findings = scan_swift_if(
     slice,
-    { text -> (contains(text, "import SwiftUI") || contains(text, "import UIKit")
-      || contains(text, "import AppKit"))
-      && (contains(text, "ObservableObject") || contains(text, "@Observable")
-      || regex_match(r"class\s+\w*(ViewModel|Controller)\b", text, "s") != nil)
-      && !contains(text, "@MainActor") },
+    { text ->
+      (contains(text, "import SwiftUI") || contains(text, "import UIKit")
+        || contains(
+        text,
+        "import AppKit",
+      ))
+        && (contains(text, "ObservableObject") || contains(text, "@Observable")
+        || regex_match(
+        r"class\s+\w*(ViewModel|Controller)\b",
+        text,
+        "s",
+      )
+        != nil)
+        && !contains(text, "@MainActor")
+    },
   )
   return warn_on_findings(
     "main_actor_on_ui_observable_state",
@@ -243,7 +260,8 @@ pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ARC_CLOSURES, confidence: 0.66, source_date: "2026-04-26")
 /** Blocks likely retain cycles from escaping closures that capture self strongly. */
 pub fn no_retain_cycle_in_escaping_closure(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when production Swift adds a stored, escaping, notification, Combine, delegate, timer, task, or completion closure that captures self strongly and can outlive the caller, and the closure lacks an intentional weak/unowned capture or lifecycle invalidation."
+  const rubric =
+    "Block only when production Swift adds a stored, escaping, notification, Combine, delegate, timer, task, or completion closure that captures self strongly and can outlive the caller, and the closure lacks an intentional weak/unowned capture or lifecycle invalidation."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -260,7 +278,8 @@ pub fn no_retain_cycle_in_escaping_closure(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UI_MAIN_ACTOR, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks UI state mutation from non-main actor callbacks or tasks. */
 pub fn ui_state_mutations_stay_main_actor(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Swift code mutates UIKit, AppKit, SwiftUI, @Published, @Observable, or view-model state from a background callback, detached task, completion handler, or nonisolated async context without @MainActor, MainActor.run, or another explicit main-actor hop."
+  const rubric =
+    "Block only when changed Swift code mutates UIKit, AppKit, SwiftUI, @Published, @Observable, or view-model state from a background callback, detached task, completion handler, or nonisolated async context without @MainActor, MainActor.run, or another explicit main-actor hop."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -277,7 +296,8 @@ pub fn ui_state_mutations_stay_main_actor(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENDABLE, confidence: 0.62, source_date: "2026-04-26")
 /** Blocks unsafe cross-concurrency sharing that Swift 6 sendability should protect. */
 pub fn sendable_cross_actor_boundaries_are_safe(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Swift code sends mutable non-Sendable reference state across actor, Task, detached task, async let, or task-group boundaries without actor isolation, locking, value copying, or a justified Sendable conformance."
+  const rubric =
+    "Block only when changed Swift code sends mutable non-Sendable reference state across actor, Task, detached task, async let, or task-group boundaries without actor isolation, locking, value copying, or a justified Sendable conformance."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_swift_files(slice)})
   if judgement.verdict == "Block" {
     return block(

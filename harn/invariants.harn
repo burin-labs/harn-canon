@@ -79,8 +79,7 @@ fn scan(slice, pattern) {
   let findings = []
   for file in harn_files(slice) {
     if regex_match(pattern, file.text, "s") != nil {
-      findings = findings
-        .push({path: file.path, pattern: pattern})
+      findings = findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -90,8 +89,7 @@ fn scan_if(slice, predicate) {
   let findings = []
   for file in harn_files(slice) {
     if predicate(file.text) {
-      findings = findings
-        .push({path: file.path})
+      findings = findings.push({path: file.path})
     }
   }
   return findings
@@ -100,7 +98,10 @@ fn scan_if(slice, predicate) {
 fn scan_without(slice, include_pattern, exclude_pattern) {
   return scan_if(
     slice,
-    { text -> regex_match(include_pattern, text, "s") != nil && regex_match(exclude_pattern, text, "s") == nil },
+    { text ->
+      regex_match(include_pattern, text, "s") != nil
+        && regex_match(exclude_pattern, text, "s") == nil
+    },
   )
 }
 
@@ -153,10 +154,16 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
   const findings = scan_if(
     slice,
-    { text -> regex_match(r"llm_call\s*\(", text, "s") != nil
-      && (contains(text, "output_schema:") || contains(text, "response_schema:")
-      || contains(text, "schema:"))
-      && !contains(text, "schema_retries:") },
+    { text ->
+      regex_match(r"llm_call\s*\(", text, "s") != nil
+        && (contains(text, "output_schema:")
+        || contains(
+        text,
+        "response_schema:",
+      )
+        || contains(text, "schema:"))
+        && !contains(text, "schema_retries:")
+    },
   )
   return block_on_findings(
     "llm_call_schema_sets_schema_retries",
@@ -215,10 +222,15 @@ pub fn no_legacy_transcript_options(slice, _ctx, _repo_at_base) {
 pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
   const findings = scan_if(
     slice,
-    { text -> (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
-      && contains(text, "properties:")
-      && contains(text, "required:")
-      && !contains(text, "additional_properties:") },
+    { text ->
+      (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
+        && contains(
+        text,
+        "properties:",
+      )
+        && contains(text, "required:")
+        && !contains(text, "additional_properties:")
+    },
   )
   return warn_on_findings(
     "schema_objects_reject_unknown_properties",
@@ -277,8 +289,10 @@ pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
 pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
   const findings = scan_if(
     slice,
-    { text -> regex_match(r"emit_channel\s*\(", text, "s") != nil
-      && regex_match(r"\bid\s*:", text, "s") == nil },
+    { text ->
+      regex_match(r"emit_channel\s*\(", text, "s") != nil
+        && regex_match(r"\bid\s*:", text, "s") == nil
+    },
   )
   return warn_on_findings(
     "emit_channel_sets_stable_id",
@@ -294,10 +308,15 @@ pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
 pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
   const findings = scan_if(
     slice,
-    { text -> regex_match(r"redirect_uris?\s*:\s*\[[^\]]*\x22http://", text, "s") != nil
-      && !contains(text, "http://127.0.0.1")
-      && !contains(text, "http://localhost")
-      && !contains(text, "http://[::1]") },
+    { text ->
+      regex_match(r"redirect_uris?\s*:\s*\[[^\]]*\x22http://", text, "s") != nil
+        && !contains(
+        text,
+        "http://127.0.0.1",
+      )
+        && !contains(text, "http://localhost")
+        && !contains(text, "http://[::1]")
+    },
   )
   return block_on_findings(
     "oauth_redirect_uris_are_https_or_loopback",
@@ -311,7 +330,8 @@ pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
 /** Blocks prompts that embed secrets or sensitive customer data. */
 pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
+  const rubric =
+    "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -328,7 +348,8 @@ pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_OAUTH_REDACTION, confidence: 0.68, source_date: "2026-05-19")
 /** Blocks OAuth client secrets and tokens from audit, transcript, log, or span payloads. */
 pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
+  const rubric =
+    "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -345,7 +366,8 @@ pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_ACP_SIDE_EFFECTS, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks ACP tool metadata that understates real side effects. */
 pub fn acp_tool_side_effects_are_honest(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
+  const rubric =
+    "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
   if judgement.verdict == "Block" {
     return block(

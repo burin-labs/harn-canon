@@ -90,18 +90,19 @@ fn php_files(slice) {
 }
 
 fn class_php_files(slice) {
-  return slice.files
-    .filter({ file -> is_class_php_path(file.path) && !is_vendored_path(file.path) })
+  return slice.files.filter(
+    { file -> is_class_php_path(file.path) && !is_vendored_path(file.path) },
+  )
 }
 
 fn production_php_files(slice) {
-  return php_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+  return php_files(slice).filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
 }
 
 fn production_class_php_files(slice) {
-  return class_php_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+  return class_php_files(slice).filter(
+    { file -> !is_test_path(file.path) && !is_script_path(file.path) },
+  )
 }
 
 fn scan_files(files, pattern, flags) {
@@ -127,8 +128,15 @@ fn scan_files_if(files, predicate) {
 fn scan_files_without(files, include_pattern, exclude_pattern) {
   return scan_files_if(
     files,
-    { file -> regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil },
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(
+        exclude_pattern,
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
 }
 
@@ -293,7 +301,8 @@ pub fn no_debug_dump_in_prod(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks SQL built by interpolating user-controlled values into the query text. */
 pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed PHP code builds a SQL query by concatenating, interpolating, or sprintf-ing user-controlled values into the SQL text instead of using PDO or mysqli prepared statements with bound parameters. Allow constant identifiers, whitelisted column or table names assembled from a fixed map, and ORM/query-builder calls that ultimately bind parameters."
+  const rubric =
+    "Block only when changed PHP code builds a SQL query by concatenating, interpolating, or sprintf-ing user-controlled values into the SQL text instead of using PDO or mysqli prepared statements with bound parameters. Allow constant identifiers, whitelisted column or table names assembled from a fixed map, and ORM/query-builder calls that ultimately bind parameters."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -310,7 +319,8 @@ pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials and high-risk secrets in PHP source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed PHP source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials as string literals or define()/const declarations instead of reading them from getenv, $_ENV, a secret manager, or a parsed configuration file outside the repo."
+  const rubric =
+    "Block only when changed PHP source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials as string literals or define()/const declarations instead of reading them from getenv, $_ENV, a secret manager, or a parsed configuration file outside the repo."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -327,7 +337,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSERIALIZE, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks unserialize() calls on data that may originate from untrusted input. */
 pub fn unserialize_input_is_trusted(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed PHP code passes potentially user-controlled data (request bodies, cookies, query parameters, file contents from upload paths, cache entries that store request data, message-queue payloads from external systems) into unserialize() without setting the allowed_classes option to false or to a small explicit allowlist. Allow unserialize() over data that is provably internal (sealed cache values, signed payloads verified before unserialize, fixtures)."
+  const rubric =
+    "Block only when changed PHP code passes potentially user-controlled data (request bodies, cookies, query parameters, file contents from upload paths, cache entries that store request data, message-queue payloads from external systems) into unserialize() without setting the allowed_classes option to false or to a small explicit allowlist. Allow unserialize() over data that is provably internal (sealed cache values, signed payloads verified before unserialize, fixtures)."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
   if judgement.verdict == "Block" {
     return block(

@@ -8,7 +8,10 @@ const _EVIDENCE_NULLNESS = [
   "https://github.com/uber/NullAway/wiki/Supported-Annotations",
 ]
 
-const _EVIDENCE_RECORDS = ["https://docs.oracle.com/en/java/javase/25/language/records.html", "https://openjdk.org/jeps/395"]
+const _EVIDENCE_RECORDS = [
+  "https://docs.oracle.com/en/java/javase/25/language/records.html",
+  "https://openjdk.org/jeps/395",
+]
 
 const _EVIDENCE_EMPTY_CATCH = [
   "https://errorprone.info/bugpattern/EmptyCatch",
@@ -131,18 +134,20 @@ pub fn no_raw_collection_types(slice, _ctx, _repo_at_base) {
 pub fn null_safety_annotations(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_java_files(slice),
-    { text -> regex_match(
-      r"(?m)^\s*public\s+(static\s+|final\s+|synchronized\s+|abstract\s+)*[A-Z][A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*\(",
-      text,
-      "s",
-    )
-      != nil
-      && regex_match(
-      r"@(NullMarked|NonNullApi|ParametersAreNonnullByDefault|Nullable|NonNull|Nonnull|CheckForNull)\b",
-      text,
-      "s",
-    )
-      == nil },
+    { text ->
+      regex_match(
+        r"(?m)^\s*public\s+(static\s+|final\s+|synchronized\s+|abstract\s+)*[A-Z][A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*\(",
+        text,
+        "s",
+      )
+        != nil
+        && regex_match(
+        r"@(NullMarked|NonNullApi|ParametersAreNonnullByDefault|Nullable|NonNull|Nonnull|CheckForNull)\b",
+        text,
+        "s",
+      )
+        == nil
+    },
   )
   return warn_on_findings(
     "null_safety_annotations",
@@ -158,11 +163,22 @@ pub fn null_safety_annotations(slice, _ctx, _repo_at_base) {
 pub fn immutable_value_objects(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_java_files(slice),
-    { text -> regex_match(r"\b(class)\s+[A-Z][A-Za-z0-9_]*\b", text, "s") != nil
-      && regex_match(r"private\s+final\s+[A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*;", text, "s")
-      != nil
-      && regex_match(r"public\s+[A-Z][A-Za-z0-9_]*\s*\([^)]*\)\s*\{", text, "s") != nil
-      && regex_match(r"\brecord\s+[A-Z][A-Za-z0-9_]*\b", text, "s") == nil },
+    { text ->
+      regex_match(r"\b(class)\s+[A-Z][A-Za-z0-9_]*\b", text, "s") != nil
+        && regex_match(
+        r"private\s+final\s+[A-Za-z0-9_<>, ?\[\]]+\s+[a-zA-Z_][A-Za-z0-9_]*\s*;",
+        text,
+        "s",
+      )
+        != nil
+        && regex_match(r"public\s+[A-Z][A-Za-z0-9_]*\s*\([^)]*\)\s*\{", text, "s") != nil
+        && regex_match(
+        r"\brecord\s+[A-Z][A-Za-z0-9_]*\b",
+        text,
+        "s",
+      )
+        == nil
+    },
   )
   return warn_on_findings(
     "immutable_value_objects",
@@ -218,7 +234,10 @@ pub fn no_print_stack_trace(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PRODUCTION_LOGGING, confidence: 0.78, source_date: "2026-05-08")
 /** Warns on direct stdout/stderr writes in production Java. */
 pub fn no_system_out_in_prod(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_java_files(slice), r"\bSystem\.(out|err)\.(print|println|printf)\s*\(")
+  const findings = scan_files(
+    production_java_files(slice),
+    r"\bSystem\.(out|err)\.(print|println|printf)\s*\(",
+  )
   return warn_on_findings(
     "no_system_out_in_prod",
     "Use the project logger instead of System.out or System.err in production code.",
@@ -247,7 +266,8 @@ pub fn optional_returns_are_not_null(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SQL, confidence: 0.66, source_date: "2026-05-08")
 /** Blocks JDBC SQL built from untrusted string concatenation without bind parameters. */
 pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Java builds SQL for JDBC, JPA native queries, or Spring JDBC by concatenating or formatting user-controlled values into the query text instead of using PreparedStatement parameters, named parameters, or a query builder that binds values."
+  const rubric =
+    "Block only when changed Java builds SQL for JDBC, JPA native queries, or Spring JDBC by concatenating or formatting user-controlled values into the query text instead of using PreparedStatement parameters, named parameters, or a query builder that binds values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -264,7 +284,8 @@ pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in Java source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Java embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
+  const rubric =
+    "Block only when changed Java embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
   if judgement.verdict == "Block" {
     return block(

@@ -18,13 +18,15 @@ const ROOT_DIR = path_normalize(path_join(source_dir(), ".."))
 
 const PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
 
-const INVARIANT_RE = "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
+const INVARIANT_RE =
+  "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
 
 const EVIDENCE_RE = "(?:let|const)\\s+(_EVIDENCE_[A-Za-z0-9_]+)\\s*=\\s*\\[([\\s\\S]*?)\\]"
 
 const URL_RE = "\"(https?://[^\"]+)\""
 
-const SEMANTIC_FALLBACK_RE = "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
+const SEMANTIC_FALLBACK_RE =
+  "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
 
 pub type CanonPack = {
   id: string,
@@ -152,7 +154,9 @@ pub fn read_fixture_document_result(path: string) -> TypedReadResult<CanonFixtur
   return read_json_typed_result<CanonFixtureDocument>(path, fixture_document_schema())
 }
 
-pub fn structured_read_failure_message(failure: StructuredReadFailure | SchemaValidationFailure) -> string {
+pub fn structured_read_failure_message(
+  failure: StructuredReadFailure | SchemaValidationFailure,
+) -> string {
   return failure.path + ": " + failure.detail
 }
 

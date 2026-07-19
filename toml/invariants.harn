@@ -4,7 +4,10 @@ const _EVIDENCE_DUPLICATE_TABLES = [
   "https://github.com/toml-lang/toml/blob/1.0.0/toml.md",
 ]
 
-const _EVIDENCE_INLINE_TABLE_COMMA = ["https://toml.io/en/v1.0.0#inline-table", "https://github.com/toml-lang/toml/blob/1.0.0/toml.md"]
+const _EVIDENCE_INLINE_TABLE_COMMA = [
+  "https://toml.io/en/v1.0.0#inline-table",
+  "https://github.com/toml-lang/toml/blob/1.0.0/toml.md",
+]
 
 const _EVIDENCE_BOOLEAN_LITERALS = [
   "https://toml.io/en/v1.0.0#boolean",
@@ -135,7 +138,11 @@ pub fn boolean_literals_are_lowercase(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_KEY_NAMING, confidence: 0.66, source_date: "2026-05-09")
 /** Warns on bare keys that contain uppercase letters; prefer snake_case or kebab-case. */
 pub fn key_naming_convention(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(toml_files(slice), r"(?m)^[ \t]*[A-Za-z0-9_.-]*[A-Z][A-Za-z0-9_.-]*[ \t]*=", "m")
+  const findings = scan_files(
+    toml_files(slice),
+    r"(?m)^[ \t]*[A-Za-z0-9_.-]*[A-Z][A-Za-z0-9_.-]*[ \t]*=",
+    "m",
+  )
   return warn_on_findings(
     "key_naming_convention",
     "Use lowercase bare keys (snake_case or kebab-case); quote the key if mixed case is required.",
@@ -165,7 +172,8 @@ pub fn datetime_includes_offset(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, or signing secrets in TOML configuration. */
 pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when TOML configuration contains a hardcoded credential value such as an API token, database password, signing key, OAuth client secret, private key, or production service credential, instead of a placeholder, environment-variable reference, secret-manager reference, or test/example fixture clearly marked as fake."
+  const rubric =
+    "Block only when TOML configuration contains a hardcoded credential value such as an API token, database password, signing key, OAuth client secret, private key, or production service credential, instead of a placeholder, environment-variable reference, secret-manager reference, or test/example fixture clearly marked as fake."
   const judgement = ctx.semantic_judge({rubric: rubric, files: toml_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -182,7 +190,8 @@ pub fn secrets_not_hardcoded_in_toml(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PACKAGE_LICENSE, confidence: 0.6, source_date: "2026-05-15")
 /** Warns when publishable Cargo or Python package metadata omits license information. */
 pub fn package_metadata_declares_license(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed Cargo.toml [package] or pyproject.toml [project] clearly describes a publishable package and omits license metadata (license, license-file, or license-files). Allow private workspaces, tool-only configs, and package metadata that inherits license information from a workspace."
+  const rubric =
+    "Warn only when a changed Cargo.toml [package] or pyproject.toml [project] clearly describes a publishable package and omits license metadata (license, license-file, or license-files). Allow private workspaces, tool-only configs, and package metadata that inherits license information from a workspace."
   const judgement = ctx.semantic_judge({rubric: rubric, files: toml_files(slice)})
   if judgement.verdict == "Warn" || judgement.verdict == "Block" {
     return warn(

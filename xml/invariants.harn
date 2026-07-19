@@ -10,11 +10,20 @@ const _EVIDENCE_EXTERNAL_ENTITIES = [
   "https://www.w3.org/TR/xml/#sec-external-ent",
 ]
 
-const _EVIDENCE_UTF8 = ["https://www.w3.org/TR/xml/#charencoding", "https://datatracker.ietf.org/doc/html/rfc7303"]
+const _EVIDENCE_UTF8 = [
+  "https://www.w3.org/TR/xml/#charencoding",
+  "https://datatracker.ietf.org/doc/html/rfc7303",
+]
 
-const _EVIDENCE_NAMESPACES = ["https://www.w3.org/TR/xml-names/", "https://www.w3.org/TR/xml-names/#scoping"]
+const _EVIDENCE_NAMESPACES = [
+  "https://www.w3.org/TR/xml-names/",
+  "https://www.w3.org/TR/xml-names/#scoping",
+]
 
-const _EVIDENCE_XSD_TARGET_NAMESPACE = ["https://www.w3.org/TR/xmlschema11-1/#sec-src-resolve", "https://www.w3.org/TR/xmlschema-0/#NS"]
+const _EVIDENCE_XSD_TARGET_NAMESPACE = [
+  "https://www.w3.org/TR/xmlschema11-1/#sec-src-resolve",
+  "https://www.w3.org/TR/xmlschema-0/#NS",
+]
 
 const _EVIDENCE_XSLT_EXTERNAL = [
   "https://www.w3.org/TR/xslt-30/#dt-stable-uri-collection",
@@ -32,25 +41,27 @@ const _EVIDENCE_SCHEMA_DOS = [
 ]
 
 fn xml_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".xml")
-      || file.path.ends_with(".xsd")
-      || file.path.ends_with(".xsl")
-      || file.path.ends_with(".xslt")
-      || file.path.ends_with(".wsdl")
-      || file.path.ends_with(".svg")
-      || file.path.ends_with(".rss")
-      || file.path.ends_with(".atom") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".xml")
+        || file.path.ends_with(".xsd")
+        || file.path.ends_with(".xsl")
+        || file.path.ends_with(".xslt")
+        || file.path.ends_with(".wsdl")
+        || file.path.ends_with(".svg")
+        || file.path.ends_with(".rss")
+        || file.path.ends_with(".atom")
+    },
   )
 }
 
 fn xml_payload_files(slice) {
-  return xml_files(slice)
-    .filter(
-    { file -> !file.path.ends_with(".xsd")
-      && !file.path.ends_with(".xsl")
-      && !file.path.ends_with(".xslt") },
+  return xml_files(slice).filter(
+    { file ->
+      !file.path.ends_with(".xsd")
+        && !file.path.ends_with(".xsl")
+        && !file.path.ends_with(".xslt")
+    },
   )
 }
 
@@ -59,8 +70,7 @@ fn xsd_files(slice) {
 }
 
 fn xslt_files(slice) {
-  return slice.files
-    .filter({ file -> file.path.ends_with(".xsl") || file.path.ends_with(".xslt") })
+  return slice.files.filter({ file -> file.path.ends_with(".xsl") || file.path.ends_with(".xslt") })
 }
 
 fn scan_files(files, pattern, flags) {
@@ -148,8 +158,10 @@ pub fn no_external_entity_references(slice, _ctx, _repo_at_base) {
 pub fn xml_declares_utf8(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     xml_files(slice),
-    { file -> regex_match("^\\s*<\\?xml\\b[^?]*encoding\\s*=\\s*[\"']utf-8[\"'][^?]*\\?>", file.text, "is")
-      == nil },
+    { file ->
+      regex_match("^\\s*<\\?xml\\b[^?]*encoding\\s*=\\s*[\"']utf-8[\"'][^?]*\\?>", file.text, "is")
+        == nil
+    },
   )
   return warn_on_findings(
     "xml_declares_utf8",
@@ -167,9 +179,11 @@ pub fn xml_declares_utf8(slice, _ctx, _repo_at_base) {
 pub fn xml_namespace_prefixes_declared(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     xml_files(slice),
-    { file -> regex_match(r"<\s*[A-Za-z_][A-Za-z0-9._-]*:[A-Za-z_][A-Za-z0-9._-]*\b", file.text, "s")
-      != nil
-      && regex_match(r"\bxmlns:[A-Za-z_][A-Za-z0-9._-]*\s*=", file.text, "s") == nil },
+    { file ->
+      regex_match(r"<\s*[A-Za-z_][A-Za-z0-9._-]*:[A-Za-z_][A-Za-z0-9._-]*\b", file.text, "s")
+        != nil
+        && regex_match(r"\bxmlns:[A-Za-z_][A-Za-z0-9._-]*\s*=", file.text, "s") == nil
+    },
   )
   return warn_on_findings(
     "xml_namespace_prefixes_declared",
@@ -185,8 +199,14 @@ pub fn xml_namespace_prefixes_declared(slice, _ctx, _repo_at_base) {
 pub fn xsd_has_target_namespace(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     xsd_files(slice),
-    { file -> regex_match(r"<\s*([A-Za-z_][A-Za-z0-9._-]*:)?schema\b[^>]*\btargetNamespace\s*=", file.text, "is")
-      == nil },
+    { file ->
+      regex_match(
+        r"<\s*([A-Za-z_][A-Za-z0-9._-]*:)?schema\b[^>]*\btargetNamespace\s*=",
+        file.text,
+        "is",
+      )
+        == nil
+    },
   )
   return warn_on_findings(
     "xsd_has_target_namespace",
@@ -217,7 +237,8 @@ pub fn xslt_no_external_documents(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks credentials, tokens, private keys, and production connection strings embedded in XML. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed XML embeds a credential, API key, bearer token, signing secret, password, private key, or production connection string instead of referencing a managed secret source or environment variable."
+  const rubric =
+    "Block only when changed XML embeds a credential, API key, bearer token, signing secret, password, private key, or production connection string instead of referencing a managed secret source or environment variable."
   const judgement = ctx.semantic_judge({rubric: rubric, files: xml_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -236,7 +257,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
  * Blocks XSD shapes that disable validation or invite quadratic blowup of attacker-controlled input.
  */
 pub fn xsd_constrains_user_input(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed XSD intentionally weakens input validation on attacker-reachable fields, for example using xs:any or xs:anyType in place of a real type, omitting maxLength on free-form strings nested under unbounded sequences, or removing pattern/enumeration facets that previously constrained an externally posted value."
+  const rubric =
+    "Block only when changed XSD intentionally weakens input validation on attacker-reachable fields, for example using xs:any or xs:anyType in place of a real type, omitting maxLength on free-form strings nested under unbounded sequences, or removing pattern/enumeration facets that previously constrained an externally posted value."
   const judgement = ctx.semantic_judge({rubric: rubric, files: xsd_files(slice)})
   if judgement.verdict == "Block" {
     return block(

@@ -169,7 +169,11 @@ pub fn no_undefined_in_prod(slice, _ctx, _repo_at_base) {
  * Warns when production modules call `error` instead of returning Either or throwing a typed exception.
  */
 pub fn no_error_call_in_prod(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_haskell_files(slice), r"(?:^|[^A-Za-z0-9_'.])error(?:[^A-Za-z0-9_']|$)", "m")
+  const findings = scan_files(
+    production_haskell_files(slice),
+    r"(?:^|[^A-Za-z0-9_'.])error(?:[^A-Za-z0-9_']|$)",
+    "m",
+  )
   return warn_on_findings(
     "no_error_call_in_prod",
     "Return Either/Maybe or throw a typed exception via Control.Exception (throwIO) instead of error.",
@@ -199,7 +203,11 @@ pub fn no_unsafe_perform_io(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EXPLICIT_IMPORTS, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on open imports — imports without `qualified` and without an explicit import list. */
 pub fn explicit_imports(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_haskell_files(slice), r"(?m)^import\s+[A-Z][\w\.]*(?:\s+as\s+\w+)?\s*$", "m")
+  const findings = scan_files(
+    production_haskell_files(slice),
+    r"(?m)^import\s+[A-Z][\w\.]*(?:\s+as\s+\w+)?\s*$",
+    "m",
+  )
   return warn_on_findings(
     "explicit_imports",
     "Add an explicit import list, e.g. `import Data.Map (Map, lookup)`, or qualify the import to keep the namespace stable.",
@@ -212,7 +220,11 @@ pub fn explicit_imports(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EXPLICIT_EXPORT, confidence: 0.74, source_date: "2026-05-10")
 /** Warns when modules omit an explicit export list before `where`. */
 pub fn explicit_export_list(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_haskell_files(slice), r"(?m)^module\s+[A-Z][\w\.]*\s+where\b", "m")
+  const findings = scan_files(
+    production_haskell_files(slice),
+    r"(?m)^module\s+[A-Z][\w\.]*\s+where\b",
+    "m",
+  )
   return warn_on_findings(
     "explicit_export_list",
     "Add an explicit export list to the module header so the public surface is documented and reviewable.",
@@ -244,7 +256,8 @@ pub fn prefer_newtype_for_single_field(slice, _ctx, _repo_at_base) {
  * Blocks production functions that pattern-match non-exhaustively without a documented partial contract.
  */
 pub fn total_function_semantic_check(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Haskell production code introduces a function whose pattern matches are non-exhaustive — for example, list patterns missing the empty case, Maybe patterns missing Nothing, sum-type patterns missing constructors, lambda-case clauses missing variants, or `head`/`fromJust`-style partial helpers — and the function lacks a Haddock comment, MonadFail context, or other clear documentation that the partiality is intentional. Allow exhaustive matches, GADT/refinement-driven coverage, intentionally partial Internal helpers, and matches whose missing branches are statically impossible."
+  const rubric =
+    "Block only when changed Haskell production code introduces a function whose pattern matches are non-exhaustive — for example, list patterns missing the empty case, Maybe patterns missing Nothing, sum-type patterns missing constructors, lambda-case clauses missing variants, or `head`/`fromJust`-style partial helpers — and the function lacks a Haddock comment, MonadFail context, or other clear documentation that the partiality is intentional. Allow exhaustive matches, GADT/refinement-driven coverage, intentionally partial Internal helpers, and matches whose missing branches are statically impossible."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_haskell_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -263,7 +276,8 @@ pub fn total_function_semantic_check(slice, ctx, _repo_at_base) {
  * Blocks orphan typeclass instances — instances declared in a module that defines neither the class nor the type.
  */
 pub fn no_orphan_instances(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed Haskell module declares a typeclass instance and the slice shows that neither the class nor the head type constructor is defined in this module or its package. Allow newtype-wrapper instances declared alongside the wrapper, and instances that the module clearly owns. The judge may rely on imports and module headers as evidence."
+  const rubric =
+    "Block only when a changed Haskell module declares a typeclass instance and the slice shows that neither the class nor the head type constructor is defined in this module or its package. Allow newtype-wrapper instances declared alongside the wrapper, and instances that the module clearly owns. The judge may rely on imports and module headers as evidence."
   const judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -280,7 +294,8 @@ pub fn no_orphan_instances(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks hardcoded credentials, tokens, and other long-lived secrets in Haskell source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Haskell source embeds API tokens, signing keys, database passwords, production connection strings, private keys, or other long-lived credentials as string literals instead of reading them from environment variables, a secret manager, or a runtime config. Allow obviously fake test fixtures, public identifiers, and example documentation literals."
+  const rubric =
+    "Block only when changed Haskell source embeds API tokens, signing keys, database passwords, production connection strings, private keys, or other long-lived credentials as string literals instead of reading them from environment variables, a secret manager, or a runtime config. Allow obviously fake test fixtures, public identifiers, and example documentation literals."
   const judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
   if judgement.verdict == "Block" {
     return block(

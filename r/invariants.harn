@@ -161,7 +161,11 @@ fn warn_on_findings(rule, remediation, findings) {
 @archivist(evidence: _EVIDENCE_ATTACH, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks calls to attach() that splice a database into the search path. */
 pub fn no_attach(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_r_files(slice), r"(?m)(^|[^A-Za-z0-9_.$@])attach\s*\(", "m")
+  const findings = scan_files(
+    production_r_files(slice),
+    r"(?m)(^|[^A-Za-z0-9_.$@])attach\s*\(",
+    "m",
+  )
   return block_on_findings(
     "no_attach",
     "Reference columns explicitly with df$col, with(df, ...), or dplyr verbs; attach() pollutes the search path and shadows variables.",
@@ -232,7 +236,11 @@ pub fn no_right_assign(slice, _ctx, _repo_at_base) {
  * Warns on 1:length(x), 1:nrow(x), 1:ncol(x) idioms that iterate c(1, 0) when the input is empty.
  */
 pub fn seq_along_over_one_to_length(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_r_files(slice), r"\b1\s*:\s*(?:length|nrow|ncol|NROW|NCOL)\s*\(", "s")
+  const findings = scan_files(
+    production_r_files(slice),
+    r"\b1\s*:\s*(?:length|nrow|ncol|NROW|NCOL)\s*\(",
+    "s",
+  )
   return warn_on_findings(
     "seq_along_over_one_to_length",
     "Use seq_along(x) or seq_len(nrow(x)); 1:length(x) silently iterates twice when x has length zero, hitting both ends of the empty input bug.",
@@ -262,7 +270,11 @@ pub fn no_install_or_update_packages(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_EVAL_PARSE, confidence: 0.74, source_date: "2026-05-10")
 /** Blocks eval(parse(text = ...)) which evaluates arbitrary text as R code. */
 pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_r_files(slice), r"\beval\s*\(\s*parse\s*\(\s*text\s*=", "s")
+  const findings = scan_files(
+    production_r_files(slice),
+    r"\beval\s*\(\s*parse\s*\(\s*text\s*=",
+    "s",
+  )
   return block_on_findings(
     "no_eval_parse_text",
     "Build expressions with rlang::expr / bquote / substitute and evaluate them with eval(); eval(parse(text = ...)) is an injection sink and skips static checks.",
@@ -277,7 +289,8 @@ pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
  * Warns on for loops over vectors or rows that perform a simple element-wise computation a vectorized op would express directly.
  */
 pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed R for loop iterates over a vector, list, or row indices and computes a result that maps cleanly onto a built-in vectorized operation (arithmetic on whole vectors, ifelse, pmin/pmax, rowSums/colSums, sweep, apply/lapply/vapply/sapply/map_*) without inter-iteration state. Allow loops that mutate external resources, accumulate dependent state across iterations, recurse, or break/next on a non-trivial condition."
+  const rubric =
+    "Warn only when a changed R for loop iterates over a vector, list, or row indices and computes a result that maps cleanly onto a built-in vectorized operation (arithmetic on whole vectors, ifelse, pmin/pmax, rowSums/colSums, sweep, apply/lapply/vapply/sapply/map_*) without inter-iteration state. Allow loops that mutate external resources, accumulate dependent state across iterations, recurse, or break/next on a non-trivial condition."
   const judgement = ctx.semantic_judge({rubric: rubric, files: r_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(
@@ -294,7 +307,8 @@ pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RANDOM_SEED, confidence: 0.62, source_date: "2026-05-10")
 /** Warns when an analysis script invokes randomness without an explicit set.seed() upstream. */
 pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed R analysis script (.R, .Rmd, or .qmd outside R/ package source and outside test directories) calls a stochastic function such as sample, runif, rnorm, rbinom, rpois, rgamma, rbeta, rexp, rweibull, rt, rchisq, rmultinom, or simulate, AND the same script does not call set.seed() with a literal integer earlier in the file. Allow files where set.seed() is called before the first stochastic call, files that only define functions to be called by other code, and package R/ source where setting the seed would clobber the caller's RNG state."
+  const rubric =
+    "Warn only when a changed R analysis script (.R, .Rmd, or .qmd outside R/ package source and outside test directories) calls a stochastic function such as sample, runif, rnorm, rbinom, rpois, rgamma, rbeta, rexp, rweibull, rt, rchisq, rmultinom, or simulate, AND the same script does not call set.seed() with a literal integer earlier in the file. Allow files where set.seed() is called before the first stochastic call, files that only define functions to be called by other code, and package R/ source where setting the seed would clobber the caller's RNG state."
   const judgement = ctx.semantic_judge({rubric: rubric, files: analysis_script_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(
@@ -313,7 +327,8 @@ pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
  * Warns when package R/ source loads dependencies via library()/require() or uses unqualified non-base symbols without an importFrom roxygen tag.
  */
 pub fn package_namespace_discipline(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed file under a package's R/ directory either (a) calls library(), require(), requireNamespace() purely for side-effect attachment, or (b) uses a symbol from a non-base, non-recommended package without either a pkg:: prefix or an @importFrom roxygen tag elsewhere in the file. Allow conditional requireNamespace(..., quietly = TRUE) checks that gate optional behavior, allow base/recommended packages (base, stats, utils, graphics, grDevices, methods, tools), and allow files that only contain comments, roxygen, or data definitions."
+  const rubric =
+    "Warn only when a changed file under a package's R/ directory either (a) calls library(), require(), requireNamespace() purely for side-effect attachment, or (b) uses a symbol from a non-base, non-recommended package without either a pkg:: prefix or an @importFrom roxygen tag elsewhere in the file. Allow conditional requireNamespace(..., quietly = TRUE) checks that gate optional behavior, allow base/recommended packages (base, stats, utils, graphics, grDevices, methods, tools), and allow files that only contain comments, roxygen, or data definitions."
   const judgement = ctx.semantic_judge({rubric: rubric, files: package_source_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(
