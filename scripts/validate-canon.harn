@@ -72,7 +72,9 @@ fn validate_routing_selector_values(
   const duplicates = duplicate_values(values)
   if len(duplicates) > 0 {
     out = out
-      + ["canon-packs.json: " + pack_id + " " + field + " has duplicates: " + join(duplicates, ", ")]
+      + [
+      "canon-packs.json: " + pack_id + " " + field + " has duplicates: " + join(duplicates, ", "),
+    ]
   }
   for value in values {
     if value == "" {
@@ -81,7 +83,9 @@ fn validate_routing_selector_values(
     }
     if value != value.lower() {
       out = out
-        + ["canon-packs.json: " + pack_id + " " + field + " entry " + value + " must be lowercase"]
+        + [
+        "canon-packs.json: " + pack_id + " " + field + " entry " + value + " must be lowercase",
+      ]
     }
     if value.contains("/") || value.contains("\\") || value.starts_with(".") {
       out = out
@@ -106,12 +110,18 @@ fn validate_routing_selectors(pack: CanonPack, errors: list<string>) -> list<str
   let out = validate_routing_selector_values(pack.id, "extensions", extensions, errors)
   out = validate_routing_selector_values(pack.id, "file_names", pack.file_names ?? [], out)
   if len(extensions) == 0 && len(pack.file_names ?? []) == 0 {
-    out = out + ["canon-packs.json: " + pack.id + " needs at least one extension or file_names selector"]
+    out = out
+      + [
+      "canon-packs.json: " + pack.id + " needs at least one extension or file_names selector",
+    ]
   }
   return out
 }
 
-fn validate_eval_critical_routes(packs_by_id: dict<string, CanonPack>, errors: list<string>) -> list<string> {
+fn validate_eval_critical_routes(
+  packs_by_id: dict<string, CanonPack>,
+  errors: list<string>,
+) -> list<string> {
   let out = errors
   for pack_id in keys(EVAL_CRITICAL_PACK_ROUTES).sort() {
     const pack = packs_by_id[pack_id]
@@ -119,12 +129,18 @@ fn validate_eval_critical_routes(packs_by_id: dict<string, CanonPack>, errors: l
       out = out + ["canon-packs.json: missing eval-critical pack " + pack_id]
       continue
     }
-    const missing = set_difference(EVAL_CRITICAL_PACK_ROUTES[pack_id].extensions, pack.extensions ?? [])
+    const missing = set_difference(
+      EVAL_CRITICAL_PACK_ROUTES[pack_id].extensions,
+      pack.extensions ?? [],
+    )
     if len(missing) > 0 {
       out = out
         + [
         "canon-packs.json: eval-critical pack " + pack_id + " extensions must include "
-          + join(missing, ", "),
+          + join(
+          missing,
+          ", ",
+        ),
       ]
     }
   }
@@ -184,7 +200,11 @@ fn validate_readme_coverage(manifest: CanonPackManifest, errors: list<string>) -
   return out
 }
 
-fn validate_semantic_fallbacks(pack: string, entries: list<InvariantEntry>, errors: list<string>) -> list<string> {
+fn validate_semantic_fallbacks(
+  pack: string,
+  entries: list<InvariantEntry>,
+  errors: list<string>,
+) -> list<string> {
   let out = errors
   let deterministic = {}
   for entry in entries {
@@ -196,7 +216,8 @@ fn validate_semantic_fallbacks(pack: string, entries: list<InvariantEntry>, erro
     const predicate = entry.name
     if entry.mode == "deterministic" {
       if trim(entry.mode_args) != "" {
-        out = out + [pack + ": deterministic predicate " + predicate + " must not declare mode args"]
+        out = out
+          + [pack + ": deterministic predicate " + predicate + " must not declare mode args"]
       }
       continue
     }
@@ -241,7 +262,10 @@ fn validate_evidence(
     }
     const confidence = to_float(entry.confidence)
     if confidence == nil || confidence < 0.0 || confidence > 1.0 {
-      out = out + [pack + ": " + predicate + " confidence " + entry.confidence + " is outside 0.0..1.0"]
+      out = out
+        + [
+        pack + ": " + predicate + " confidence " + entry.confidence + " is outside 0.0..1.0",
+      ]
     }
     const source_date = parse_ymd(entry.source_date)
     if source_date == nil {
@@ -249,11 +273,14 @@ fn validate_evidence(
       continue
     }
     if source_date.serial > today.serial {
-      out = out + [pack + ": " + predicate + " source_date " + entry.source_date + " is in the future"]
+      out = out
+        + [pack + ": " + predicate + " source_date " + entry.source_date + " is in the future"]
     }
     if source_date.serial < cutoff.serial {
       out = out
-        + [pack + ": " + predicate + " source_date " + entry.source_date + " is older than 18 months"]
+        + [
+        pack + ": " + predicate + " source_date " + entry.source_date + " is older than 18 months",
+      ]
     }
   }
   return out
@@ -312,7 +339,12 @@ fn validate_case_file(
   return out
 }
 
-fn validate_fixture_case(rel_path: string, index: int, case: CanonFixtureCase, errors: list<string>) -> FixtureCaseValidation {
+fn validate_fixture_case(
+  rel_path: string,
+  index: int,
+  case: CanonFixtureCase,
+  errors: list<string>,
+) -> FixtureCaseValidation {
   let out = errors
   let expects: list<FixtureExpectedVerdict> = [case.expect]
   let case_names: list<string> = []
@@ -372,7 +404,11 @@ pub fn validate_fixture_value(
   return out
 }
 
-fn validate_fixture_document(pack_dir: string, fixture_path: string, errors: list<string>) -> list<string> {
+fn validate_fixture_document(
+  pack_dir: string,
+  fixture_path: string,
+  errors: list<string>,
+) -> list<string> {
   const rel_path = basename(pack_dir) + "/fixtures/" + basename(fixture_path)
   const loaded = read_fixture_document_result(fixture_path)
   if !is_ok(loaded) {
@@ -383,7 +419,11 @@ fn validate_fixture_document(pack_dir: string, fixture_path: string, errors: lis
   return validate_fixture_value(rel_path, expected_predicate, fixture, errors)
 }
 
-fn validate_fixtures(pack_dir: string, predicate_names: list<string>, errors: list<string>) -> FixtureValidationReport {
+fn validate_fixtures(
+  pack_dir: string,
+  predicate_names: list<string>,
+  errors: list<string>,
+) -> FixtureValidationReport {
   let out = errors
   const fixtures_dir = path_join(pack_dir, "fixtures")
   if !harness.fs.exists(fixtures_dir) {
@@ -442,8 +482,7 @@ fn main(harness: Harness) {
   const today = unwrap(today_result)
   const manifest_result = read_pack_manifest_result()
   if !is_ok(manifest_result) {
-    harness.stdio
-      .println(
+    harness.stdio.println(
       "Canon validation failed:\n- " + structured_read_failure_message(unwrap_err(manifest_result)),
     )
     exit(1)
@@ -519,8 +558,7 @@ fn main(harness: Harness) {
     }
     exit(1)
   }
-  harness.stdio
-    .println(
+  harness.stdio.println(
     "Validated "
       + to_string(len(expected))
       + " packs, "

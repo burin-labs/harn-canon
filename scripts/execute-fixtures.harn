@@ -80,7 +80,9 @@ pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
     const fixture_result = read_fixture_document_result(fixture_path)
     if !is_ok(fixture_result) {
       failures = failures
-        + [{kind: "setup", error: structured_read_failure_message(unwrap_err(fixture_result))}]
+        + [
+        {kind: "setup", error: structured_read_failure_message(unwrap_err(fixture_result))},
+      ]
       continue
     }
     const fixture = unwrap(fixture_result)
@@ -148,8 +150,7 @@ fn main(harness: Harness) {
     }
     exit(1)
   }
-  harness.stdio
-    .println(
+  harness.stdio.println(
     "Executed "
       + to_string(executed)
       + " deterministic fixture cases across "

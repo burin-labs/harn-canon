@@ -91,8 +91,7 @@ fn scan_files(files, pattern) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
-      findings = findings
-        .push({path: file.path, pattern: pattern})
+      findings = findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -106,9 +105,13 @@ fn scan_without_prod(slice, include_pattern, exclude_pattern) {
   let findings = []
   for file in prod_rust_files(slice) {
     if regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil {
-      findings = findings
-        .push({path: file.path, pattern: include_pattern})
+      && regex_match(
+      exclude_pattern,
+      file.text,
+      "s",
+    )
+      == nil {
+      findings = findings.push({path: file.path, pattern: include_pattern})
     }
   }
   return findings
@@ -175,7 +178,11 @@ pub fn must_use_message_on_pub_result_option(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_UNSAFE_COMMENT, confidence: 0.78, source_date: "2026-04-26")
 /** Blocks unsafe blocks or impls without a preceding SAFETY comment. */
 pub fn unsafe_requires_safety_comment(slice, _ctx, _repo_at_base) {
-  const findings = scan_without_prod(slice, r"\bunsafe\s*(\{|impl\b)", r"//\s*SAFETY:[^\n]*\n\s*unsafe\s*(\{|impl\b)")
+  const findings = scan_without_prod(
+    slice,
+    r"\bunsafe\s*(\{|impl\b)",
+    r"//\s*SAFETY:[^\n]*\n\s*unsafe\s*(\{|impl\b)",
+  )
   return block_on_findings(
     "unsafe_requires_safety_comment",
     "Precede each unsafe block or unsafe impl with a // SAFETY: comment explaining the invariant.",
@@ -259,7 +266,8 @@ pub fn no_panic_in_result_fn(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_CARGO_ADVISORIES, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks dependency changes that lack advisory or cargo-deny/audit evidence. */
 pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when Rust dependency metadata changed, such as Cargo.toml, Cargo.lock, deny.toml, or Rust CI, and the slice provides no evidence that cargo-deny, cargo-audit, RustSec, OSV, Dependabot, or equivalent advisory checks were considered. Allow pure source changes and dependency changes that add or preserve a clear advisory-check path."
+  const rubric =
+    "Block only when Rust dependency metadata changed, such as Cargo.toml, Cargo.lock, deny.toml, or Rust CI, and the slice provides no evidence that cargo-deny, cargo-audit, RustSec, OSV, Dependabot, or equivalent advisory checks were considered. Allow pure source changes and dependency changes that add or preserve a clear advisory-check path."
   const judgement = ctx.semantic_judge({rubric: rubric, files: rust_project_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -276,7 +284,8 @@ pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_FFI_SAFETY, confidence: 0.6, source_date: "2026-04-26")
 /** Blocks unsafe public FFI boundaries that omit safety contracts. */
 pub fn ffi_boundary_safety_contract(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed Rust file adds or modifies a public FFI boundary, extern block, no_mangle/export_name symbol, or public unsafe wrapper and the nearby docs/comments do not state caller safety obligations, ownership/nullability/lifetime requirements, or why the foreign signature is sound."
+  const rubric =
+    "Block only when a changed Rust file adds or modifies a public FFI boundary, extern block, no_mangle/export_name symbol, or public unsafe wrapper and the nearby docs/comments do not state caller safety obligations, ownership/nullability/lifetime requirements, or why the foreign signature is sound."
   const judgement = ctx.semantic_judge({rubric: rubric, files: rust_files(slice)})
   if judgement.verdict == "Block" {
     return block(

@@ -53,7 +53,12 @@ const _EVIDENCE_MINIMIZE_LAYERS = [
 
 fn is_dockerfile_path(path) {
   return regex_match(r"(?i)(^|/)(Dockerfile|Containerfile)(\.[A-Za-z0-9._-]+)?$", path, "s") != nil
-    || regex_match(r"(?i)\.dockerfile$", path, "s") != nil
+    || regex_match(
+    r"(?i)\.dockerfile$",
+    path,
+    "s",
+  )
+    != nil
 }
 
 fn dockerfile_files(slice) {
@@ -137,7 +142,11 @@ pub fn no_latest_or_unpinned_base_image(slice, _ctx, _repo_at_base) {
   for file in dockerfile_files(slice) {
     for line in file.text.lines() {
       const from_line = regex_match(r"(?i)^\s*FROM\s+", line, "") != nil
-      const latest = regex_match(r"(?i)^\s*FROM\s+(--[A-Za-z0-9_-]+(=\S+)?\s+)*[^\s#]+:latest(\s|$)", line, "")
+      const latest = regex_match(
+        r"(?i)^\s*FROM\s+(--[A-Za-z0-9_-]+(=\S+)?\s+)*[^\s#]+:latest(\s|$)",
+        line,
+        "",
+      )
         != nil
       const unpinned = from_line
         && !contains(line, ":")
@@ -244,8 +253,15 @@ pub fn no_curl_pipe_shell(slice, _ctx, _repo_at_base) {
 pub fn non_root_user_set(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     dockerfile_files(slice),
-    { text -> regex_match(r"(?mi)^\s*USER\s+\S+", text, "m") == nil
-      || regex_match(r"(?mi)^\s*USER\s+(root|0)\b", text, "m") != nil },
+    { text ->
+      regex_match(r"(?mi)^\s*USER\s+\S+", text, "m") == nil
+        || regex_match(
+        r"(?mi)^\s*USER\s+(root|0)\b",
+        text,
+        "m",
+      )
+        != nil
+    },
   )
   return warn_on_findings(
     "non_root_user_set",
@@ -279,7 +295,12 @@ pub fn use_exec_form_for_cmd_entrypoint(slice, _ctx, _repo_at_base) {
   for file in dockerfile_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\S", line, "") != nil
-        && regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[", line, "") == nil {
+        && regex_match(
+        r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[",
+        line,
+        "",
+      )
+        == nil {
         findings = findings.push({path: file.path})
       }
     }
@@ -296,7 +317,8 @@ pub fn use_exec_form_for_cmd_entrypoint(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MULTI_STAGE, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks single-stage Dockerfiles that ship build toolchains into the runtime image. */
 pub fn multi_stage_build_preferred(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed Dockerfile builds an application from source using compilers, package managers, or development toolchains (gcc, make, cargo build, go build, npm install with dev dependencies, mvn package, pip wheel, dotnet build, webpack, etc.) and ships those build tools or intermediate artifacts in the final image instead of using a multi-stage build that copies only the runtime artifact into a smaller base. Allow Dockerfiles that already use multi-stage builds, that only install runtime dependencies, or that document why a single stage is required."
+  const rubric =
+    "Block only when a changed Dockerfile builds an application from source using compilers, package managers, or development toolchains (gcc, make, cargo build, go build, npm install with dev dependencies, mvn package, pip wheel, dotnet build, webpack, etc.) and ships those build tools or intermediate artifacts in the final image instead of using a multi-stage build that copies only the runtime artifact into a smaller base. Allow Dockerfiles that already use multi-stage builds, that only install runtime dependencies, or that document why a single stage is required."
   const judgement = ctx.semantic_judge({rubric: rubric, files: dockerfile_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -313,7 +335,8 @@ pub fn multi_stage_build_preferred(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_MINIMIZE_LAYERS, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when consecutive RUN steps could be merged to shrink the image and cache surface. */
 pub fn minimize_layer_count(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed Dockerfile contains three or more consecutive RUN instructions that perform clearly related package installation, download, extract, or cleanup work, and the cleanup of one step undoes state created by an earlier step in a different layer. Allow Dockerfiles whose RUN steps stay separated for caching, readability, or because the steps are genuinely independent."
+  const rubric =
+    "Warn only when a changed Dockerfile contains three or more consecutive RUN instructions that perform clearly related package installation, download, extract, or cleanup work, and the cleanup of one step undoes state created by an earlier step in a different layer. Allow Dockerfiles whose RUN steps stay separated for caching, readability, or because the steps are genuinely independent."
   const judgement = ctx.semantic_judge({rubric: rubric, files: dockerfile_files(slice)})
   if judgement.verdict == "Block" {
     return warn(

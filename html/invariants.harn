@@ -147,8 +147,15 @@ pub fn images_have_alt_text(slice, _ctx, _repo_at_base) {
 pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     html_files(slice),
-    { file -> regex_match(r"(?i)<html\b", file.text, "s") != nil
-      && regex_match(r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=", file.text, "s") == nil },
+    { file ->
+      regex_match(r"(?i)<html\b", file.text, "s") != nil
+        && regex_match(
+        r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=",
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
   return block_on_findings(
     "documents_specify_lang",
@@ -162,7 +169,11 @@ pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INLINE_HANDLERS, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks inline event-handler attributes such as onclick, onload, or onerror. */
 pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\son[a-z]+\\s*=\\s*[\"']", "s")
+  const findings = scan_files(
+    html_files(slice),
+    "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\son[a-z]+\\s*=\\s*[\"']",
+    "s",
+  )
   return block_on_findings(
     "no_inline_event_handlers",
     "Bind handlers in JavaScript with addEventListener; inline handlers break under strict CSP.",
@@ -175,7 +186,11 @@ pub fn no_inline_event_handlers(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_INLINE_STYLES, confidence: 0.7, source_date: "2026-05-09")
 /** Warns on style attributes set directly on elements in production HTML. */
 pub fn no_inline_styles(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(html_files(slice), "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\sstyle\\s*=\\s*[\"']", "s")
+  const findings = scan_files(
+    html_files(slice),
+    "(?i)<[a-z][a-z0-9-]*\\b[^>]*\\sstyle\\s*=\\s*[\"']",
+    "s",
+  )
   return warn_on_findings(
     "no_inline_styles",
     "Move declarations to a stylesheet or scoped class; inline styles defeat caching and strict CSP.",
@@ -209,7 +224,11 @@ pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
   for file in html_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(?i)<a\b", line, "") != nil
-        && (contains(line, "target=\"_blank\"") || contains(line, "target='_blank'"))
+        && (contains(line, "target=\"_blank\"")
+        || contains(
+        line,
+        "target='_blank'",
+      ))
         && regex_match(r"(?i)\b(noopener|noreferrer)\b", line, "") == nil {
         findings = findings.push({path: file.path})
       }
@@ -229,7 +248,8 @@ pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
  * Blocks form controls that lack an accessible name from a label, aria-label, or aria-labelledby.
  */
 pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed HTML introduces or modifies a form control such as <input> (other than type=\"hidden\", \"submit\", \"button\", \"reset\", or \"image\" with alt), <select>, or <textarea>, and the control has no associated <label> (wrapping or with for=id), no aria-label, no aria-labelledby pointing at visible text, and no title attribute carrying the name."
+  const rubric =
+    "Block only when changed HTML introduces or modifies a form control such as <input> (other than type=\"hidden\", \"submit\", \"button\", \"reset\", or \"image\" with alt), <select>, or <textarea>, and the control has no associated <label> (wrapping or with for=id), no aria-label, no aria-labelledby pointing at visible text, and no title attribute carrying the name."
   const judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -248,7 +268,8 @@ pub fn form_controls_have_accessible_names(slice, ctx, _repo_at_base) {
  * Blocks generic anchor text such as "click here" or "read more" without disambiguating context.
  */
 pub fn link_purpose_is_clear(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed HTML introduces an anchor whose visible text is generic placeholder phrasing such as \"click here\", \"here\", \"more\", \"read more\", or \"learn more\", and the anchor lacks a programmatic accessible name from aria-label or aria-labelledby and has no descriptive surrounding text in the same paragraph, list item, table cell, or heading that disambiguates the link target."
+  const rubric =
+    "Block only when changed HTML introduces an anchor whose visible text is generic placeholder phrasing such as \"click here\", \"here\", \"more\", \"read more\", or \"learn more\", and the anchor lacks a programmatic accessible name from aria-label or aria-labelledby and has no descriptive surrounding text in the same paragraph, list item, table cell, or heading that disambiguates the link target."
   const judgement = ctx.semantic_judge({rubric: rubric, files: html_files(slice)})
   if judgement.verdict == "Block" {
     return block(

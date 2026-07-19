@@ -1,11 +1,17 @@
-const _EVIDENCE_TRAILING_COMMAS = ["https://www.rfc-editor.org/rfc/rfc8259#section-5", "https://www.json.org/json-en.html"]
+const _EVIDENCE_TRAILING_COMMAS = [
+  "https://www.rfc-editor.org/rfc/rfc8259#section-5",
+  "https://www.json.org/json-en.html",
+]
 
 const _EVIDENCE_NO_COMMENTS = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-12",
   "https://code.visualstudio.com/docs/languages/json#_json-with-comments",
 ]
 
-const _EVIDENCE_DOUBLE_QUOTED_STRINGS = ["https://www.rfc-editor.org/rfc/rfc8259#section-7", "https://www.json.org/json-en.html"]
+const _EVIDENCE_DOUBLE_QUOTED_STRINGS = [
+  "https://www.rfc-editor.org/rfc/rfc8259#section-7",
+  "https://www.json.org/json-en.html",
+]
 
 const _EVIDENCE_BOM = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-8.1",
@@ -36,7 +42,12 @@ const _BOM = "﻿"
 
 fn is_strict_json_path(path) {
   return path.ends_with(".json")
-    && regex_match(r"(^|/)((tsconfig|jsconfig)[^/]*\.json$|\.(vscode|devcontainer)/)", path, "") == nil
+    && regex_match(
+    r"(^|/)((tsconfig|jsconfig)[^/]*\.json$|\.(vscode|devcontainer)/)",
+    path,
+    "",
+  )
+    == nil
 }
 
 fn strict_json_files(slice) {
@@ -44,11 +55,12 @@ fn strict_json_files(slice) {
 }
 
 fn all_json_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".json")
-      || file.path.ends_with(".jsonc")
-      || file.path.ends_with(".json5") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".json")
+        || file.path.ends_with(".jsonc")
+        || file.path.ends_with(".json5")
+    },
   )
 }
 
@@ -170,7 +182,8 @@ pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-09")
 /** Blocks credentials, tokens, and private keys committed in JSON values. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed JSON commits a credential, API key, OAuth token, signed JWT, private key, signing secret, password, or production connection string in a JSON value, instead of referencing a secret manager, environment variable, or templated placeholder."
+  const rubric =
+    "Block only when changed JSON commits a credential, API key, OAuth token, signed JWT, private key, signing secret, password, or production connection string in a JSON value, instead of referencing a secret manager, environment variable, or templated placeholder."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -187,7 +200,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SCHEMA, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks JSON files that declare a $schema reference but introduce values that violate it. */
 pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a changed JSON file declares a top-level \"$schema\" URL and the change introduces a value the referenced JSON Schema would clearly reject — wrong type, missing required property, additional property in a closed schema, or an enum or range violation that the schema documents."
+  const rubric =
+    "Block only when a changed JSON file declares a top-level \"$schema\" URL and the change introduces a value the referenced JSON Schema would clearly reject — wrong type, missing required property, additional property in a closed schema, or an enum or range violation that the schema documents."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -204,7 +218,8 @@ pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_KEY_ORDER, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when config-shaped JSON edits gratuitously reorder unrelated keys. */
 pub fn stable_key_ordering(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a changed config-shaped JSON file (package.json, tsconfig.json, manifest, lockfile, or settings file) reorders keys the change otherwise leaves untouched, producing diff noise without a value or structural change. Allow ordering changes that are forced by a value edit, alphabetization the project explicitly enforces, or initial file creation."
+  const rubric =
+    "Warn only when a changed config-shaped JSON file (package.json, tsconfig.json, manifest, lockfile, or settings file) reorders keys the change otherwise leaves untouched, producing diff noise without a value or structural change. Allow ordering changes that are forced by a value edit, alphabetization the project explicitly enforces, or initial file creation."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
   if judgement.verdict == "Warn" || judgement.verdict == "Block" {
     return warn(

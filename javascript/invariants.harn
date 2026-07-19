@@ -54,12 +54,13 @@ const _EVIDENCE_SENSITIVE_LOGS = [
 ]
 
 fn javascript_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".js")
-      || file.path.ends_with(".jsx")
-      || file.path.ends_with(".mjs")
-      || file.path.ends_with(".cjs") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".js")
+        || file.path.ends_with(".jsx")
+        || file.path.ends_with(".mjs")
+        || file.path.ends_with(".cjs")
+    },
   )
 }
 
@@ -84,7 +85,9 @@ fn is_cli_path(path) {
 }
 
 fn production_javascript_files(slice) {
-  return javascript_files(slice).filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
+  return javascript_files(slice).filter(
+    { file -> !is_test_path(file.path) && !is_cli_path(file.path) },
+  )
 }
 
 fn scan_files(files, pattern) {
@@ -192,7 +195,11 @@ pub fn strict_equality(slice, _ctx, _repo_at_base) {
 /** Blocks var declarations in favor of block-scoped declarations. */
 pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
   const findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])var\s+[A-Za-z_$]")
-  return block_on_findings("no_var_keyword", "Use let or const so declarations have block scope.", findings)
+  return block_on_findings(
+    "no_var_keyword",
+    "Use let or const so declarations have block scope.",
+    findings,
+  )
 }
 
 @invariant
@@ -200,7 +207,10 @@ pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_NO_CONSOLE, confidence: 0.76, source_date: "2026-05-08")
 /** Blocks console debugging calls in production JavaScript paths. */
 pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_javascript_files(slice), r"\bconsole\.(log|debug|trace|info)\s*\(")
+  const findings = scan_files(
+    production_javascript_files(slice),
+    r"\bconsole\.(log|debug|trace|info)\s*\(",
+  )
   return block_on_findings(
     "no_console_in_prod_path",
     "Use the project logger or remove console debugging from production code.",
@@ -242,7 +252,8 @@ pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks external data being trusted as domain data without runtime validation. */
 pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed JavaScript trusts external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, postMessage, or URL params without runtime validation, schema parsing, allow-listing, or explicit narrowing."
+  const rubric =
+    "Block only when changed JavaScript trusts external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, postMessage, or URL params without runtime validation, schema parsing, allow-listing, or explicit narrowing."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -259,7 +270,8 @@ pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in JavaScript source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed JavaScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
+  const rubric =
+    "Block only when changed JavaScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -276,7 +288,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed JavaScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
+  const rubric =
+    "Block only when changed JavaScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
   if judgement.verdict == "Block" {
     return block(

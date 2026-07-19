@@ -58,21 +58,25 @@ fn csharp_files(slice) {
 }
 
 fn project_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".csproj")
-      || file.path.ends_with("Directory.Build.props")
-      || file.path.ends_with("Directory.Build.targets") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".csproj")
+        || file.path.ends_with("Directory.Build.props")
+        || file.path.ends_with(
+        "Directory.Build.targets",
+      )
+    },
   )
 }
 
 fn analyzer_config_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".editorconfig")
-      || file.path.ends_with(".globalconfig")
-      || file.path.ends_with(".csproj")
-      || file.path.ends_with("Directory.Build.props") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".editorconfig")
+        || file.path.ends_with(".globalconfig")
+        || file.path.ends_with(".csproj")
+        || file.path.ends_with("Directory.Build.props")
+    },
   )
 }
 
@@ -101,10 +105,11 @@ fn production_csharp_files(slice) {
 }
 
 fn library_csharp_files(slice) {
-  return production_csharp_files(slice)
-    .filter(
-    { file -> (contains(file.path, "/src/") || file.path.starts_with("src/"))
-      && !is_ui_path(file.path) },
+  return production_csharp_files(slice).filter(
+    { file ->
+      (contains(file.path, "/src/") || file.path.starts_with("src/"))
+        && !is_ui_path(file.path)
+    },
   )
 }
 
@@ -131,8 +136,15 @@ fn scan_files_if(files, predicate) {
 fn scan_files_without(files, include_pattern, exclude_pattern) {
   return scan_files_if(
     files,
-    { file -> regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil },
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(
+        exclude_pattern,
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
 }
 
@@ -286,7 +298,12 @@ pub fn no_valuetask_reuse(slice, _ctx, _repo_at_base) {
         value_task_local = true
       }
       if regex_match(r"\bawait\s+[A-Za-z_][A-Za-z0-9_]*\s*;", line, "") != nil
-        || regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.Result\b", line, "") != nil {
+        || regex_match(
+        r"\b[A-Za-z_][A-Za-z0-9_]*\.Result\b",
+        line,
+        "",
+      )
+        != nil {
         reads = reads + 1
       }
     }
@@ -323,7 +340,8 @@ pub fn no_console_write_in_prod_path(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks SQL commands assembled with untrusted string interpolation or concatenation. */
 pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed C# builds SQL command text by concatenating, interpolating, or formatting user-controlled values into the SQL string instead of using parameters, stored procedures, or a query builder that binds values."
+  const rubric =
+    "Block only when changed C# builds SQL command text by concatenating, interpolating, or formatting user-controlled values into the SQL string instead of using parameters, stored procedures, or a query builder that binds values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -340,7 +358,8 @@ pub fn sql_commands_use_parameters(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, private keys, and production connection strings. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed C# source, appsettings JSON, csproj metadata, or test host configuration embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from configuration or a managed secret source."
+  const rubric =
+    "Block only when changed C# source, appsettings JSON, csproj metadata, or test host configuration embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from configuration or a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
   if judgement.verdict == "Block" {
     return block(
@@ -357,7 +376,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, authorization material, or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed C# logs or throws messages containing secrets, credentials, session identifiers, authorization headers, access tokens, passwords, payment data, or sensitive personal data through ILogger, Console, diagnostics, telemetry, or exception text."
+  const rubric =
+    "Block only when changed C# logs or throws messages containing secrets, credentials, session identifiers, authorization headers, access tokens, passwords, payment data, or sensitive personal data through ILogger, Console, diagnostics, telemetry, or exception text."
   const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
   if judgement.verdict == "Block" {
     return block(

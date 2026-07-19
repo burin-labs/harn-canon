@@ -120,10 +120,22 @@ fn warn_on_findings(rule, remediation, findings) {
 pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match("(?m)^\\s*resource\\s+\"(aws_|azurerm_|google_)", text, "m") != nil
-      && (regex_match(r"(?i)\bowner\b", text, "s") == nil
-      || regex_match(r"(?i)\b(env|environment)\b", text, "s") == nil
-      || regex_match(r"(?i)\b(costcenter|cost[_-]?center)\b", text, "s") == nil) },
+    { text ->
+      regex_match("(?m)^\\s*resource\\s+\"(aws_|azurerm_|google_)", text, "m") != nil
+        && (regex_match(
+        r"(?i)\bowner\b",
+        text,
+        "s",
+      )
+        == nil
+        || regex_match(r"(?i)\b(env|environment)\b", text, "s") == nil
+        || regex_match(
+        r"(?i)\b(costcenter|cost[_-]?center)\b",
+        text,
+        "s",
+      )
+        == nil)
+    },
   )
   return warn_on_findings(
     "required_tags_on_resources",
@@ -141,8 +153,15 @@ pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
 pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match("(?m)^\\s*variable\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
-      && regex_match(r"(?m)^\s*type\s*=", text, "m") == nil },
+    { text ->
+      regex_match("(?m)^\\s*variable\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
+        && regex_match(
+        r"(?m)^\s*type\s*=",
+        text,
+        "m",
+      )
+        == nil
+    },
   )
   return warn_on_findings(
     "variable_type_constraints_explicit",
@@ -161,7 +180,8 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
   let findings = []
   for file in production_tf_files(slice) {
     if !contains(file.path, "/modules/")
-      && regex_match(r"required_providers\s*\{", file.text, "s") != nil
+      && regex_match(r"required_providers\s*\{", file.text, "s")
+      != nil
       && regex_match("(?m)^\\s*backend\\s+\"[^\"]+\"\\s*\\{", file.text, "m") == nil {
       findings = findings.push({path: file.path})
     }
@@ -180,16 +200,22 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
 pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match("(?m)^\\s*module\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
-      && regex_match("source\\s*=\\s*\"[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+){2,3}\"", text, "s")
-      != nil
-      && regex_match(
-      "source\\s*=\\s*\"(?:\\./|\\.\\./|git::|s3::|gcs::|hg::|github\\.com/|bitbucket\\.org/|gitlab\\.com/|https?://)",
-      text,
-      "s",
-    )
-      == nil
-      && regex_match(r"(?m)^\s*version\s*=", text, "m") == nil },
+    { text ->
+      regex_match("(?m)^\\s*module\\s+\"[^\"]+\"\\s*\\{", text, "m") != nil
+        && regex_match(
+        "source\\s*=\\s*\"[A-Za-z0-9_-][A-Za-z0-9_.-]*(?:/[A-Za-z0-9_.-]+){2,3}\"",
+        text,
+        "s",
+      )
+        != nil
+        && regex_match(
+        "source\\s*=\\s*\"(?:\\./|\\.\\./|git::|s3::|gcs::|hg::|github\\.com/|bitbucket\\.org/|gitlab\\.com/|https?://)",
+        text,
+        "s",
+      )
+        == nil
+        && regex_match(r"(?m)^\s*version\s*=", text, "m") == nil
+    },
   )
   return block_on_findings(
     "module_registry_version_pinned",
@@ -207,8 +233,15 @@ pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
 pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match(r"required_providers\s*\{", text, "s") != nil
-      && regex_match(r"(?m)^\s*version\s*=", text, "m") == nil },
+    { text ->
+      regex_match(r"required_providers\s*\{", text, "s") != nil
+        && regex_match(
+        r"(?m)^\s*version\s*=",
+        text,
+        "m",
+      )
+        == nil
+    },
   )
   return block_on_findings(
     "provider_versions_pinned",
@@ -224,13 +257,15 @@ pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
 pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_tf_files(slice),
-    { text -> regex_match(
-      "(?im)^\\s*output\\s+\"[A-Za-z0-9_-]*(?:password|secret|token|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*\"\\s*\\{",
-      text,
-      "m",
-    )
-      != nil
-      && regex_match(r"sensitive\s*=\s*true", text, "s") == nil },
+    { text ->
+      regex_match(
+        "(?im)^\\s*output\\s+\"[A-Za-z0-9_-]*(?:password|secret|token|api[_-]?key|private[_-]?key|credential)[A-Za-z0-9_-]*\"\\s*\\{",
+        text,
+        "m",
+      )
+        != nil
+        && regex_match(r"sensitive\s*=\s*true", text, "s") == nil
+    },
   )
   return block_on_findings(
     "outputs_with_secret_names_marked_sensitive",
@@ -244,7 +279,8 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in Terraform source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
+  const rubric =
+    "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -263,7 +299,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
  * Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification.
  */
 pub fn iam_policies_avoid_wildcard_grants(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
+  const rubric =
+    "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
   if judgement.verdict == "Block" {
     return block(

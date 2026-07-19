@@ -1,4 +1,7 @@
-const _EVIDENCE_DEBUG_HELPERS = ["https://hexdocs.pm/credo/Credo.Check.Warning.IoInspect.html", "https://hexdocs.pm/elixir/IO.html"]
+const _EVIDENCE_DEBUG_HELPERS = [
+  "https://hexdocs.pm/credo/Credo.Check.Warning.IoInspect.html",
+  "https://hexdocs.pm/elixir/IO.html",
+]
 
 const _EVIDENCE_DBG_MACRO = [
   "https://hexdocs.pm/credo/Credo.Check.Warning.Dbg.html",
@@ -70,8 +73,9 @@ fn elixir_files(slice) {
 }
 
 fn production_elixir_files(slice) {
-  return elixir_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_generated_path(file.path) })
+  return elixir_files(slice).filter(
+    { file -> !is_test_path(file.path) && !is_generated_path(file.path) },
+  )
 }
 
 fn scan_files(files, pattern, flags) {
@@ -151,7 +155,11 @@ pub fn no_dbg_macro(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_IEX_PRY, confidence: 0.86, source_date: "2026-05-10")
 /** Blocks IEx.pry breakpoints in production Elixir source. */
 pub fn no_iex_pry(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_elixir_files(slice), r"\bIEx\.pry\s*\(\s*\)|\brequire\s+IEx\b", "s")
+  const findings = scan_files(
+    production_elixir_files(slice),
+    r"\bIEx\.pry\s*\(\s*\)|\brequire\s+IEx\b",
+    "s",
+  )
   return block_on_findings(
     "no_iex_pry",
     "Remove IEx.pry breakpoints and the matching require IEx before merging; they only work in an attached IEx shell.",
@@ -198,7 +206,11 @@ pub fn unless_with_else(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PREDICATE_NAMING, confidence: 0.78, source_date: "2026-05-10")
 /** Warns when a function is named with both the is_ prefix and a trailing question mark. */
 pub fn predicate_function_naming(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_elixir_files(slice), r"(?m)^\s*defp?\s+is_[A-Za-z0-9_]+\?", "m")
+  const findings = scan_files(
+    production_elixir_files(slice),
+    r"(?m)^\s*defp?\s+is_[A-Za-z0-9_]+\?",
+    "m",
+  )
   return warn_on_findings(
     "predicate_function_naming",
     "Pick one form: end the name with ? for runtime predicates, or use the is_ prefix for guard-safe macros, but not both.",
@@ -228,7 +240,11 @@ pub fn no_raise_inside_rescue(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_PIPE_READABILITY, confidence: 0.66, source_date: "2026-05-10")
 /** Warns on pipe chains longer than five stages without an intermediate binding. */
 pub fn pipe_chain_readability(slice, _ctx, _repo_at_base) {
-  const findings = scan_files(production_elixir_files(slice), r"(?m)(?:^[ \t]*\|>[^\n]*\n){6,}", "m")
+  const findings = scan_files(
+    production_elixir_files(slice),
+    r"(?m)(?:^[ \t]*\|>[^\n]*\n){6,}",
+    "m",
+  )
   return warn_on_findings(
     "pipe_chain_readability",
     "Break long pipelines with a named intermediate or a small private function so the steps remain greppable and debuggable.",
@@ -243,7 +259,8 @@ pub fn pipe_chain_readability(slice, _ctx, _repo_at_base) {
  * Blocks public functions that signal failure with bare atoms or strings instead of tagged error tuples.
  */
 pub fn tagged_error_tuples(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when a public Elixir function (def, not defp) added or changed in this slice signals fallible outcomes by returning :error, an arbitrary atom, a string, or nil where the rest of the module's public API uses {:ok, value} and {:error, reason} tuples or a bang variant. Allow boolean predicates ending in ?, functions whose contract is documented as returning :ok or an atom enum, callbacks that must conform to a behaviour, and bang functions that intentionally raise."
+  const rubric =
+    "Block only when a public Elixir function (def, not defp) added or changed in this slice signals fallible outcomes by returning :error, an arbitrary atom, a string, or nil where the rest of the module's public API uses {:ok, value} and {:error, reason} tuples or a bang variant. Allow boolean predicates ending in ?, functions whose contract is documented as returning :ok or an atom enum, callbacks that must conform to a behaviour, and bang functions that intentionally raise."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_elixir_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -260,7 +277,8 @@ pub fn tagged_error_tuples(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_GENSERVER_BOUNDARY, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks GenServer callbacks that leak fresh internal state types across the call boundary. */
 pub fn genserver_callback_boundary(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Elixir code defines a GenServer callback (init/1, handle_call/3, handle_cast/2, handle_info/2, handle_continue/2, terminate/2, code_change/3) that returns a state value whose shape disagrees with the module's documented or @type-declared state, introduces a fresh ad hoc tuple or map shape that other callbacks in the same module would not pattern-match, or returns implementation-specific internal types as the reply that the caller is meant to consume directly. Allow callbacks whose state shape matches the declared type, callbacks that wrap reply values in well-known tuples, and modules that explicitly document a richer reply contract."
+  const rubric =
+    "Block only when changed Elixir code defines a GenServer callback (init/1, handle_call/3, handle_cast/2, handle_info/2, handle_continue/2, terminate/2, code_change/3) that returns a state value whose shape disagrees with the module's documented or @type-declared state, introduces a fresh ad hoc tuple or map shape that other callbacks in the same module would not pattern-match, or returns implementation-specific internal types as the reply that the caller is meant to consume directly. Allow callbacks whose state shape matches the declared type, callbacks that wrap reply values in well-known tuples, and modules that explicitly document a richer reply contract."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_elixir_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -279,7 +297,8 @@ pub fn genserver_callback_boundary(slice, ctx, _repo_at_base) {
  * Warns when a function body is a single case or cond that could be replaced by function-head pattern matching.
  */
 pub fn pattern_match_over_conditional(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when an added or changed Elixir function body is a single case or cond expression that branches directly on the function's own arguments, where each branch could be expressed as a separate function clause with pattern matching or guards over the same arguments. Allow case or cond statements that branch on intermediate computations, that need shared setup before the branching, that share substantial code across branches, or that benefit from a default catch-all in one place."
+  const rubric =
+    "Warn only when an added or changed Elixir function body is a single case or cond expression that branches directly on the function's own arguments, where each branch could be expressed as a separate function clause with pattern matching or guards over the same arguments. Allow case or cond statements that branch on intermediate computations, that need shared setup before the branching, that share substantial code across branches, or that benefit from a default catch-all in one place."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_elixir_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(

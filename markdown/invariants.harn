@@ -44,7 +44,11 @@ fn is_markdown_path(path) {
 }
 
 fn is_vendored_path(path) {
-  return regex_match(r"(^|/)(node_modules|vendor|third_party|target|dist|build|out|\.git)(/|$)", path, "")
+  return regex_match(
+    r"(^|/)(node_modules|vendor|third_party|target|dist|build|out|\.git)(/|$)",
+    path,
+    "",
+  )
     != nil
 }
 
@@ -57,8 +61,9 @@ fn markdown_files(slice) {
 }
 
 fn production_markdown_files(slice) {
-  return markdown_files(slice)
-    .filter({ file -> !is_vendored_path(file.path) && !is_fixture_path(file.path) })
+  return markdown_files(slice).filter(
+    { file -> !is_vendored_path(file.path) && !is_fixture_path(file.path) },
+  )
 }
 
 fn scan_files_if(files, predicate) {
@@ -139,7 +144,10 @@ pub fn code_fence_language_specified(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_HEADING_LEVELS, confidence: 0.7, source_date: "2026-05-09")
 /** Warns on documents that use a heading level without the parent level present. */
 pub fn heading_level_discipline(slice, _ctx, _repo_at_base) {
-  const findings = scan_files_if(production_markdown_files(slice), { file -> has_heading_level_skip(file) })
+  const findings = scan_files_if(
+    production_markdown_files(slice),
+    { file -> has_heading_level_skip(file) },
+  )
   return warn_on_findings(
     "heading_level_discipline",
     "Increment heading levels one at a time so screen readers and outlines stay coherent.",
@@ -188,12 +196,14 @@ pub fn image_alt_text_present(slice, _ctx, _repo_at_base) {
 pub fn no_dangerous_inline_html(slice, _ctx, _repo_at_base) {
   const findings = scan_files_if(
     production_markdown_files(slice),
-    { file -> regex_match(
-      r"(?i)<\s*(script|iframe|object|embed|form)\b|\bjavascript:|\bon(click|load|error|focus|blur|submit|change|input|key[a-z]+|mouse[a-z]+)\s*=",
-      file.text,
-      "is",
-    )
-      != nil },
+    { file ->
+      regex_match(
+        r"(?i)<\s*(script|iframe|object|embed|form)\b|\bjavascript:|\bon(click|load|error|focus|blur|submit|change|input|key[a-z]+|mouse[a-z]+)\s*=",
+        file.text,
+        "is",
+      )
+        != nil
+    },
   )
   return block_on_findings(
     "no_dangerous_inline_html",
@@ -207,7 +217,8 @@ pub fn no_dangerous_inline_html(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_BROKEN_LINKS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks changed Markdown that introduces relative links or anchors with no resolvable target. */
 pub fn no_broken_internal_links(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Markdown introduces or modifies a relative path link, image reference, or fragment anchor whose target cannot be resolved against the slice plus repo_at_base. Anchor checks must compare the fragment to the rendered heading slugs in the destination Markdown file. Allow external URLs, mailto links, and links whose target is created in the same slice."
+  const rubric =
+    "Block only when changed Markdown introduces or modifies a relative path link, image reference, or fragment anchor whose target cannot be resolved against the slice plus repo_at_base. Anchor checks must compare the fragment to the rendered heading slugs in the destination Markdown file. Allow external URLs, mailto links, and links whose target is created in the same slice."
   const judgement = ctx.semantic_judge({rubric: rubric, files: markdown_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -226,7 +237,8 @@ pub fn no_broken_internal_links(slice, ctx, _repo_at_base) {
  * Warns when a single document mixes inline, reference, and bare-URL link styles in ways that hurt readability.
  */
 pub fn consistent_link_format(slice, ctx, _repo_at_base) {
-  const rubric = "Warn only when a single changed Markdown document mixes inline links, full reference-style links, collapsed/shortcut reference links, and bare autolinks in ways that materially hurt readability. Do not flag single-style documents, code samples that show alternative syntaxes intentionally, or short-form patterns inside link tables."
+  const rubric =
+    "Warn only when a single changed Markdown document mixes inline links, full reference-style links, collapsed/shortcut reference links, and bare autolinks in ways that materially hurt readability. Do not flag single-style documents, code samples that show alternative syntaxes intentionally, or short-form patterns inside link tables."
   const judgement = ctx.semantic_judge({rubric: rubric, files: markdown_files(slice)})
   if judgement.verdict == "Warn" {
     return warn(

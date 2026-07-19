@@ -56,13 +56,14 @@ const _EVIDENCE_SENSITIVE_LOGS = [
 ]
 
 fn ruby_files(slice) {
-  return slice.files
-    .filter(
-    { file -> file.path.ends_with(".rb")
-      || file.path.ends_with(".rake")
-      || file.path.ends_with(".gemspec")
-      || file.path.ends_with("Gemfile")
-      || file.path.ends_with("Rakefile") },
+  return slice.files.filter(
+    { file ->
+      file.path.ends_with(".rb")
+        || file.path.ends_with(".rake")
+        || file.path.ends_with(".gemspec")
+        || file.path.ends_with("Gemfile")
+        || file.path.ends_with("Rakefile")
+    },
   )
 }
 
@@ -83,16 +84,16 @@ fn is_script_path(path) {
 }
 
 fn production_ruby_files(slice) {
-  return ruby_files(slice)
-    .filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
+  return ruby_files(slice).filter(
+    { file -> !is_test_path(file.path) && !is_script_path(file.path) },
+  )
 }
 
 fn scan_files(files, pattern, flags) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings
-        .push({path: file.path, pattern: pattern})
+      findings = findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -102,8 +103,7 @@ fn scan_files_if(files, predicate) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings
-        .push({path: file.path})
+      findings = findings.push({path: file.path})
     }
   }
   return findings
@@ -112,8 +112,15 @@ fn scan_files_if(files, predicate) {
 fn scan_files_without(files, include_pattern, exclude_pattern) {
   return scan_files_if(
     files,
-    { file -> regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(exclude_pattern, file.text, "s") == nil },
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(
+        exclude_pattern,
+        file.text,
+        "s",
+      )
+        == nil
+    },
   )
 }
 
@@ -276,7 +283,8 @@ pub fn initialize_calls_super(slice, _ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_RUBOCOP, confidence: 0.66, source_date: "2026-05-08")
 /** Blocks changes that bypass or weaken the repo's RuboCop policy without justification. */
 pub fn rubocop_style_compliance(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Ruby code or .rubocop.yml clearly violates an enabled RuboCop rule, disables broad departments or cops without a narrow reason, or adds style drift that RuboCop would report under the repository configuration."
+  const rubric =
+    "Block only when changed Ruby code or .rubocop.yml clearly violates an enabled RuboCop rule, disables broad departments or cops without a narrow reason, or adds style drift that RuboCop would report under the repository configuration."
   const judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
   if judgement.verdict == "Block" {
     return block(
@@ -293,7 +301,8 @@ pub fn rubocop_style_compliance(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials and high-risk secrets in Ruby source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Ruby source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment."
+  const rubric =
+    "Block only when changed Ruby source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment."
   const judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
   if judgement.verdict == "Block" {
     return block(
@@ -310,7 +319,8 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.63, source_date: "2026-05-08")
 /** Blocks logs and errors that expose secrets or sensitive user data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
-  const rubric = "Block only when changed Ruby source logs, reports, or raises messages containing secrets, credentials, authorization headers, session identifiers, tokens, passwords, or sensitive personal data without redaction."
+  const rubric =
+    "Block only when changed Ruby source logs, reports, or raises messages containing secrets, credentials, authorization headers, session identifiers, tokens, passwords, or sensitive personal data without redaction."
   const judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
   if judgement.verdict == "Block" {
     return block(
