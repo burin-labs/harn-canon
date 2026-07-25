@@ -1,10 +1,9 @@
 # Bump Harn Runtime — thin caller of the reusable workflow (harn#5299).
 #
-# Replaces the ~267L copied shell/YAML state machine with a trigger wrapper that
-# calls burin-labs/harn's published `workflow_call` workflow. All orchestration
-# (pin resolve, readiness gate, lockfile refresh, signed commit, PR + auto-merge)
-# lives in Harn (`std/bump/runtime`/`std/bump/live`), not here. The only
-# repo-specific parts are the schedule and the single validate-command.
+# All orchestration (pin resolve, readiness gate, lockfile refresh, signed
+# commit, PR + auto-merge) lives in Harn (`std/bump/runtime`/`std/bump/live`),
+# not here. The only repo-specific parts are the schedule and the single
+# validate-command.
 name: Bump Harn Runtime
 on:
   workflow_dispatch:
@@ -30,18 +29,41 @@ jobs:
       # lockfile refresh; non-zero exit blocks the commit. POSIX-sh only — the
       # runtime executes this through the host default shell (std/command shell
       # mode), which on a runner may resolve to /bin/sh (dash), not bash. No
-      # bashisms (mapfile/pipefail/(( ))): keep this portable so the identical
-      # template is safe across every fleet repo regardless of runner shell.
+      # bashisms (mapfile/pipefail/(( ))): keep this portable regardless of
+      # runner shell.
+      #
+      # This mirrors `.github/workflows/ci.yml`, which is deliberately NOT a
+      # `git ls-files '*.harn'` sweep. harn-canon has two populations of .harn
+      # source with different gates:
+      #   * the four repo scripts, held to `harn lint --strict`;
+      #   * ~34 `invariants.harn` predicate packs, held to plain `harn lint`
+      #     (they are trusted code executed on consumer machines by
+      #     `harn lint`, and are not formatter-gated by ci.yml).
+      # Sweeping both into one strict pass would fail the bump on packs that
+      # ci.yml intentionally lets through.
+      #
+      # Deviation from ci.yml, deliberate: ci.yml runs `harn fmt --check`
+      # because it verifies a PR; here `harn fmt` REWRITES, so a formatter
+      # change in the new runtime lands in the bump commit and the PR's own
+      # ci.yml `--check` then passes. Verifying here would instead wedge the
+      # daily bump permanently on any formatter change.
       validate-command: |
         set -eu
-        files=$(git ls-files '*.harn')
-        if [ -n "$files" ]; then
-          # Word-splitting on $files is intentional: pass every .harn path as a
-          # separate arg. Fleet .harn paths never contain whitespace.
-          harn fmt $files
-          harn check $files
-          harn lint $files
+        scripts='scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn scripts/canon-boundary-test.harn'
+        # Word-splitting on $scripts is intentional: one arg per path.
+        harn fmt $scripts
+        for script in $scripts; do
+          harn check "$script"
+          harn lint --strict "$script"
+        done
+        harn test scripts/canon-boundary-test.harn --timeout 30000
+        HARN_CANON_TODAY="$(date -u +%F)" harn run scripts/validate-canon.harn
+        packs=$(find . -name invariants.harn -type f -not -path './.git/*')
+        if [ -n "$packs" ]; then
+          harn check $packs
+          harn lint $packs
         fi
+        harn run scripts/execute-fixtures.harn
     secrets:
       app-client-id: ${{ secrets.RELEASE_APP_CLIENT_ID }}
       app-private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
