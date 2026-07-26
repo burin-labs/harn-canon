@@ -4,6 +4,7 @@
     {
       "name": "warns_on_non_const_read_only_method",
       "expect": "Warn",
+      "judge_verdict": "Block",
       "files": [
         {
           "path": "include/widget/widget.hpp",

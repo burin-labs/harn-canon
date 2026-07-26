@@ -4,6 +4,7 @@
     {
       "name": "warns_open_match_without_fallback",
       "expect": "Warn",
+      "judge_verdict": "Block",
       "files": [
         {
           "path": "src/main/scala/example/Decoder.scala",

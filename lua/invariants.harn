@@ -270,7 +270,7 @@ pub fn require_assigned_to_local(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_global_function_definition)
+@semantic(fallback: no_global_function_definition, policy: advisory)
 @archivist(evidence: _EVIDENCE_TAIL_CALLS, confidence: 0.6, source_date: "2026-05-10")
 /** Warns on recursive Lua functions whose recursive call is not in tail position. */
 pub fn tail_call_recursion(slice, ctx, _repo_at_base) {
@@ -288,7 +288,7 @@ pub fn tail_call_recursion(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_global_function_definition)
+@semantic(fallback: no_global_function_definition, policy: advisory)
 @archivist(evidence: _EVIDENCE_METATABLES, confidence: 0.62, source_date: "2026-05-10")
 /**
  * Blocks metatable mutations that change reads, writes, or identity without an adjacent comment.
@@ -308,7 +308,7 @@ pub fn metatable_boundary_documented(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_global_function_definition)
+@semantic(fallback: no_global_function_definition, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-10")
 /** Blocks hardcoded credentials and high-risk secrets in Lua source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {

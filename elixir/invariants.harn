@@ -253,7 +253,7 @@ pub fn pipe_chain_readability(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_io_inspect)
+@semantic(fallback: no_io_inspect, policy: advisory)
 @archivist(evidence: _EVIDENCE_TAGGED_ERROR_TUPLES, confidence: 0.64, source_date: "2026-05-10")
 /**
  * Blocks public functions that signal failure with bare atoms or strings instead of tagged error tuples.
@@ -273,7 +273,7 @@ pub fn tagged_error_tuples(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_io_inspect)
+@semantic(fallback: no_io_inspect, policy: advisory)
 @archivist(evidence: _EVIDENCE_GENSERVER_BOUNDARY, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks GenServer callbacks that leak fresh internal state types across the call boundary. */
 pub fn genserver_callback_boundary(slice, ctx, _repo_at_base) {
@@ -291,7 +291,7 @@ pub fn genserver_callback_boundary(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_io_inspect)
+@semantic(fallback: no_io_inspect, policy: advisory)
 @archivist(evidence: _EVIDENCE_PATTERN_MATCH, confidence: 0.62, source_date: "2026-05-10")
 /**
  * Warns when a function body is a single case or cond that could be replaced by function-head pattern matching.

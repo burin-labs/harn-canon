@@ -15,24 +15,38 @@ import {
 
 const arg_spec = [{kind: "option", name: "pack", flags: ["--pack"], multi: true, default: []}]
 
-fn run_case(pack: string, predicate: string, case: CanonFixtureCase) -> FixtureCaseResult {
+fn run_case(
+  pack: string,
+  predicate: string,
+  mode: string,
+  case: CanonFixtureCase,
+) -> FixtureCaseResult {
+  const semantic_judge = { _request ->
+    return {verdict: case.judge_verdict ?? case.expect, findings: []}
+  }
   const eval_result = flow_evaluate_invariants(
     "",
     {files: case.files},
     {
       path: path_join(repo_root(), pack, "invariants.harn"),
       predicates: [predicate],
-      budget_ms: 50,
-      ctx: case.ctx ?? {},
+      include_semantic: mode == "semantic",
+      budget_ms: if mode == "semantic" {
+        2000
+      } else {
+        50
+      },
+      ctx: (case.ctx ?? {}) + {semantic_judge: semantic_judge},
     },
   )
   const records = eval_result?.records ?? []
-  const record = if len(records) > 0 {
-    records[0]
-  } else {
-    nil
+  let record = nil
+  for candidate in records {
+    if candidate.name == predicate {
+      record = candidate
+    }
   }
-  const actual = fixture_verdict(record)
+  const actual = fixture_verdict(record ?? {})
   const expect = case.expect
   if actual == expect {
     return {kind: "pass"}
@@ -64,18 +78,12 @@ pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
     return {
       pack: pack,
       executed: 0,
-      skipped_semantic: 0,
       failures: parsed.errors.map({ error -> {kind: "setup", error: error} }).to_list(),
     }
   }
   let executed = 0
-  let skipped_semantic = 0
   let failures: list<FixtureRunFailure> = []
   for entry in parsed.entries {
-    if entry.mode == "semantic" {
-      skipped_semantic = skipped_semantic + 1
-      continue
-    }
     const fixture_path = path_join(root, pack, "fixtures", entry.name + ".json")
     const fixture_result = read_fixture_document_result(fixture_path)
     if !is_ok(fixture_result) {
@@ -87,14 +95,14 @@ pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
     }
     const fixture = unwrap(fixture_result)
     for case in fixture.cases {
-      const result = run_case(pack, entry.name, case)
+      const result = run_case(pack, entry.name, entry.mode, case)
       executed = executed + 1
       if result.kind == "fail" {
         failures = failures + [result.failure]
       }
     }
   }
-  return {pack: pack, executed: executed, skipped_semantic: skipped_semantic, failures: failures}
+  return {pack: pack, executed: executed, failures: failures}
 }
 
 fn run_pack(pack: string) -> FixturePackReport {
@@ -135,10 +143,8 @@ fn main(harness: Harness) {
   }
   let failures: list<FixtureRunFailure> = []
   let executed = 0
-  let skipped_semantic = 0
   for report in reports {
     executed = executed + report.executed
-    skipped_semantic = skipped_semantic + report.skipped_semantic
     failures = failures + report.failures
   }
   if len(failures) > 0 {
@@ -153,10 +159,8 @@ fn main(harness: Harness) {
   harness.stdio.println(
     "Executed "
       + to_string(executed)
-      + " deterministic fixture cases across "
+      + " fixture cases across "
       + to_string(len(packs))
-      + " packs; skipped "
-      + to_string(skipped_semantic)
-      + " semantic predicates.",
+      + " packs through flow_evaluate_invariants.",
   )
 }

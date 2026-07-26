@@ -233,7 +233,7 @@ pub fn xslt_no_external_documents(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_inline_doctype)
+@semantic(fallback: no_inline_doctype, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks credentials, tokens, private keys, and production connection strings embedded in XML. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -251,7 +251,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_inline_doctype)
+@semantic(fallback: no_inline_doctype, policy: advisory)
 @archivist(evidence: _EVIDENCE_SCHEMA_DOS, confidence: 0.62, source_date: "2026-05-09")
 /**
  * Blocks XSD shapes that disable validation or invite quadratic blowup of attacker-controlled input.

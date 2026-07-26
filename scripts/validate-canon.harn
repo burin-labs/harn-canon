@@ -227,6 +227,14 @@ fn validate_semantic_fallbacks(
         pack + ": semantic predicate " + predicate
           + " must declare @semantic(fallback: deterministic_predicate)",
       ]
+    } else if entry.fallback_policy != "advisory" {
+      out = out
+        + [
+        pack
+          + ": semantic predicate "
+          + predicate
+          + " must declare policy: advisory until it has an honest deterministic lower bound",
+      ]
     } else if !(deterministic[entry.fallback] ?? false) {
       out = out
         + [
