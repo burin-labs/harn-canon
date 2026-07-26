@@ -312,7 +312,7 @@ pub fn prefer_using_over_typedef(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_raw_new_delete)
+@semantic(fallback: no_raw_new_delete, policy: advisory)
 @archivist(evidence: _EVIDENCE_RULE_OF_FIVE, confidence: 0.66, source_date: "2026-05-10")
 /**
  * Blocks classes that declare some special member functions while leaving others implicit, violating the Rule of Five.
@@ -332,7 +332,7 @@ pub fn rule_of_five_consistency(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_raw_new_delete)
+@semantic(fallback: no_raw_new_delete, policy: advisory)
 @archivist(evidence: _EVIDENCE_MEMBER_INIT, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks class members left without an in-class initializer or constructor initialization. */
 pub fn members_initialized(slice, ctx, _repo_at_base) {
@@ -350,7 +350,7 @@ pub fn members_initialized(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_raw_new_delete)
+@semantic(fallback: no_raw_new_delete, policy: advisory)
 @archivist(evidence: _EVIDENCE_CONST_CORRECTNESS, confidence: 0.6, source_date: "2026-05-10")
 /**
  * Warns on public/protected member functions that do not modify *this but are not declared const.

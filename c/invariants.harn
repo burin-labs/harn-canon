@@ -327,7 +327,7 @@ pub fn no_alloca(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_gets)
+@semantic(fallback: no_gets, policy: advisory)
 @archivist(evidence: _EVIDENCE_ALLOC_NULL_CHECK, confidence: 0.64, source_date: "2026-05-10")
 /** Blocks heap allocation paths that lack a NULL-return check before the result is dereferenced. */
 pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
@@ -345,7 +345,7 @@ pub fn allocation_return_checked(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_gets)
+@semantic(fallback: no_gets, policy: advisory)
 @archivist(evidence: _EVIDENCE_STATIC_ANALYZER, confidence: 0.6, source_date: "2026-05-10")
 /**
  * Blocks meaningful C source changes that ship without evidence of a static-analysis or sanitizer path.
@@ -365,7 +365,7 @@ pub fn static_analyzer_clean(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_gets)
+@semantic(fallback: no_gets, policy: advisory)
 @archivist(evidence: _EVIDENCE_DEP_SECURITY, confidence: 0.6, source_date: "2026-05-10")
 /**
  * Blocks C dependency or build-system changes that omit advisory or vulnerability-check evidence.

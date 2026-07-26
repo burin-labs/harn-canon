@@ -8,11 +8,16 @@ Per-language and per-stack predicate packs. Each pack is a directory containing:
 
 - `invariants.harn` — Harn functions annotated with `@invariant` and either
   `@deterministic` (pure, 50 ms budget) or
-  `@semantic(fallback: predicate_name)` (one cheap LLM judge call, 2 s budget,
-  evidence pre-baked at authoring time, plus a same-pack deterministic fallback
-  for replay/runtime discovery).
+  `@semantic(fallback: predicate_name, policy: advisory)` (one cheap LLM judge
+  call, 2 s budget, evidence pre-baked at authoring time, plus an explicitly
+  advisory same-pack deterministic replay record). Canon's current fallback
+  links are not proven lower bounds, so the runtime evaluates and records them
+  but does not merge their verdicts into the semantic result.
 - `README.md` — purpose, stack assumptions, evidence sources, coverage examples, known false positives.
-- `fixtures/` — small atom/slice fixtures the predicates are expected to allow or block, used by CI.
+- `fixtures/` — small atom/slice fixtures the predicates are expected to allow
+  or block, used by CI. Semantic cases normally mock the judge with `expect`;
+  set `judge_verdict` when the predicate deliberately maps a judge `Block` to a
+  public `Warn`.
 
 `canon-packs.json` is the canonical pack manifest for tools that need stable
 pack discovery without scraping the repository layout. It also owns pack

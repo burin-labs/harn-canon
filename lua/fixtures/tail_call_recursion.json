@@ -4,6 +4,7 @@
     {
       "name": "warns_on_non_tail_recursion",
       "expect": "Warn",
+      "judge_verdict": "Block",
       "files": [
         {
           "path": "src/math.lua",

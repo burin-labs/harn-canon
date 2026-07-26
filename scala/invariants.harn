@@ -287,7 +287,7 @@ pub fn no_await_in_library_code(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_any_in_public_api)
+@semantic(fallback: no_any_in_public_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks unsafe boundaries between effect types and Future in production Scala. */
 pub fn effect_typed_boundaries(slice, ctx, _repo_at_base) {
@@ -305,7 +305,7 @@ pub fn effect_typed_boundaries(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_any_in_public_api)
+@semantic(fallback: no_any_in_public_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_EFFECTS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks unsafe runtime escapes outside of process entry points. */
 pub fn no_unsafe_run_in_library_code(slice, ctx, _repo_at_base) {
@@ -323,7 +323,7 @@ pub fn no_unsafe_run_in_library_code(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_any_in_public_api)
+@semantic(fallback: no_any_in_public_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_PATTERN_EXHAUSTIVE, confidence: 0.6, source_date: "2026-05-10")
 /** Warns when production match expressions are non-exhaustive without an explicit fallback. */
 pub fn pattern_matches_are_exhaustive(slice, ctx, _repo_at_base) {

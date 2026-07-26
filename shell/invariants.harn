@@ -203,7 +203,7 @@ pub fn no_blanket_shellcheck_disable(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: set_euo_pipefail)
+@semantic(fallback: set_euo_pipefail, policy: advisory)
 @archivist(evidence: _EVIDENCE_SHELLCHECK, confidence: 0.62, source_date: "2026-05-09")
 /** Blocks changed shell scripts that would fail ShellCheck under default configuration. */
 pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
@@ -221,7 +221,7 @@ pub fn shellcheck_clean(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: set_euo_pipefail)
+@semantic(fallback: set_euo_pipefail, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in shell sources. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -239,7 +239,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: set_euo_pipefail)
+@semantic(fallback: set_euo_pipefail, policy: advisory)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.6, source_date: "2026-05-09")
 /** Blocks shell scripts that echo or print secrets and sensitive request data. */
 pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {

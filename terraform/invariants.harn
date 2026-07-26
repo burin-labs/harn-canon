@@ -275,7 +275,7 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: required_tags_on_resources)
+@semantic(fallback: required_tags_on_resources, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in Terraform source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -293,7 +293,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: required_tags_on_resources)
+@semantic(fallback: required_tags_on_resources, policy: advisory)
 @archivist(evidence: _EVIDENCE_IAM_LEAST_PRIV, confidence: 0.62, source_date: "2026-05-09")
 /**
  * Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification.

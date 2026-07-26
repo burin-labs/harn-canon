@@ -178,7 +178,7 @@ pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_trailing_commas)
+@semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-09")
 /** Blocks credentials, tokens, and private keys committed in JSON values. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
@@ -196,7 +196,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_trailing_commas)
+@semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_SCHEMA, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks JSON files that declare a $schema reference but introduce values that violate it. */
 pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
@@ -214,7 +214,7 @@ pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_trailing_commas)
+@semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_KEY_ORDER, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when config-shaped JSON edits gratuitously reorder unrelated keys. */
 pub fn stable_key_ordering(slice, ctx, _repo_at_base) {

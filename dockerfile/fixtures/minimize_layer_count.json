@@ -4,6 +4,7 @@
     {
       "name": "warns_when_install_and_cleanup_split_across_layers",
       "expect": "Warn",
+      "judge_verdict": "Block",
       "files": [
         {
           "path": "Dockerfile",

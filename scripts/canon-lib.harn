@@ -28,6 +28,9 @@ const URL_RE = "\"(https?://[^\"]+)\""
 const SEMANTIC_FALLBACK_RE =
   "fallback\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
 
+const SEMANTIC_FALLBACK_POLICY_RE =
+  "policy\\s*:\\s*(?:\"([A-Za-z_][A-Za-z0-9_]*)\"|([A-Za-z_][A-Za-z0-9_]*))"
+
 pub type CanonPack = {
   id: string,
   title: string,
@@ -45,6 +48,7 @@ pub type InvariantEntry = {
   mode: InvariantMode,
   mode_args: string,
   fallback?: string,
+  fallback_policy?: string,
   evidence: string,
   confidence: string,
   source_date: string,
@@ -66,6 +70,7 @@ pub type CanonFixtureFile = {path: string, text: string}
 pub type CanonFixtureCase = {
   name: string,
   expect: FixtureExpectedVerdict,
+  judge_verdict?: FixtureExpectedVerdict,
   files: list<CanonFixtureFile>,
   ctx?: dict,
 }
@@ -92,12 +97,7 @@ pub type FixtureCaseFail = {kind: "fail", failure: FixtureCaseFailure}
 
 pub type FixtureCaseResult = FixtureCasePass | FixtureCaseFail
 
-pub type FixturePackReport = {
-  pack: string,
-  executed: int,
-  skipped_semantic: int,
-  failures: list<FixtureRunFailure>,
-}
+pub type FixturePackReport = {pack: string, executed: int, failures: list<FixtureRunFailure>}
 
 /**
  * Build the closed manifest schema owned by this JSON boundary.
@@ -131,6 +131,7 @@ pub fn fixture_document_schema() -> Schema<CanonFixtureDocument> {
     {
       name: schema_string(),
       expect: schema_enum(["Allow", "Warn", "Block"]),
+      judge_verdict: schema_field(schema_enum(["Allow", "Warn", "Block"]), false),
       files: schema_list(file_schema),
       ctx: schema_field(schema_dict(), false),
     },
@@ -235,6 +236,10 @@ fn fallback_name(mode_args: string) -> string? {
   return first_group(SEMANTIC_FALLBACK_RE, mode_args)
 }
 
+fn fallback_policy(mode_args: string) -> string? {
+  return first_group(SEMANTIC_FALLBACK_POLICY_RE, mode_args)
+}
+
 pub fn parse_invariants(path: string, errors: list<string> = []) -> ParsedInvariants {
   const text = harness.fs.read_text(path)
   let entries: list<InvariantEntry> = []
@@ -252,6 +257,7 @@ pub fn parse_invariants(path: string, errors: list<string> = []) -> ParsedInvari
         mode: mode,
         mode_args: mode_args,
         fallback: fallback_name(mode_args),
+        fallback_policy: fallback_policy(mode_args),
         evidence: to_string(groups[2] ?? ""),
         confidence: to_string(groups[3] ?? ""),
         source_date: to_string(groups[4] ?? ""),

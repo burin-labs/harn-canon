@@ -283,7 +283,7 @@ pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_attach)
+@semantic(fallback: no_attach, policy: advisory)
 @archivist(evidence: _EVIDENCE_VECTORIZE, confidence: 0.55, source_date: "2026-05-10")
 /**
  * Warns on for loops over vectors or rows that perform a simple element-wise computation a vectorized op would express directly.
@@ -303,7 +303,7 @@ pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_attach)
+@semantic(fallback: no_attach, policy: advisory)
 @archivist(evidence: _EVIDENCE_RANDOM_SEED, confidence: 0.62, source_date: "2026-05-10")
 /** Warns when an analysis script invokes randomness without an explicit set.seed() upstream. */
 pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
@@ -321,7 +321,7 @@ pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_attach)
+@semantic(fallback: no_attach, policy: advisory)
 @archivist(evidence: _EVIDENCE_NAMESPACE, confidence: 0.62, source_date: "2026-05-10")
 /**
  * Warns when package R/ source loads dependencies via library()/require() or uses unqualified non-base symbols without an importFrom roxygen tag.

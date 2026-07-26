@@ -250,7 +250,7 @@ pub fn prefer_newtype_for_single_field(slice, _ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_partial_functions_in_pub_api)
+@semantic(fallback: no_partial_functions_in_pub_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_TOTAL_FUNCTIONS, confidence: 0.62, source_date: "2026-05-10")
 /**
  * Blocks production functions that pattern-match non-exhaustively without a documented partial contract.
@@ -270,7 +270,7 @@ pub fn total_function_semantic_check(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_partial_functions_in_pub_api)
+@semantic(fallback: no_partial_functions_in_pub_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_ORPHAN_INSTANCES, confidence: 0.66, source_date: "2026-05-10")
 /**
  * Blocks orphan typeclass instances — instances declared in a module that defines neither the class nor the type.
@@ -290,7 +290,7 @@ pub fn no_orphan_instances(slice, ctx, _repo_at_base) {
 }
 
 @invariant
-@semantic(fallback: no_partial_functions_in_pub_api)
+@semantic(fallback: no_partial_functions_in_pub_api, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks hardcoded credentials, tokens, and other long-lived secrets in Haskell source. */
 pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
