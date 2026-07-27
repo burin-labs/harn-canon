@@ -1,154 +1,49 @@
 name: CI
 
 on:
+  pull_request:
   push:
     branches: [main]
-  pull_request:
   merge_group:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  canon-validation:
+  package:
+    uses: burin-labs/.github/.github/workflows/harn-package.yml@bcdcf64e5c7021f649432b77fe2e1f9f489c4824
+
+  canon-contract:
     name: Canon structure and fixture validation
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0
       - name: Install pinned Harn
-        shell: bash
-        run: |
-          set -euo pipefail
-          HARN_VERSION="$(tr -d '[:space:]' < .harn-version)"
-          if ! [[ "${HARN_VERSION}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "::error::.harn-version must contain a semantic version without the leading v" >&2
-            exit 1
-          fi
-          target="x86_64-unknown-linux-gnu"
-          tag="v${HARN_VERSION}"
-          asset_name="harn-${target}.tar.gz"
-          asset_url="https://github.com/burin-labs/harn/releases/download/${tag}/${asset_name}"
-          sums_url="https://github.com/burin-labs/harn/releases/download/${tag}/SHA256SUMS"
-          tmpdir="$(mktemp -d)"
-          download_release_asset() {
-            local url="$1"
-            local output="$2"
-            local label="$3"
-            local max_attempts=20
-            local delay_seconds=15
-
-            for attempt in $(seq 1 "${max_attempts}"); do
-              if curl -fsSL "${url}" -o "${output}"; then
-                return 0
-              fi
-              if [ "${attempt}" -eq "${max_attempts}" ]; then
-                break
-              fi
-              echo "::notice::${label} is not available yet for ${tag}; retry ${attempt}/${max_attempts}" >&2
-              sleep "${delay_seconds}"
-            done
-
-            echo "::error::Timed out waiting for ${label} at ${url}" >&2
-            return 1
-          }
-
-          download_release_asset "${asset_url}" "${tmpdir}/harn.tar.gz" "${asset_name}"
-          download_release_asset "${sums_url}" "${tmpdir}/SHA256SUMS" "SHA256SUMS"
-          expected_sum="$(awk -v name="${asset_name}" '$2 == name { print $1 }' "${tmpdir}/SHA256SUMS")"
-          if [ -z "${expected_sum}" ]; then
-            echo "::error::${asset_name} not listed in SHA256SUMS for ${tag}" >&2
-            exit 1
-          fi
-          actual_sum="$(sha256sum "${tmpdir}/harn.tar.gz" | awk '{ print $1 }')"
-          if [ "${actual_sum}" != "${expected_sum}" ]; then
-            echo "::error::sha256 mismatch for ${asset_name}: expected ${expected_sum}, got ${actual_sum}" >&2
-            exit 1
-          fi
-          tar -xzf "${tmpdir}/harn.tar.gz" -C "${tmpdir}"
-          mkdir -p "${HOME}/.local/bin"
-          install -m 755 "${tmpdir}/harn" "${HOME}/.local/bin/harn"
-          echo "${HOME}/.local/bin" >> "${GITHUB_PATH}"
-
-      - name: Harn script check + lint
-        shell: bash
-        run: |
-          set -euo pipefail
-          scripts=(
-            scripts/canon-lib.harn
-            scripts/validate-canon.harn
-            scripts/execute-fixtures.harn
-            scripts/canon-boundary-test.harn
-          )
-          harn fmt --check "${scripts[@]}"
-          for script in "${scripts[@]}"; do
-            harn check "${script}"
-            harn lint --strict "${script}"
-          done
-
-      - name: Test typed JSON boundaries
-        run: harn test scripts/canon-boundary-test.harn --timeout 30000
-
+        uses: burin-labs/harn/.github/actions/setup-harn@e2089cd9628995bf2080cd1515086a891dff34f4
       - name: Validate canon packs
         shell: bash
         run: HARN_CANON_TODAY="$(date -u +%F)" harn run scripts/validate-canon.harn
-
       - name: Reject side-effect builtins in predicates
         shell: bash
         run: |
           set -euo pipefail
-          # Predicate packs are TRUSTED CODE executed on consumer machines by
-          # `harn lint`. PRs may not introduce calls to side-effect builtins.
-          # See CONTRIBUTING.md "Trust model" for the rationale and the full
-          # forbidden list. The pattern requires `<name>\s*\(` so regex
-          # literals that just mention these names (e.g. the parallel-io
-          # predicate's own scan_without regex) are not false-positives.
           if grep -nrE '\b(command_json|http_get|http_post|process_exec|secret_get|store_set|store_get)\s*\(' --include='*.harn' .; then
-            echo "::error::Predicate packs may not call side-effect builtins. See CONTRIBUTING.md \"Trust model\"." >&2
+            echo "::error::Predicate packs may not call side-effect builtins." >&2
             exit 1
           fi
-          echo "No side-effect builtin calls in predicate packs."
-
-      - name: Harn check + lint predicate packs
-        shell: bash
-        run: |
-          set -euo pipefail
-          harn --version
-          failed=0
-          while IFS= read -r -d '' invariants; do
-            echo "==> ${invariants}"
-            check_ok=1
-            lint_ok=1
-            harn check "${invariants}" || check_ok=0
-            harn lint "${invariants}" || lint_ok=0
-            if [ "${check_ok}" -eq 0 ] || [ "${lint_ok}" -eq 0 ]; then
-              if [ "${check_ok}" -eq 0 ]; then
-                echo "::error file=${invariants}::harn check failed" >&2
-              fi
-              if [ "${lint_ok}" -eq 0 ]; then
-                echo "::error file=${invariants}::harn lint failed" >&2
-              fi
-              failed=1
-            fi
-          done < <(find . -name 'invariants.harn' -type f -not -path './.git/*' -print0)
-          if [ "${failed}" -ne 0 ]; then
-            exit 1
-          fi
-
       - name: Execute deterministic fixture cases
         run: harn run scripts/execute-fixtures.harn
 
-  ci-status:
+  status:
     name: CI status
     if: always()
-    needs: [canon-validation]
+    needs: [package, canon-contract]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
     steps:
-      - name: Check for failures
-        run: |
-          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
-            echo "One or more CI jobs failed"
-            exit 1
-          fi
-          echo "All CI jobs passed or were skipped"
+      - name: Enforce required jobs
+        env:
+          PACKAGE_RESULT: ${{ needs.package.result }}
+          CANON_RESULT: ${{ needs.canon-contract.result }}
+        run: test "$PACKAGE_RESULT" = success && test "$CANON_RESULT" = success
