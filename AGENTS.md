@@ -28,7 +28,7 @@ and evidence-backed.
 ## Validation
 
 - Structure and fixtures:
-  `HARN_CANON_TODAY=$(date -u +%F) harn run scripts/validate-canon.harn`
+  `harn run scripts/validate-canon.harn -- --today $(date -u +%F)`
 - Deterministic fixtures: `harn run scripts/execute-fixtures.harn`
 - Validator syntax:
   `harn check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn`

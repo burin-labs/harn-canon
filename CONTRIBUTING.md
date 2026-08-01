@@ -61,7 +61,7 @@ add syntactically-malicious or unlintable Harn code fail before merge.
 
 ## Review flow
 
-Run `HARN_CANON_TODAY=$(date -u +%F) harn run scripts/validate-canon.harn`
+Run `harn run scripts/validate-canon.harn -- --today $(date -u +%F)`
 before opening a PR. CI runs the same validator and checks:
 
 - expected pack directories
