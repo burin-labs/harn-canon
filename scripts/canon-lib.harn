@@ -14,10 +14,6 @@ import {
   schema_string,
 } from "std/schema"
 
-const ROOT_DIR = path_normalize(path_join(source_dir(), ".."))
-
-const PACK_MANIFEST_PATH = path_join(ROOT_DIR, "canon-packs.json")
-
 const INVARIANT_RE =
   "@invariant\\s*@(deterministic|semantic)(\\s*\\([^)]*\\))?\\s*@archivist\\(\\s*evidence:\\s*(_EVIDENCE_[A-Za-z0-9_]+)\\s*,\\s*confidence:\\s*((?:0(?:\\.\\d+)?|1(?:\\.0+)?))\\s*,\\s*source_date:\\s*\"(\\d{4}-\\d{2}-\\d{2})\"\\s*\\)[\\s\\S]*?pub\\s+fn\\s+([A-Za-z_][A-Za-z0-9_]*)\\s*\\("
 
@@ -140,11 +136,11 @@ pub fn fixture_document_schema() -> Schema<CanonFixtureDocument> {
 }
 
 pub fn repo_root() -> string {
-  return ROOT_DIR
+  return path_normalize(path_join(source_dir(), ".."))
 }
 
 pub fn read_pack_manifest_result() -> TypedReadResult<CanonPackManifest> {
-  return read_pack_manifest_path_result(PACK_MANIFEST_PATH)
+  return read_pack_manifest_path_result(path_join(repo_root(), "canon-packs.json"))
 }
 
 pub fn read_pack_manifest_path_result(path: string) -> TypedReadResult<CanonPackManifest> {
