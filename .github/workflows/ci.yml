@@ -24,7 +24,7 @@ jobs:
         uses: burin-labs/harn/.github/actions/setup-harn@e2089cd9628995bf2080cd1515086a891dff34f4
       - name: Validate canon packs
         shell: bash
-        run: HARN_CANON_TODAY="$(date -u +%F)" harn run scripts/validate-canon.harn
+        run: harn run scripts/validate-canon.harn -- --today "$(date -u +%F)"
       - name: Reject side-effect builtins in predicates
         shell: bash
         run: |
