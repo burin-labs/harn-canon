@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   package:
-    uses: burin-labs/.github/.github/workflows/harn-package.yml@c5c3362bd344a549d6e5ed5418d5932405443738
+    uses: burin-labs/.github/.github/workflows/harn-package.yml@a556b40acf7cbb278bd9b25b293fd99603656ef8
 
   canon-contract:
     name: Canon structure and fixture validation
@@ -24,7 +24,7 @@ jobs:
           persist-credentials: false
       - name: Install pinned Harn
         id: harn
-        uses: burin-labs/harn/.github/actions/setup-harn@e2089cd9628995bf2080cd1515086a891dff34f4
+        uses: burin-labs/harn/.github/actions/setup-harn@cf52e20564cb722f2f060bc222fa79d996cd3c30
       - name: Validate canon packs
         shell: bash
         run: harn run scripts/validate-canon.harn -- --today "$(date -u +%F)"
@@ -41,8 +41,7 @@ jobs:
     needs: [package, canon-contract]
     runs-on: ubuntu-latest
     steps:
-      - name: Enforce required jobs
-        env:
-          PACKAGE_RESULT: ${{ needs.package.result }}
-          CANON_RESULT: ${{ needs.canon-contract.result }}
-        run: test "$PACKAGE_RESULT" = success && test "$CANON_RESULT" = success
+      - name: Require successful verification jobs
+        uses: burin-labs/.github/.github/actions/require-successful-needs@a556b40acf7cbb278bd9b25b293fd99603656ef8
+        with:
+          results-json: ${{ toJSON(needs.*.result) }}
