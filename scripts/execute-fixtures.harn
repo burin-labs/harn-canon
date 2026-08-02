@@ -15,7 +15,10 @@ import {
 
 const arg_spec = [{kind: "option", name: "pack", flags: ["--pack"], multi: true, default: []}]
 
+type FixtureHarness = {fs: HarnessFs, runtime: HarnessRuntime}
+
 fn run_case(
+  harness: FixtureHarness,
   pack: string,
   predicate: string,
   mode: string,
@@ -24,11 +27,11 @@ fn run_case(
   const semantic_judge = { _request ->
     return {verdict: case.judge_verdict ?? case.expect, findings: []}
   }
-  const eval_result = flow_evaluate_invariants(
+  const eval_result = harness.runtime.flow_evaluate_invariants(
     "",
     {files: case.files},
     {
-      path: path_join(repo_root(), pack, "invariants.harn"),
+      path: path_join(repo_root(harness.fs), pack, "invariants.harn"),
       predicates: [predicate],
       include_semantic: mode == "semantic",
       budget_ms: if mode == "semantic" {
@@ -72,30 +75,39 @@ fn run_case(
  * @effects: [fs.read]
  * @errors: []
  */
-pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
-  const parsed = parse_invariants(path_join(root, pack, "invariants.harn"), [])
+pub fn __run_pack_at(harness: FixtureHarness, root: string, pack: string) -> FixturePackReport {
+  const invariants_path = path_join(root, pack, "invariants.harn")
+  const parsed = parse_invariants(harness.fs, invariants_path, [])
   if len(parsed.errors) > 0 {
     return {
       pack: pack,
       executed: 0,
-      failures: parsed.errors.map({ error -> {kind: "setup", error: error} }).to_list(),
+      failures: parsed.errors.map(
+        { error -> {kind: "setup", source: "invariants", path: invariants_path, error: error} },
+      )
+        .to_list(),
     }
   }
   let executed = 0
   let failures: list<FixtureRunFailure> = []
   for entry in parsed.entries {
     const fixture_path = path_join(root, pack, "fixtures", entry.name + ".json")
-    const fixture_result = read_fixture_document_result(fixture_path)
+    const fixture_result = read_fixture_document_result(harness.fs, fixture_path)
     if !is_ok(fixture_result) {
       failures = failures
         + [
-        {kind: "setup", error: structured_read_failure_message(unwrap_err(fixture_result))},
+        {
+          kind: "setup",
+          source: "fixture",
+          path: fixture_path,
+          error: structured_read_failure_message(unwrap_err(fixture_result)),
+        },
       ]
       continue
     }
     const fixture = unwrap(fixture_result)
     for case in fixture.cases {
-      const result = run_case(pack, entry.name, entry.mode, case)
+      const result = run_case(harness, pack, entry.name, entry.mode, case)
       executed = executed + 1
       if result.kind == "fail" {
         failures = failures + [result.failure]
@@ -105,20 +117,20 @@ pub fn __run_pack_at(root: string, pack: string) -> FixturePackReport {
   return {pack: pack, executed: executed, failures: failures}
 }
 
-fn run_pack(pack: string) -> FixturePackReport {
-  return __run_pack_at(repo_root(), pack)
+fn run_pack(harness: FixtureHarness, pack: string) -> FixturePackReport {
+  return __run_pack_at(harness, repo_root(harness.fs), pack)
 }
 
 fn main(harness: Harness) {
   const parsed = parse_args(argv, arg_spec)
   if len(parsed?._errors ?? []) > 0 {
     harness.stdio.println(join(parsed._errors, "\n"))
-    exit(2)
+    harness.runtime.exit(2)
   }
-  const manifest_result = read_pack_manifest_result()
+  const manifest_result = read_pack_manifest_result(harness.fs)
   if !is_ok(manifest_result) {
     harness.stdio.println(structured_read_failure_message(unwrap_err(manifest_result)))
-    exit(1)
+    harness.runtime.exit(1)
   }
   const all_packs = expected_packs(unwrap(manifest_result))
   const requested = parsed?.pack ?? []
@@ -130,7 +142,7 @@ fn main(harness: Harness) {
   }
   if len(unknown) > 0 {
     harness.stdio.println("unknown pack(s): " + join(unknown.sort(), ", "))
-    exit(2)
+    harness.runtime.exit(2)
   }
   const packs = if len(requested) > 0 {
     requested
@@ -139,7 +151,7 @@ fn main(harness: Harness) {
   }
   let reports: list<FixturePackReport> = []
   for pack in packs {
-    reports = reports + [run_pack(pack)]
+    reports = reports + [run_pack({fs: harness.fs, runtime: harness.runtime}, pack)]
   }
   let failures: list<FixtureRunFailure> = []
   let executed = 0
@@ -154,7 +166,7 @@ fn main(harness: Harness) {
         harness.stdio.println("- " + report.pack + ": " + json_stringify(failure))
       }
     }
-    exit(1)
+    harness.runtime.exit(1)
   }
   harness.stdio.println(
     "Executed "

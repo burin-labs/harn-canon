@@ -30,8 +30,12 @@ and evidence-backed.
 - Structure and fixtures:
   `harn run scripts/validate-canon.harn -- --today $(date -u +%F)`
 - Deterministic fixtures: `harn run scripts/execute-fixtures.harn`
+- Package boundary tests: `harn test tests/`
+- Strict source gate: `harn check --strict-types . && harn lint --strict .`
+- Typed Flow capability boundary:
+  `harn run --no-sandbox scripts/assert-flow-capability-contract.harn`
 - Validator syntax:
-  `harn check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn`
+  `harn check scripts/canon-lib.harn scripts/validate-canon.harn scripts/execute-fixtures.harn scripts/assert-flow-capability-contract.harn tests/canon-boundary.harn`
 - Whitespace: `git diff --check`
 - Harn formatting: run `harn fmt --check <changed .harn files>` when touching
   Harn files. Do not treat repo-wide `harn fmt --check .` as a clean gate until

@@ -120,16 +120,6 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings = findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
 fn allow(rule) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }

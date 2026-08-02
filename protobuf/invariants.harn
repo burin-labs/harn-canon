@@ -77,21 +77,6 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn scan_files_without(files, include_pattern, exclude_pattern) {
-  return scan_files_if(
-    files,
-    { file ->
-      regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(
-        exclude_pattern,
-        file.text,
-        "s",
-      )
-        == nil
-    },
-  )
-}
-
 fn allow(rule) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }

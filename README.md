@@ -26,6 +26,9 @@ as `dockerfile`. Harn and product hosts should infer harn-canon packs from that
 manifest instead of carrying their own language-routing tables. The validator
 treats eval-critical language routes as a contract so convergence packs cannot
 silently disappear from Harn/Burin discovery.
+Hosts that must bundle the manifest project these exact bytes rather than
+maintaining a fork. The fleet policy checks Burin's bundled resource against
+this file before runtime bumps.
 
 When this repo is installed as a Harn package, `harn.toml` exposes the same
 `canon-packs.json` file as a `harn.canon` contribution. Package consumers should

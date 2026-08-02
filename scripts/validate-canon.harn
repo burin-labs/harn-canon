@@ -11,6 +11,9 @@ import {
   duplicate_values,
   expected_packs,
   is_normalized_relative_path,
+  markdown_list_link_targets,
+  markdown_section_lines,
+  markdown_table_code_keys,
   parse_invariants,
   parse_ymd,
   read_fixture_document_result,
@@ -147,7 +150,11 @@ fn validate_eval_critical_routes(
   return out
 }
 
-fn validate_manifest(manifest: CanonPackManifest, errors: list<string>) -> list<string> {
+fn validate_manifest(
+  fs: HarnessFs,
+  manifest: CanonPackManifest,
+  errors: list<string>,
+) -> list<string> {
   let out = errors
   let seen = {}
   let packs_by_id: dict<string, CanonPack> = {}
@@ -175,10 +182,10 @@ fn validate_manifest(manifest: CanonPackManifest, errors: list<string>) -> list<
     if trim(pack.title) == "" {
       out = out + ["canon-packs.json: " + pack_id + " needs a non-empty title"]
     }
-    if !harness.fs.exists(path_join(repo_root(), expected_invariants)) {
+    if !fs.exists(path_join(repo_root(fs), expected_invariants)) {
       out = out + ["canon-packs.json: " + expected_invariants + " does not exist"]
     }
-    if !harness.fs.exists(path_join(repo_root(), expected_fixtures)) {
+    if !fs.exists(path_join(repo_root(fs), expected_fixtures)) {
       out = out + ["canon-packs.json: " + expected_fixtures + " does not exist"]
     }
     out = validate_routing_selectors(pack, out)
@@ -189,13 +196,24 @@ fn validate_manifest(manifest: CanonPackManifest, errors: list<string>) -> list<
   return validate_eval_critical_routes(packs_by_id, out)
 }
 
-fn validate_readme_coverage(manifest: CanonPackManifest, errors: list<string>) -> list<string> {
+fn validate_readme_coverage(
+  fs: HarnessFs,
+  manifest: CanonPackManifest,
+  errors: list<string>,
+) -> list<string> {
   let out = errors
-  const readme = harness.fs.read_text(path_join(repo_root(), "README.md"))
-  for pack in expected_packs(manifest) {
-    if !readme.contains("](./" + pack + "/)") {
-      out = out + ["README.md: missing pack link for " + pack + "/"]
-    }
+  const readme = fs.read_text(path_join(repo_root(fs), "README.md"))
+  const expected_targets = expected_packs(manifest).map({ pack -> "./" + pack + "/" }).to_list()
+  const actual_targets = markdown_list_link_targets(markdown_section_lines(readme, "## Packs"))
+  for target in set_difference(expected_targets, actual_targets) {
+    out = out + ["README.md: missing pack link target " + target]
+  }
+  for target in set_difference(actual_targets, expected_targets) {
+    out = out + ["README.md: unexpected pack link target " + target]
+  }
+  const duplicates = duplicate_values(actual_targets)
+  if duplicates.count > 0 {
+    out = out + ["README.md: duplicate pack link targets: " + join(duplicates, ", ")]
   }
   return out
 }
@@ -295,25 +313,36 @@ fn validate_evidence(
 }
 
 fn validate_pack_readme_coverage(
+  fs: HarnessFs,
   pack_dir: string,
   predicate_names: list<string>,
   errors: list<string>,
 ) -> list<string> {
   let out = errors
   const readme_path = path_join(pack_dir, "README.md")
-  const readme = harness.fs.read_text(readme_path)
-  let missing: list<string> = []
-  for name in predicate_names {
-    if !readme.contains(name) {
-      missing = missing + [name]
-    }
-  }
+  const readme = fs.read_text(readme_path)
+  const documented = markdown_table_code_keys(
+    markdown_section_lines(readme, "## Predicate coverage"),
+  )
+  const missing = set_difference(predicate_names, documented)
   if len(missing) > 0 {
     out = out
       + [
       basename(pack_dir) + "/README.md: missing predicate coverage for "
         + join(missing.sort(), ", "),
     ]
+  }
+  const unexpected = set_difference(documented, predicate_names)
+  if len(unexpected) > 0 {
+    out = out
+      + [
+      basename(pack_dir) + "/README.md: unexpected predicate rows " + join(unexpected, ", "),
+    ]
+  }
+  const duplicates = duplicate_values(documented)
+  if len(duplicates) > 0 {
+    out = out
+      + [basename(pack_dir) + "/README.md: duplicate predicate rows " + join(duplicates, ", ")]
   }
   return out
 }
@@ -413,12 +442,13 @@ pub fn validate_fixture_value(
 }
 
 fn validate_fixture_document(
+  fs: HarnessFs,
   pack_dir: string,
   fixture_path: string,
   errors: list<string>,
 ) -> list<string> {
   const rel_path = basename(pack_dir) + "/fixtures/" + basename(fixture_path)
-  const loaded = read_fixture_document_result(fixture_path)
+  const loaded = read_fixture_document_result(fs, fixture_path)
   if !is_ok(loaded) {
     return errors + [rel_path + ": " + unwrap_err(loaded).detail]
   }
@@ -428,17 +458,18 @@ fn validate_fixture_document(
 }
 
 fn validate_fixtures(
+  fs: HarnessFs,
   pack_dir: string,
   predicate_names: list<string>,
   errors: list<string>,
 ) -> FixtureValidationReport {
   let out = errors
   const fixtures_dir = path_join(pack_dir, "fixtures")
-  if !harness.fs.exists(fixtures_dir) {
+  if !fs.exists(fixtures_dir) {
     return {errors: out + [basename(pack_dir) + ": missing fixtures/ directory"], count: 0}
   }
   let fixture_files: list<string> = []
-  for entry in harness.fs.list_dir(fixtures_dir) ?? [] {
+  for entry in fs.list_dir(fixtures_dir) ?? [] {
     if entry.ends_with(".json") {
       fixture_files = fixture_files + [path_join(fixtures_dir, entry)]
     }
@@ -454,16 +485,16 @@ fn validate_fixtures(
     out = out + [basename(pack_dir) + ": fixture files without predicates: " + join(extra, ", ")]
   }
   for fixture_path in fixture_files {
-    out = validate_fixture_document(pack_dir, fixture_path, out)
+    out = validate_fixture_document(fs, pack_dir, fixture_path, out)
   }
   return {errors: out, count: len(fixture_files)}
 }
 
-fn pack_dirs() -> list<string> {
+fn pack_dirs(fs: HarnessFs) -> list<string> {
   let out: list<string> = []
-  for entry in harness.fs.list_dir(repo_root()) ?? [] {
-    const dir = path_join(repo_root(), entry)
-    if harness.fs.exists(path_join(dir, "invariants.harn")) {
+  for entry in fs.list_dir(repo_root(fs)) ?? [] {
+    const dir = path_join(repo_root(fs), entry)
+    if fs.exists(path_join(dir, "invariants.harn")) {
       out = out + [entry]
     }
   }
@@ -478,45 +509,45 @@ fn main(harness: Harness) {
   }
   if len(parsed?._errors ?? []) > 0 {
     harness.stdio.println(join(parsed._errors, "\n"))
-    exit(2)
+    harness.runtime.exit(2)
   }
   const today_result = try {
-    today_from_env_or_args(parsed?.today)
+    today_from_env_or_args(harness.env, parsed?.today)
   }
   if is_err(today_result) {
     harness.stdio.println("Canon validation failed:\n- " + to_string(unwrap_err(today_result)))
-    exit(1)
+    harness.runtime.exit(1)
   }
   const today = unwrap(today_result)
-  const manifest_result = read_pack_manifest_result()
+  const manifest_result = read_pack_manifest_result(harness.fs)
   if !is_ok(manifest_result) {
     harness.stdio.println(
       "Canon validation failed:\n- " + structured_read_failure_message(unwrap_err(manifest_result)),
     )
-    exit(1)
+    harness.runtime.exit(1)
   }
   const manifest = unwrap(manifest_result)
   let errors: list<string> = []
   const expected = expected_packs(manifest)
-  const actual = pack_dirs()
+  const actual = pack_dirs(harness.fs)
   for pack in set_difference(expected, actual) {
     errors = errors + [pack + ": expected pack directory is missing"]
   }
   for pack in set_difference(actual, expected) {
     errors = errors + [pack + ": pack directory is not listed in EXPECTED_PACKS"]
   }
-  errors = validate_manifest(manifest, errors)
-  errors = validate_readme_coverage(manifest, errors)
+  errors = validate_manifest(harness.fs, manifest, errors)
+  errors = validate_readme_coverage(harness.fs, manifest, errors)
   let total_predicates = 0
   let total_fixtures = 0
   for pack in expected {
-    const pack_dir = path_join(repo_root(), pack)
+    const pack_dir = path_join(repo_root(harness.fs), pack)
     const invariants_path = path_join(pack_dir, "invariants.harn")
     const readme_path = path_join(pack_dir, "README.md")
     if !harness.fs.exists(invariants_path) || !harness.fs.exists(readme_path) {
       continue
     }
-    const parsed_invariants = parse_invariants(invariants_path, errors)
+    const parsed_invariants = parse_invariants(harness.fs, invariants_path, errors)
     errors = parsed_invariants.errors
     const entries = parsed_invariants.entries
     const names = entries.map({ entry -> entry.name }).to_list()
@@ -553,9 +584,9 @@ fn main(harness: Harness) {
     }
     errors = validate_semantic_fallbacks(pack, entries, errors)
     errors = validate_evidence(pack, entries, parsed_invariants.evidence_defs, today, errors)
-    errors = validate_pack_readme_coverage(pack_dir, names, errors)
+    errors = validate_pack_readme_coverage(harness.fs, pack_dir, names, errors)
     total_predicates = total_predicates + len(entries)
-    const fixture_result = validate_fixtures(pack_dir, names, errors)
+    const fixture_result = validate_fixtures(harness.fs, pack_dir, names, errors)
     errors = fixture_result.errors
     total_fixtures = total_fixtures + fixture_result.count
   }
@@ -564,7 +595,7 @@ fn main(harness: Harness) {
     for error in errors {
       harness.stdio.println("- " + error)
     }
-    exit(1)
+    harness.runtime.exit(1)
   }
   harness.stdio.println(
     "Validated "
