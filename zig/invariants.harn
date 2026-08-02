@@ -556,9 +556,10 @@ fn _symbol_observed(callee, observed) {
  * `{variable, callee}` record. Only producer-role callees are recorded, so a
  * `const n = add(2, 3)` binding never enters the list.
  */
-fn _producer_bindings(file_text) {
+fn _producer_bindings(harness: HarnessAst, file_text) {
   let bindings = []
   const search = ast_search(
+    harness,
     {
       source: file_text,
       query:
@@ -581,9 +582,10 @@ fn _producer_bindings(file_text) {
  * author-written string literal, and (3) references a producer-bound variable
  * whose producing callee is absent from `ctx.observed_symbols`.
  */
-fn _ungrounded_assertions(file_text, bindings, observed) {
+fn _ungrounded_assertions(harness: HarnessAst, file_text, bindings, observed) {
   let hits = []
   const search = ast_search(
+    harness,
     {source: file_text, query: "(call_expression function: (_) @callee) @call", language: "zig"},
   )
   for node in search.matches ?? [] {
@@ -621,18 +623,18 @@ fn _ungrounded_assertions(file_text, bindings, observed) {
  * hand-simulated value. The producing callee is resolved by role, and the
  * grounded case (`observe_output` populated the symbol) suppresses the block.
  */
-pub fn assertion_on_ungrounded_output(slice, ctx, _repo_at_base) {
+pub fn assertion_on_ungrounded_output(harness: HarnessAst, slice, ctx, _repo_at_base) {
   const observed = ctx?.observed_symbols ?? []
   let findings = []
   for file in zig_files(slice) {
     if !is_test_zig_path(file.path) {
       continue
     }
-    const bindings = _producer_bindings(file.text)
+    const bindings = _producer_bindings(harness, file.text)
     if len(bindings) == 0 {
       continue
     }
-    for hit in _ungrounded_assertions(file.text, bindings, observed) {
+    for hit in _ungrounded_assertions(harness, file.text, bindings, observed) {
       findings = findings.push({path: file.path, symbol: hit.symbol, assertion: hit.assertion})
     }
   }

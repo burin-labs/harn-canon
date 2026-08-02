@@ -65,16 +65,6 @@ fn production_tf_files(slice) {
   return tf_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn scan_files(files, pattern) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, "s") != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
 fn scan_files_if(files, predicate) {
   let findings = []
   for file in files {

@@ -1,0 +1,194 @@
+import { parse_args } from "std/cli"
+import { command_run } from "std/command"
+import "std/schema"
+import { with_temp_dir } from "std/testing"
+
+const FLOW_CAPABILITY_DIAGNOSTIC = "HARN-ORC-009"
+
+const arg_spec = [{kind: "option", name: "harn_bin", flags: ["--harn-bin"], default: "harn"}]
+
+type CheckDiagnostic = {source: string, severity: string, code: string}
+
+type CheckFileProjection = {path: string, diagnostics: list<CheckDiagnostic>}
+
+type CheckEnvelopeProjection = {
+  schemaVersion: int,
+  ok: bool,
+  data: {files: list<CheckFileProjection>},
+}
+
+type CheckRunProjection = {
+  exit_code: int,
+  ok: bool,
+  path: string,
+  diagnostics: list<CheckDiagnostic>,
+}
+
+type FlowCapabilityCase = {name: string, declarations: list<string>, parameter: string}
+
+fn check_envelope_projection_schema() -> Schema<CheckEnvelopeProjection> {
+  const diagnostic = schema_object(
+    {
+      source: schema_field(schema_string()),
+      severity: schema_field(schema_string()),
+      code: schema_field(schema_string()),
+    },
+  )
+  return schema_object(
+    {
+      schemaVersion: schema_field(schema_int()),
+      ok: schema_field(schema_bool()),
+      data: schema_field(
+        schema_object(
+          {
+            files: schema_field(
+              schema_list(
+                schema_object(
+                  {
+                    path: schema_field(schema_string()),
+                    diagnostics: schema_field(schema_list(diagnostic)),
+                  },
+                ),
+              ),
+            ),
+          },
+        ),
+      ),
+    },
+  )
+}
+
+fn flow_source(declarations: list<string>, parameter: string) -> string {
+  return join(
+    declarations
+      + [
+      "",
+      "@invariant",
+      "@deterministic",
+      "@archivist(evidence: [\"https://example.com/a\", \"https://example.org/b\"], confidence: 0.9, source_date: \"2026-08-01\")",
+      "fn _inspect(",
+      "  " + parameter + ",",
+      "  _slice,",
+      "  _ctx,",
+      "  _repo,",
+      ") -> bool { return true }",
+      "",
+    ],
+    "\n",
+  )
+}
+
+fn ensure(condition: bool, message: string) -> nil {
+  if !condition {
+    throw message
+  }
+  return nil
+}
+
+fn check_flow_source(
+  tools: HarnessTools,
+  harn_bin: string,
+  source_path: string,
+) -> CheckRunProjection {
+  const result = command_run(
+    tools,
+    [harn_bin, "check", "--json", source_path],
+    {capture: {max_inline_bytes: 65536}},
+  )
+  const decoded = parse_json_typed_report(result.stdout, check_envelope_projection_schema())
+  if !decoded.ok {
+    throw "harn check returned an invalid diagnostic envelope: " + json_stringify(decoded)
+  }
+  const envelope = decoded.value
+  ensure(envelope.schemaVersion == 1, "unsupported harn check schema version")
+  ensure(envelope.data.files.count == 1, "harn check must report exactly one source file")
+  return {
+    exit_code: result.exit_code,
+    ok: envelope.ok,
+    path: envelope.data.files[0]?.path ?? "",
+    diagnostics: envelope.data.files.flat_map({ file -> file.diagnostics }).to_list(),
+  }
+}
+
+fn assert_flow_capability_rejected(
+  tools: HarnessTools,
+  harn_bin: string,
+  source_path: string,
+  name: string,
+) -> nil {
+  const result = check_flow_source(tools, harn_bin, source_path)
+  ensure(result.path == source_path, name + ": harn check reported the wrong source path")
+  ensure(result.exit_code == 1, name + ": harn check must exit 1")
+  ensure(!result.ok, name + ": harn check must reject unsupported Flow authority")
+  ensure(
+    result.diagnostics.count == 1,
+    name
+      + ": expected exactly one diagnostic, got "
+      + to_string(result.diagnostics.count)
+      + ": "
+      + json_stringify(result.diagnostics),
+  )
+  const diagnostic = result.diagnostics[0]
+  ensure(diagnostic?.code == FLOW_CAPABILITY_DIAGNOSTIC, name + ": unexpected diagnostic code")
+  ensure(diagnostic?.source == "type", name + ": diagnostic must come from type checking")
+  ensure(diagnostic?.severity == "error", name + ": diagnostic must be an error")
+  return nil
+}
+
+fn assert_flow_ast_capability_accepted(
+  tools: HarnessTools,
+  harn_bin: string,
+  source_path: string,
+) -> nil {
+  const result = check_flow_source(tools, harn_bin, source_path)
+  ensure(result.path == source_path, "accepted Flow check reported the wrong source path")
+  ensure(result.exit_code == 0, "direct leading HarnessAst must pass harn check")
+  ensure(result.ok, "direct leading HarnessAst must be accepted")
+  ensure(
+    result.diagnostics.count == 0,
+    "direct leading HarnessAst produced diagnostics: " + json_stringify(result.diagnostics),
+  )
+  return nil
+}
+
+fn main(harness: Harness) {
+  const parsed = parse_args(argv, arg_spec)
+  ensure(len(parsed?._errors ?? []) == 0, join(parsed?._errors ?? [], "\n"))
+  const harn_bin = trim(parsed?.harn_bin ?? "")
+  ensure(harn_bin != "", "--harn-bin must name the checked Harn executable")
+  with_temp_dir(
+    harness.fs,
+    { root ->
+      const rejected: list<FlowCapabilityCase> = [
+        {
+          name: "aliased leading AST",
+          declarations: ["type AstAlias = HarnessAst"],
+          parameter: "_ast_alias: AstAlias",
+        },
+        {
+          name: "nested capability bundle",
+          declarations: [],
+          parameter: "_bundle: {ast: HarnessAst, fs: HarnessFs}",
+        },
+        {
+          name: "aliased network authority",
+          declarations: ["type Network = HarnessNet"],
+          parameter: "_network: Network",
+        },
+        {name: "root authority", declarations: [], parameter: "_root: Harness"},
+      ]
+      for rejected_case in rejected {
+        const source_path = path_join(root, rejected_case.name.replace(" ", "-") + ".harn")
+        harness.fs.write_text(
+          source_path,
+          flow_source(rejected_case.declarations, rejected_case.parameter),
+        )
+        assert_flow_capability_rejected(harness.tools, harn_bin, source_path, rejected_case.name)
+      }
+      const allowed_path = path_join(root, "leading-ast-capability.harn")
+      harness.fs.write_text(allowed_path, flow_source([], "_ast: HarnessAst"))
+      assert_flow_ast_capability_accepted(harness.tools, harn_bin, allowed_path)
+    },
+  )
+  harness.stdio.println("Flow capability contract: 5/5 typed cases passed")
+}

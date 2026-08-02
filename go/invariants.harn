@@ -146,7 +146,7 @@ fn go_declaration_key(path, line) {
     return ""
   }
   const package_dir = go_package_dir(path)
-  let rest = trimmed[5:].trim()
+  const rest = trimmed[5:].trim()
   if rest.starts_with("(") {
     const receiver = rest[1:].split(")")[0] ?? ""
     const receiver_type = go_receiver_type(receiver)

@@ -83,7 +83,24 @@ pub type FixtureCaseFailure = {
   result: unknown,
 }
 
-pub type FixtureSetupFailure = {kind: "setup", error: string}
+pub type FixtureSetupSource = "invariants" | "fixture"
+
+pub type FixtureSetupFailureCode = "invariant_contract_invalid" \
+  | "absent" \
+  | "unreadable" \
+  | "malformed" \
+  | "recursion_limit" \
+  | "schema_invalid" \
+  | "rule_failed" \
+  | "rule_error"
+
+pub type FixtureSetupFailure = {
+  kind: "setup",
+  source: FixtureSetupSource,
+  code: FixtureSetupFailureCode,
+  path: string,
+  detail: string,
+}
 
 pub type FixtureRunFailure = FixtureCaseFailure | FixtureSetupFailure
 
@@ -135,20 +152,26 @@ pub fn fixture_document_schema() -> Schema<CanonFixtureDocument> {
   return schema_closed_object({predicate: schema_string(), cases: schema_list(case_schema)})
 }
 
-pub fn repo_root() -> string {
-  return path_normalize(path_join(source_dir(), ".."))
+pub fn repo_root(fs: HarnessFs) -> string {
+  return path_normalize(path_join(fs.source_dir(), ".."))
 }
 
-pub fn read_pack_manifest_result() -> TypedReadResult<CanonPackManifest> {
-  return read_pack_manifest_path_result(path_join(repo_root(), "canon-packs.json"))
+pub fn read_pack_manifest_result(fs: HarnessFs) -> TypedReadResult<CanonPackManifest> {
+  return read_pack_manifest_path_result(fs, path_join(repo_root(fs), "canon-packs.json"))
 }
 
-pub fn read_pack_manifest_path_result(path: string) -> TypedReadResult<CanonPackManifest> {
-  return read_json_typed_result<CanonPackManifest>(path, pack_manifest_schema())
+pub fn read_pack_manifest_path_result(
+  fs: HarnessFs,
+  path: string,
+) -> TypedReadResult<CanonPackManifest> {
+  return read_json_typed_result<CanonPackManifest>(fs, path, pack_manifest_schema())
 }
 
-pub fn read_fixture_document_result(path: string) -> TypedReadResult<CanonFixtureDocument> {
-  return read_json_typed_result<CanonFixtureDocument>(path, fixture_document_schema())
+pub fn read_fixture_document_result(
+  fs: HarnessFs,
+  path: string,
+) -> TypedReadResult<CanonFixtureDocument> {
+  return read_json_typed_result<CanonFixtureDocument>(fs, path, fixture_document_schema())
 }
 
 pub fn structured_read_failure_message(
@@ -202,6 +225,57 @@ pub fn set_intersects(left: list<string>, right: list<string>) -> bool {
   return false
 }
 
+pub fn markdown_section_lines(markdown: string, heading: string) -> list<string> {
+  let active = false
+  let lines: list<string> = []
+  for raw_line in markdown.split("\n") {
+    const line = trim(raw_line)
+    if regex_match("^#{1,6} ", line, "") != nil {
+      active = line == heading
+    } else if active {
+      lines = lines + [line]
+    }
+  }
+  return lines
+}
+
+pub fn markdown_list_link_targets(lines: list<string>) -> list<string> {
+  let targets: list<string> = []
+  for line in lines {
+    if !line.starts_with("- [") {
+      continue
+    }
+    const label_and_target = line.split("](")
+    if label_and_target.count != 2 {
+      continue
+    }
+    const target_and_suffix = label_and_target[1].split(")")
+    if target_and_suffix.count < 2 {
+      continue
+    }
+    targets = targets + [target_and_suffix[0]]
+  }
+  return targets
+}
+
+pub fn markdown_table_code_keys(lines: list<string>) -> list<string> {
+  let keys: list<string> = []
+  for line in lines {
+    if !line.starts_with("|") {
+      continue
+    }
+    const cells = line.split("|")
+    if cells.count < 3 {
+      continue
+    }
+    const key = trim(cells[1])
+    if key.starts_with("`") && key.ends_with("`") && len(key) > 2 {
+      keys = keys + [key[1:-1]]
+    }
+  }
+  return keys
+}
+
 pub fn is_normalized_relative_path(value: string) -> bool {
   if value.starts_with("/") || value.contains("\\") {
     return false
@@ -236,8 +310,12 @@ fn fallback_policy(mode_args: string) -> string? {
   return first_group(SEMANTIC_FALLBACK_POLICY_RE, mode_args)
 }
 
-pub fn parse_invariants(path: string, errors: list<string> = []) -> ParsedInvariants {
-  const text = harness.fs.read_text(path)
+pub fn parse_invariants(
+  fs: HarnessFs,
+  path: string,
+  errors: list<string> = [],
+) -> ParsedInvariants {
+  const text = fs.read_text(path)
   let entries: list<InvariantEntry> = []
   for capture in regex_captures(INVARIANT_RE, text) ?? [] {
     const groups = capture?.groups ?? []
@@ -339,8 +417,8 @@ pub fn shifted_months(day: CanonDate, months: int) -> CanonDate {
   }
 }
 
-pub fn today_from_env_or_args(today_arg: unknown = nil) -> CanonDate {
-  const raw = trim(to_string(today_arg ?? harness.env.get("HARN_CANON_TODAY") ?? ""))
+pub fn today_from_env_or_args(env: HarnessEnv, today_arg: unknown = nil) -> CanonDate {
+  const raw = trim(to_string(today_arg ?? env.get("HARN_CANON_TODAY") ?? ""))
   if raw == "" {
     throw "set HARN_CANON_TODAY=YYYY-MM-DD or pass --today YYYY-MM-DD"
   }
