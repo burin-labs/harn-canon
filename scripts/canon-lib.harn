@@ -85,11 +85,21 @@ pub type FixtureCaseFailure = {
 
 pub type FixtureSetupSource = "invariants" | "fixture"
 
+pub type FixtureSetupFailureCode = "invariant_contract_invalid" \
+  | "absent" \
+  | "unreadable" \
+  | "malformed" \
+  | "recursion_limit" \
+  | "schema_invalid" \
+  | "rule_failed" \
+  | "rule_error"
+
 pub type FixtureSetupFailure = {
   kind: "setup",
   source: FixtureSetupSource,
+  code: FixtureSetupFailureCode,
   path: string,
-  error: string,
+  detail: string,
 }
 
 pub type FixtureRunFailure = FixtureCaseFailure | FixtureSetupFailure

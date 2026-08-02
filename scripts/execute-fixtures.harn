@@ -83,7 +83,15 @@ pub fn __run_pack_at(harness: FixtureHarness, root: string, pack: string) -> Fix
       pack: pack,
       executed: 0,
       failures: parsed.errors.map(
-        { error -> {kind: "setup", source: "invariants", path: invariants_path, error: error} },
+        { detail ->
+          {
+            kind: "setup",
+            source: "invariants",
+            code: "invariant_contract_invalid",
+            path: invariants_path,
+            detail: detail,
+          }
+        },
       )
         .to_list(),
     }
@@ -94,13 +102,15 @@ pub fn __run_pack_at(harness: FixtureHarness, root: string, pack: string) -> Fix
     const fixture_path = path_join(root, pack, "fixtures", entry.name + ".json")
     const fixture_result = read_fixture_document_result(harness.fs, fixture_path)
     if !is_ok(fixture_result) {
+      const failure = unwrap_err(fixture_result)
       failures = failures
         + [
         {
           kind: "setup",
           source: "fixture",
+          code: failure.kind,
           path: fixture_path,
-          error: structured_read_failure_message(unwrap_err(fixture_result)),
+          detail: structured_read_failure_message(failure),
         },
       ]
       continue

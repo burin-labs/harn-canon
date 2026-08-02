@@ -265,8 +265,8 @@ pipeline test_executor_reports_malformed_fixture_as_setup_failure(harness: Harne
       assert_eq(report.failures.count, 1)
       assert_eq(report.failures[0]?.kind, "setup")
       assert_eq(report.failures[0]?.source, "fixture")
+      assert_eq(report.failures[0]?.code, "schema_invalid")
       assert_eq(report.failures[0]?.path, path_join(fixtures_root, "malformed_rule.json"))
-      assert((report.failures[0]?.error ?? "") != "", "typed decoder failure is reported")
     },
   )
 }
@@ -288,8 +288,12 @@ pipeline test_executor_reports_malformed_invariants_as_setup_failure(harness: Ha
       assert_eq(report.failures.count, 1)
       assert_eq(report.failures[0]?.kind, "setup")
       assert_eq(report.failures[0]?.source, "invariants")
+      assert_eq(report.failures[0]?.code, "invariant_contract_invalid")
       assert_eq(report.failures[0]?.path, invariants_path)
-      assert((report.failures[0]?.error ?? "") != "", "parser failure is reported")
+      assert_eq(
+        report.failures[0]?.detail,
+        invariants_path + ": parsed 0 annotated pub fns but found 1 @invariant markers",
+      )
     },
   )
 }
