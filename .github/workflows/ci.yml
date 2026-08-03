@@ -11,37 +11,21 @@ permissions:
   contents: read
 
 jobs:
-  package:
-    uses: burin-labs/.github/.github/workflows/harn-package.yml@a556b40acf7cbb278bd9b25b293fd99603656ef8
+  harn:
+    uses: burin-labs/.github/.github/workflows/harn-package.yml@c3d3025db6297d736400911029f34f7983744deb
+    with:
+      validate-command: |-
+        harn run scripts/validate-canon.harn -- --today "$(date -u +%F)"
+        harn run --no-sandbox scripts/assert-flow-capability-contract.harn -- --harn-bin "$(command -v harn)"
+        harn run scripts/execute-fixtures.harn
 
-  canon-contract:
-    name: Canon structure and fixture validation
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        with:
-          persist-credentials: false
-      - name: Install pinned Harn
-        id: harn
-        uses: burin-labs/harn/.github/actions/setup-harn@cf52e20564cb722f2f060bc222fa79d996cd3c30
-      - name: Validate canon packs
-        shell: bash
-        run: harn run scripts/validate-canon.harn -- --today "$(date -u +%F)"
-      - name: Verify typed Flow capability boundary
-        run: >-
-          harn run --no-sandbox scripts/assert-flow-capability-contract.harn --
-          --harn-bin "${{ steps.harn.outputs.path }}"
-      - name: Execute deterministic fixture cases
-        run: harn run scripts/execute-fixtures.harn
-
-  status:
+  ci-status:
     name: CI status
-    if: always()
-    needs: [package, canon-contract]
+    if: ${{ always() }}
+    needs: [harn]
     runs-on: ubuntu-latest
     steps:
-      - name: Require successful verification jobs
-        uses: burin-labs/.github/.github/actions/require-successful-needs@a556b40acf7cbb278bd9b25b293fd99603656ef8
+      - name: Enforce required jobs
+        uses: burin-labs/.github/.github/actions/require-successful-needs@c3d3025db6297d736400911029f34f7983744deb
         with:
           results-json: ${{ toJSON(needs.*.result) }}
