@@ -556,10 +556,10 @@ fn _symbol_observed(callee, observed) {
  * `{variable, callee}` record. Only producer-role callees are recorded, so a
  * `const n = add(2, 3)` binding never enters the list.
  */
-fn _producer_bindings(harness: HarnessAst, file_text) {
+fn _producer_bindings(ast: HarnessAst, file_text) {
   let bindings = []
   const search = ast_search(
-    harness,
+    ast,
     {
       source: file_text,
       query:
@@ -582,10 +582,10 @@ fn _producer_bindings(harness: HarnessAst, file_text) {
  * author-written string literal, and (3) references a producer-bound variable
  * whose producing callee is absent from `ctx.observed_symbols`.
  */
-fn _ungrounded_assertions(harness: HarnessAst, file_text, bindings, observed) {
+fn _ungrounded_assertions(ast: HarnessAst, file_text, bindings, observed) {
   let hits = []
   const search = ast_search(
-    harness,
+    ast,
     {source: file_text, query: "(call_expression function: (_) @callee) @call", language: "zig"},
   )
   for node in search.matches ?? [] {
