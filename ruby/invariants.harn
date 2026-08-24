@@ -114,12 +114,8 @@ fn scan_files_without(files, include_pattern, exclude_pattern) {
     files,
     { file ->
       regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(
-        exclude_pattern,
-        file.text,
-        "s",
-      )
-        == nil
+        && regex_match(exclude_pattern, file.text, "s")
+          == nil
     },
   )
 }

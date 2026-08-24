@@ -237,17 +237,17 @@ pub fn no_format_string_from_variable(slice, _ctx, _repo_at_base) {
       )
         != nil
         || regex_match(
-        r"\b(?:fprintf|dprintf|vfprintf|syslog)\s*\(\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
-        file.text,
-        "s",
-      )
-        != nil
+          r"\b(?:fprintf|dprintf|vfprintf|syslog)\s*\(\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
+          file.text,
+          "s",
+        )
+          != nil
         || regex_match(
-        r"\b(?:snprintf|vsnprintf)\s*\(\s*[^,)\n]+,\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
-        file.text,
-        "s",
-      )
-        != nil
+          r"\b(?:snprintf|vsnprintf)\s*\(\s*[^,)\n]+,\s*[^,)\n]+,\s*[A-Za-z_]\w*\s*[,)]",
+          file.text,
+          "s",
+        )
+          != nil
     },
   )
   return block_on_findings(
@@ -293,11 +293,11 @@ pub fn c_header_has_include_guard(slice, _ctx, _repo_at_base) {
     { file ->
       regex_match(r"(?m)^\s*#\s*pragma\s+once\b", file.text, "m") == nil
         && regex_match(
-        r"(?ms)^\s*#\s*ifndef\s+\w+\s*\n\s*#\s*define\s+\w+\b.*^\s*#\s*endif\b",
-        file.text,
-        "ms",
-      )
-        == nil
+          r"(?ms)^\s*#\s*ifndef\s+\w+\s*\n\s*#\s*define\s+\w+\b.*^\s*#\s*endif\b",
+          file.text,
+          "ms",
+        )
+          == nil
     },
   )
   return warn_on_findings(

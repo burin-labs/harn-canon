@@ -189,17 +189,10 @@ pub fn main_actor_on_ui_observable_state(slice, _ctx, _repo_at_base) {
     slice,
     { text ->
       (contains(text, "import SwiftUI") || contains(text, "import UIKit")
-        || contains(
-        text,
-        "import AppKit",
-      ))
+          || contains(text, "import AppKit"))
         && (contains(text, "ObservableObject") || contains(text, "@Observable")
-        || regex_match(
-        r"class\s+\w*(ViewModel|Controller)\b",
-        text,
-        "s",
-      )
-        != nil)
+          || regex_match(r"class\s+\w*(ViewModel|Controller)\b", text, "s")
+            != nil)
         && !contains(text, "@MainActor")
     },
   )

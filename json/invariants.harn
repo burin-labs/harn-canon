@@ -42,12 +42,8 @@ const _BOM = "﻿"
 
 fn is_strict_json_path(path) {
   return path.ends_with(".json")
-    && regex_match(
-    r"(^|/)((tsconfig|jsconfig)[^/]*\.json$|\.(vscode|devcontainer)/)",
-    path,
-    "",
-  )
-    == nil
+    && regex_match(r"(^|/)((tsconfig|jsconfig)[^/]*\.json$|\.(vscode|devcontainer)/)", path, "")
+      == nil
 }
 
 fn strict_json_files(slice) {

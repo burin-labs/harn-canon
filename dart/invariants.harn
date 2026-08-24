@@ -240,7 +240,7 @@ pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
       regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*[a-z_]+(\s*,\s*[a-z_]+){2,}", file.text, "m")
         != nil
         || regex_match(r"(?m)^\s*//\s*ignore_for_file\s*:\s*type\s*=\s*[a-z]+", file.text, "m")
-        != nil
+          != nil
     },
   )
   return warn_on_findings(

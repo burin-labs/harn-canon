@@ -327,30 +327,30 @@ pub fn parse_invariants(
     const mode_args = to_string(groups[1] ?? "")
     entries = entries
       + [
-      {
-        mode: mode,
-        mode_args: mode_args,
-        fallback: fallback_name(mode_args),
-        fallback_policy: fallback_policy(mode_args),
-        evidence: to_string(groups[2] ?? ""),
-        confidence: to_string(groups[3] ?? ""),
-        source_date: to_string(groups[4] ?? ""),
-        name: to_string(groups[5] ?? ""),
-      },
-    ]
+        {
+          mode: mode,
+          mode_args: mode_args,
+          fallback: fallback_name(mode_args),
+          fallback_policy: fallback_policy(mode_args),
+          evidence: to_string(groups[2] ?? ""),
+          confidence: to_string(groups[3] ?? ""),
+          source_date: to_string(groups[4] ?? ""),
+          name: to_string(groups[5] ?? ""),
+        },
+      ]
   }
   let out_errors = errors
   const invariant_count = len(regex_captures("@invariant\\b", text) ?? [])
   if invariant_count != len(entries) {
     out_errors = out_errors
       + [
-      path
-        + ": parsed "
-        + to_string(len(entries))
-        + " annotated pub fns but found "
-        + to_string(invariant_count)
-        + " @invariant markers",
-    ]
+        path
+          + ": parsed "
+          + to_string(len(entries))
+          + " annotated pub fns but found "
+          + to_string(invariant_count)
+          + " @invariant markers",
+      ]
   }
   let evidence_defs: dict<string, list<string>> = {}
   for capture in regex_captures(EVIDENCE_RE, text) ?? [] {

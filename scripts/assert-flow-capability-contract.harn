@@ -62,18 +62,18 @@ fn flow_source(declarations: list<string>, parameter: string) -> string {
   return join(
     declarations
       + [
-      "",
-      "@invariant",
-      "@deterministic",
-      "@archivist(evidence: [\"https://example.com/a\", \"https://example.org/b\"], confidence: 0.9, source_date: \"2026-08-01\")",
-      "fn _inspect(",
-      "  " + parameter + ",",
-      "  _slice,",
-      "  _ctx,",
-      "  _repo,",
-      ") -> bool { return true }",
-      "",
-    ],
+        "",
+        "@invariant",
+        "@deterministic",
+        "@archivist(evidence: [\"https://example.com/a\", \"https://example.org/b\"], confidence: 0.9, source_date: \"2026-08-01\")",
+        "fn _inspect(",
+        "  " + parameter + ",",
+        "  _slice,",
+        "  _ctx,",
+        "  _repo,",
+        ") -> bool { return true }",
+        "",
+      ],
     "\n",
   )
 }

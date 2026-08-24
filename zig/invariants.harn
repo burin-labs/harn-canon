@@ -224,12 +224,8 @@ pub fn unsafe_cast_has_justification(slice, _ctx, _repo_at_base) {
   for file in zig_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(", line, "") != nil
-        && regex_match(
-        r"//",
-        line,
-        "",
-      )
-        == nil {
+        && regex_match(r"//", line, "")
+          == nil {
         findings = findings.push({path: file.path})
       }
     }
@@ -265,12 +261,8 @@ pub fn tests_use_testing_allocator(slice, _ctx, _repo_at_base) {
     zig_files(slice),
     { file ->
       regex_match(r"(?m)^test\b", file.text, "m") != nil
-        && regex_match(
-        r"\b(page_allocator|c_allocator)\b",
-        file.text,
-        "s",
-      )
-        != nil
+        && regex_match(r"\b(page_allocator|c_allocator)\b", file.text, "s")
+          != nil
         && regex_match(r"\btesting\.allocator\b", file.text, "s") == nil
     },
   )
@@ -307,7 +299,7 @@ pub fn build_zon_dependency_hash_pinned(slice, _ctx, _repo_at_base) {
     { file ->
       regex_match(r"\.url\s*=", file.text, "s") != nil
         && regex_match(r"\.hash\s*=", file.text, "s")
-        == nil
+          == nil
     },
   )
   return block_on_findings(
@@ -344,46 +336,34 @@ pub fn parsed_json_arrayhashmap_has_single_owner(slice, _ctx, _repo_at_base) {
     zig_files(slice),
     { file ->
       regex_match(r"\bstd\.json\.ArrayHashMap\b", file.text, "s") != nil
-        && ((regex_match(
-        r"\bstd\.json\.parseFromSlice\b",
-        file.text,
-        "s",
-      )
-        != nil
-        && regex_match(
-        r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
-        file.text,
-        "s",
-      )
-        != nil)
-        || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
-        && regex_match(
-        r"\.map\.(?:put|putNoClobber|putAssumeCapacity(?:NoClobber)?|fetchPut|getOrPut(?:AssumeCapacity)?)\s*\(",
-        file.text,
-        "s",
-      )
-        != nil
-        && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
-        && regex_match(
-        r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)",
-        file.text,
-        "s",
-      )
-        == nil)
-        || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
-        && regex_match(
-        r"\.map\.getOrPut(?:AssumeCapacity)?\s*\(",
-        file.text,
-        "s",
-      )
-        != nil
-        && regex_match(r"\.found_existing\b", file.text, "s") != nil
-        && regex_match(
-        r"\bfree\s*\(\s*(?:key|[A-Za-z_][A-Za-z0-9_]*_key|key_[A-Za-z0-9_]*)\s*\)",
-        file.text,
-        "s",
-      )
-        == nil))
+        && ((regex_match(r"\bstd\.json\.parseFromSlice\b", file.text, "s")
+            != nil
+            && regex_match(
+              r"\b[A-Za-z_][A-Za-z0-9_]*\.value(?:\.[A-Za-z_][A-Za-z0-9_]*){0,8}\.map\.deinit\s*\(",
+              file.text,
+              "s",
+            )
+              != nil)
+          || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+            && regex_match(
+              r"\.map\.(?:put|putNoClobber|putAssumeCapacity(?:NoClobber)?|fetchPut|getOrPut(?:AssumeCapacity)?)\s*\(",
+              file.text,
+              "s",
+            )
+              != nil
+            && regex_match(r"\.map\.deinit\s*\(", file.text, "s") != nil
+            && regex_match(r"\bfree\s*\([^)]*(?:\.key_ptr\.\*|\.key)\s*\)", file.text, "s")
+              == nil)
+          || (regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*\.dupeZ?\s*\(\s*u8\b", file.text, "s") != nil
+            && regex_match(r"\.map\.getOrPut(?:AssumeCapacity)?\s*\(", file.text, "s")
+              != nil
+            && regex_match(r"\.found_existing\b", file.text, "s") != nil
+            && regex_match(
+              r"\bfree\s*\(\s*(?:key|[A-Za-z_][A-Za-z0-9_]*_key|key_[A-Za-z0-9_]*)\s*\)",
+              file.text,
+              "s",
+            )
+              == nil))
     },
   )
   return block_on_findings(
@@ -408,11 +388,11 @@ pub fn hashmap_count_uses_count_method(slice, _ctx, _repo_at_base) {
       )
         != nil
         && regex_match(
-        r"\b(?:map|hash_map|lookup|table|items|entries|[A-Za-z_][A-Za-z0-9_]*_map)(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}\.size\b",
-        file.text,
-        "s",
-      )
-        != nil
+          r"\b(?:map|hash_map|lookup|table|items|entries|[A-Za-z_][A-Za-z0-9_]*_map)(?:\.[A-Za-z_][A-Za-z0-9_]*){0,2}\.size\b",
+          file.text,
+          "s",
+        )
+          != nil
     },
   )
   return block_on_findings(
@@ -445,18 +425,18 @@ pub fn arraylist_uses_unmanaged_api(slice, _ctx, _repo_at_base) {
     { file ->
       regex_match(r"\bstd\.ArrayList\s*\([^\n]+?\)\.init\s*\(", file.text, "s") != nil
         || (regex_match(
-        r"\b(?:const|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*std\.ArrayList\s*\([^)\n]+\)\s*=\s*\.empty\b",
-        file.text,
-        "s",
-      )
-        != nil
-        && (regex_match(
-        r"\.(?:append|appendSlice|insert|insertSlice|resize|ensureTotalCapacity|ensureUnusedCapacity)\s*\(\s*[^,\n)]*\s*\)",
-        file.text,
-        "s",
-      )
-        != nil
-        || regex_match(r"\.(?:deinit|toOwnedSlice)\s*\(\s*\)", file.text, "s") != nil))
+          r"\b(?:const|var)\s+[A-Za-z_][A-Za-z0-9_]*\s*:\s*std\.ArrayList\s*\([^)\n]+\)\s*=\s*\.empty\b",
+          file.text,
+          "s",
+        )
+          != nil
+          && (regex_match(
+            r"\.(?:append|appendSlice|insert|insertSlice|resize|ensureTotalCapacity|ensureUnusedCapacity)\s*\(\s*[^,\n)]*\s*\)",
+            file.text,
+            "s",
+          )
+            != nil
+            || regex_match(r"\.(?:deinit|toOwnedSlice)\s*\(\s*\)", file.text, "s") != nil))
     },
   )
   return block_on_findings(
@@ -601,10 +581,7 @@ fn _ungrounded_assertions(ast: HarnessAst, file_text, bindings, observed) {
       // Zig identifiers are `[A-Za-z_][A-Za-z0-9_]*`, so no regex escaping is
       // needed to word-boundary-match the bound variable name in the call text.
       if regex_match(r"\b" + binding.variable + r"\b", call_text, "") != nil
-        && !_symbol_observed(
-        binding.callee,
-        observed,
-      ) {
+        && !_symbol_observed(binding.callee, observed) {
         hits = hits.push({assertion: call_text, symbol: binding.callee, variable: binding.variable})
       }
     }

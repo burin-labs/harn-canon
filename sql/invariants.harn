@@ -176,13 +176,13 @@ pub fn no_unbounded_delete_or_update(slice, _ctx, _repo_at_base) {
         r"(?i)\bWHERE\b",
       )
         || any_match_lacks(
-        regex_match(
-          r"(?is)\bUPDATE\s+[\w\.]+(?:\s+(?:AS\s+)?\w+)?\s+SET\s+[^;]+;",
-          file.text,
-          "is",
-        ),
-        r"(?i)\bWHERE\b",
-      )
+          regex_match(
+            r"(?is)\bUPDATE\s+[\w\.]+(?:\s+(?:AS\s+)?\w+)?\s+SET\s+[^;]+;",
+            file.text,
+            "is",
+          ),
+          r"(?i)\bWHERE\b",
+        )
     },
   )
   return block_on_findings(

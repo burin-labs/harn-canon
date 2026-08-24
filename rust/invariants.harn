@@ -105,12 +105,8 @@ fn scan_without_prod(slice, include_pattern, exclude_pattern) {
   let findings = []
   for file in prod_rust_files(slice) {
     if regex_match(include_pattern, file.text, "s") != nil
-      && regex_match(
-      exclude_pattern,
-      file.text,
-      "s",
-    )
-      == nil {
+      && regex_match(exclude_pattern, file.text, "s")
+        == nil {
       findings = findings.push({path: file.path, pattern: include_pattern})
     }
   }

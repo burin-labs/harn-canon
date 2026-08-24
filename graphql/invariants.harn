@@ -184,12 +184,8 @@ pub fn mutation_uses_input_type(slice, _ctx, _repo_at_base) {
     production_schema_files(slice),
     { file ->
       regex_match(r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\([^)]*\)", file.text, "s") != nil
-        && regex_match(
-        r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\(\s*input\s*:",
-        file.text,
-        "s",
-      )
-        == nil
+        && regex_match(r"\btype\s+Mutation\s*\{[^}]*?\b\w+\s*\(\s*input\s*:", file.text, "s")
+          == nil
     },
   )
   return warn_on_findings(
