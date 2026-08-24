@@ -252,13 +252,9 @@ pub fn header_include_guard_or_pragma_once(slice, _ctx, _repo_at_base) {
     cpp_header_files(slice),
     { file ->
       regex_match(r"#\s*pragma\s+once", file.text, "i") == nil
-        && (regex_match(
-        r"#\s*ifndef\s+\w+",
-        file.text,
-        "i",
-      )
-        == nil
-        || regex_match(r"#\s*define\s+\w+", file.text, "i") == nil)
+        && (regex_match(r"#\s*ifndef\s+\w+", file.text, "i")
+          == nil
+          || regex_match(r"#\s*define\s+\w+", file.text, "i") == nil)
     },
   )
   return block_on_findings(

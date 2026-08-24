@@ -105,14 +105,14 @@ pub fn __run_pack_at(harness: FixtureHarness, root: string, pack: string) -> Fix
       const failure = unwrap_err(fixture_result)
       failures = failures
         + [
-        {
-          kind: "setup",
-          source: "fixture",
-          code: failure.kind,
-          path: fixture_path,
-          detail: structured_read_failure_message(failure),
-        },
-      ]
+          {
+            kind: "setup",
+            source: "fixture",
+            code: failure.kind,
+            path: fixture_path,
+            detail: structured_read_failure_message(failure),
+          },
+        ]
       continue
     }
     const fixture = unwrap(fixture_result)

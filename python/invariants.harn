@@ -58,23 +58,15 @@ fn python_files(slice) {
 
 fn is_test_path(path) {
   return regex_match(r"(^|/)(tests?|test_[^/]*|[^/]*_test)\.py$", path, "") != nil
-    || regex_match(
-    r"(^|/)tests?/",
-    path,
-    "",
-  )
-    != nil
+    || regex_match(r"(^|/)tests?/", path, "")
+      != nil
 }
 
 fn is_cli_path(path) {
   return path.ends_with("__main__.py")
     || regex_match(r"(^|/)(cli|scripts?)/", path, "") != nil
-    || regex_match(
-    r"(^|/)(cli|main)\.py$",
-    path,
-    "",
-  )
-    != nil
+    || regex_match(r"(^|/)(cli|main)\.py$", path, "")
+      != nil
 }
 
 fn production_python_files(slice) {
@@ -139,13 +131,9 @@ pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
   for file in python_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"^(async\s+)?def\s+[A-Za-z][A-Za-z0-9_]*\s*\(", line, "") != nil
-        && (regex_match(
-        r"->",
-        line,
-        "",
-      )
-        == nil
-        || regex_match(r"\([^)]*:[^)]*\)", line, "") == nil) {
+        && (regex_match(r"->", line, "")
+          == nil
+          || regex_match(r"\([^)]*:[^)]*\)", line, "") == nil) {
         findings = findings.push({path: file.path})
       }
     }
@@ -196,12 +184,8 @@ pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
   for file in python_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(^|[^._A-Za-z0-9])open\s*\(", line, "") != nil
-        && regex_match(
-        r"\bwith\s+open\s*\(",
-        line,
-        "",
-      )
-        == nil {
+        && regex_match(r"\bwith\s+open\s*\(", line, "")
+          == nil {
         findings = findings.push({path: file.path})
       }
     }

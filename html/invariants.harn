@@ -149,12 +149,8 @@ pub fn documents_specify_lang(slice, _ctx, _repo_at_base) {
     html_files(slice),
     { file ->
       regex_match(r"(?i)<html\b", file.text, "s") != nil
-        && regex_match(
-        r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=",
-        file.text,
-        "s",
-      )
-        == nil
+        && regex_match(r"(?i)<html\b[^>]*\b(?:xml:)?lang\s*=", file.text, "s")
+          == nil
     },
   )
   return block_on_findings(
@@ -225,10 +221,7 @@ pub fn target_blank_uses_rel_noopener(slice, _ctx, _repo_at_base) {
     for line in file.text.lines() {
       if regex_match(r"(?i)<a\b", line, "") != nil
         && (contains(line, "target=\"_blank\"")
-        || contains(
-        line,
-        "target='_blank'",
-      ))
+          || contains(line, "target='_blank'"))
         && regex_match(r"(?i)\b(noopener|noreferrer)\b", line, "") == nil {
         findings = findings.push({path: file.path})
       }

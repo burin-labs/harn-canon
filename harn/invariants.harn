@@ -157,11 +157,8 @@ pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
     { text ->
       regex_match(r"llm_call\s*\(", text, "s") != nil
         && (contains(text, "output_schema:")
-        || contains(
-        text,
-        "response_schema:",
-      )
-        || contains(text, "schema:"))
+          || contains(text, "response_schema:")
+          || contains(text, "schema:"))
         && !contains(text, "schema_retries:")
     },
   )
@@ -224,10 +221,7 @@ pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
     slice,
     { text ->
       (contains(text, "type: \"dict\"") || contains(text, "type:\"dict\""))
-        && contains(
-        text,
-        "properties:",
-      )
+        && contains(text, "properties:")
         && contains(text, "required:")
         && !contains(text, "additional_properties:")
     },
@@ -310,10 +304,7 @@ pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
     slice,
     { text ->
       regex_match(r"redirect_uris?\s*:\s*\[[^\]]*\x22http://", text, "s") != nil
-        && !contains(
-        text,
-        "http://127.0.0.1",
-      )
+        && !contains(text, "http://127.0.0.1")
         && !contains(text, "http://localhost")
         && !contains(text, "http://[::1]")
     },

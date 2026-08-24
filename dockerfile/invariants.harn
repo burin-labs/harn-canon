@@ -53,12 +53,8 @@ const _EVIDENCE_MINIMIZE_LAYERS = [
 
 fn is_dockerfile_path(path) {
   return regex_match(r"(?i)(^|/)(Dockerfile|Containerfile)(\.[A-Za-z0-9._-]+)?$", path, "s") != nil
-    || regex_match(
-    r"(?i)\.dockerfile$",
-    path,
-    "s",
-  )
-    != nil
+    || regex_match(r"(?i)\.dockerfile$", path, "s")
+      != nil
 }
 
 fn dockerfile_files(slice) {
@@ -255,12 +251,8 @@ pub fn non_root_user_set(slice, _ctx, _repo_at_base) {
     dockerfile_files(slice),
     { text ->
       regex_match(r"(?mi)^\s*USER\s+\S+", text, "m") == nil
-        || regex_match(
-        r"(?mi)^\s*USER\s+(root|0)\b",
-        text,
-        "m",
-      )
-        != nil
+        || regex_match(r"(?mi)^\s*USER\s+(root|0)\b", text, "m")
+          != nil
     },
   )
   return warn_on_findings(
@@ -295,12 +287,8 @@ pub fn use_exec_form_for_cmd_entrypoint(slice, _ctx, _repo_at_base) {
   for file in dockerfile_files(slice) {
     for line in file.text.lines() {
       if regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\S", line, "") != nil
-        && regex_match(
-        r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[",
-        line,
-        "",
-      )
-        == nil {
+        && regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[", line, "")
+          == nil {
         findings = findings.push({path: file.path})
       }
     }

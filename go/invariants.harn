@@ -346,12 +346,8 @@ pub fn http_response_body_closed(slice, _ctx, _repo_at_base) {
     production_go_files(slice),
     { file ->
       regex_match(r"http\.(Get|Post|Do)\s*\(", file.text, "s") != nil
-        && regex_match(
-        r"\.Body\b",
-        file.text,
-        "s",
-      )
-        != nil
+        && regex_match(r"\.Body\b", file.text, "s")
+          != nil
         && regex_match(r"\bdefer\s+\w+\.Body\.Close\s*\(", file.text, "s") == nil
     },
   )
@@ -371,12 +367,8 @@ pub fn no_math_rand_for_keys(slice, _ctx, _repo_at_base) {
     production_go_files(slice),
     { file ->
       regex_match(r"math/rand", file.text, "s") != nil
-        && regex_match(
-        r"(?i)(key|token|secret|password|nonce|session)",
-        file.text,
-        "s",
-      )
-        != nil
+        && regex_match(r"(?i)(key|token|secret|password|nonce|session)", file.text, "s")
+          != nil
     },
   )
   return block_on_findings(

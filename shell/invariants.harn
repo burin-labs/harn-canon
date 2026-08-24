@@ -120,11 +120,11 @@ pub fn set_euo_pipefail(slice, _ctx, _repo_at_base) {
       regex_match(r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*e[a-zA-Z]*\b|\berrexit\b)", file.text, "m")
         == nil
         || regex_match(
-        r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*u[a-zA-Z]*\b|\bnounset\b)",
-        file.text,
-        "m",
-      )
-        == nil
+          r"(?m)^\s*set\b[^#\n]*(\s-[a-zA-Z]*u[a-zA-Z]*\b|\bnounset\b)",
+          file.text,
+          "m",
+        )
+          == nil
         || regex_match(r"(?m)^\s*set\b[^#\n]*\bpipefail\b", file.text, "m") == nil
     },
   )
@@ -170,12 +170,8 @@ pub fn trap_cleanup_on_tempfile(slice, _ctx, _repo_at_base) {
     shell_files(slice),
     { file ->
       regex_match(r"\bmktemp\b", file.text, "s") != nil
-        && regex_match(
-        r"(?m)^[^#\n]*\btrap\b[^\n]*\bEXIT\b",
-        file.text,
-        "m",
-      )
-        == nil
+        && regex_match(r"(?m)^[^#\n]*\btrap\b[^\n]*\bEXIT\b", file.text, "m")
+          == nil
     },
   )
   return warn_on_findings(
