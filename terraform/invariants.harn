@@ -44,11 +44,11 @@ const _EVIDENCE_IAM_LEAST_PRIV = [
   "https://cloud.google.com/iam/docs/using-iam-securely",
 ]
 
-fn is_tf_path(path) {
+fn is_tf_path(path: any) {
   return path.ends_with(".tf")
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, "/examples/")
     || contains(path, "/example/")
     || contains(path, "/test/")
@@ -57,15 +57,15 @@ fn is_test_path(path) {
     || contains(path, "/.terraform/")
 }
 
-fn tf_files(slice) {
+fn tf_files(slice: any) {
   return slice.files.filter({ file -> is_tf_path(file.path) })
 }
 
-fn production_tf_files(slice) {
+fn production_tf_files(slice: any) {
   return tf_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
@@ -75,26 +75,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -107,7 +107,7 @@ fn warn_on_findings(rule, remediation, findings) {
 /**
  * Warns when changed Terraform files declare cloud resources without Owner, Env, and CostCenter tags.
  */
-pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
+pub fn required_tags_on_resources(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_tf_files(slice),
     { text ->
@@ -132,7 +132,7 @@ pub fn required_tags_on_resources(slice, _ctx, _repo_at_base) {
 /**
  * Warns when changed Terraform files declare variable blocks without an explicit type constraint.
  */
-pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
+pub fn variable_type_constraints_explicit(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_tf_files(slice),
     { text ->
@@ -154,7 +154,7 @@ pub fn variable_type_constraints_explicit(slice, _ctx, _repo_at_base) {
 /**
  * Warns when a root-module file declares required_providers without configuring a remote state backend.
  */
-pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
+pub fn remote_state_backend_configured(slice: any, _ctx: any, _repo_at_base: any) {
   let findings = []
   for file in production_tf_files(slice) {
     if !contains(file.path, "/modules/")
@@ -175,7 +175,7 @@ pub fn remote_state_backend_configured(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MODULE_VERSION, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks module blocks that pull from a registry source without pinning a version constraint. */
-pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
+pub fn module_registry_version_pinned(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_tf_files(slice),
     { text ->
@@ -208,7 +208,7 @@ pub fn module_registry_version_pinned(slice, _ctx, _repo_at_base) {
 /**
  * Blocks required_providers declarations that omit a version constraint for at least one provider.
  */
-pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
+pub fn provider_versions_pinned(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_tf_files(slice),
     { text ->
@@ -228,7 +228,7 @@ pub fn provider_versions_pinned(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_OUTPUT_SENSITIVE, confidence: 0.74, source_date: "2026-05-09")
 /** Blocks output blocks whose names suggest secrets when sensitive = true is missing. */
-pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
+pub fn outputs_with_secret_names_marked_sensitive(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_tf_files(slice),
     { text ->
@@ -252,7 +252,7 @@ pub fn outputs_with_secret_names_marked_sensitive(slice, _ctx, _repo_at_base) {
 @semantic(fallback: required_tags_on_resources, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks hardcoded credentials, tokens, and private keys in Terraform source. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
@@ -272,7 +272,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 /**
  * Blocks IAM policy documents that grant unscoped wildcard actions or resources without justification.
  */
-pub fn iam_policies_avoid_wildcard_grants(slice, ctx, _repo_at_base) {
+pub fn iam_policies_avoid_wildcard_grants(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})

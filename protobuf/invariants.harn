@@ -41,11 +41,11 @@ const _EVIDENCE_RESERVED_ON_DELETE = [
   "https://protobuf.dev/best-practices/dos-donts/#do-reserve-tag-numbers-for-deleted-fields",
 ]
 
-fn proto_files(slice) {
+fn proto_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".proto") })
 }
 
-fn is_vendored_path(path) {
+fn is_vendored_path(path: any) {
   return contains(path, "/vendor/")
     || contains(path, "/third_party/")
     || contains(path, "/node_modules/")
@@ -53,11 +53,11 @@ fn is_vendored_path(path) {
     || contains(path, "/generated/")
 }
 
-fn first_party_proto_files(slice) {
+fn first_party_proto_files(slice: any) {
   return proto_files(slice).filter({ file -> !is_vendored_path(file.path) })
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -67,7 +67,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
@@ -77,26 +77,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -107,7 +107,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SYNTAX_VERSION, confidence: 0.92, source_date: "2026-05-09")
 /** Blocks .proto files that omit an explicit syntax or edition declaration. */
-pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
+pub fn explicit_syntax_version(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
     { file ->
@@ -127,7 +127,7 @@ pub fn explicit_syntax_version(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PACKAGE, confidence: 0.78, source_date: "2026-05-09")
 /** Warns when .proto files omit a package declaration, risking name collisions across schemas. */
-pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
+pub fn package_declaration_required(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
     { file ->
@@ -145,7 +145,7 @@ pub fn package_declaration_required(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_REQUIRED, confidence: 0.95, source_date: "2026-05-09")
 /** Blocks the proto2-only required field rule in proto3 schemas. */
-pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
+pub fn no_required_in_proto3(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
     { file ->
@@ -169,7 +169,7 @@ pub fn no_required_in_proto3(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_FIELD_NAMES, confidence: 0.7, source_date: "2026-05-09")
 /** Warns when message field names use camelCase or PascalCase instead of lower_snake_case. */
-pub fn field_names_lower_snake_case(slice, _ctx, _repo_at_base) {
+pub fn field_names_lower_snake_case(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     first_party_proto_files(slice),
     r"(?m)^\s*(?:optional\s+|repeated\s+|required\s+)?[A-Za-z_][A-Za-z0-9_.]*\s+([A-Za-z_]*[A-Z][A-Za-z0-9_]*)\s*=\s*\d+\s*[;\[]",
@@ -186,7 +186,7 @@ pub fn field_names_lower_snake_case(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ENUM_ZERO, confidence: 0.74, source_date: "2026-05-09")
 /** Warns when an enum's first value is not an *_UNSPECIFIED zero entry. */
-pub fn enum_zero_value_unspecified(slice, _ctx, _repo_at_base) {
+pub fn enum_zero_value_unspecified(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     first_party_proto_files(slice),
     { file ->
@@ -215,7 +215,7 @@ pub fn enum_zero_value_unspecified(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RESERVED_RANGE, confidence: 0.96, source_date: "2026-05-09")
 /** Blocks field numbers that fall in the protobuf-reserved 19000-19999 range. */
-pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
+pub fn no_reserved_field_number_range(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     first_party_proto_files(slice),
     r"(?m)^\s*(?:optional\s+|repeated\s+|required\s+)?[A-Za-z_][A-Za-z0-9_.]*\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*(?:19[0-9]{3})\s*[;\[]",
@@ -232,7 +232,7 @@ pub fn no_reserved_field_number_range(slice, _ctx, _repo_at_base) {
 @semantic(fallback: explicit_syntax_version, policy: advisory)
 @archivist(evidence: _EVIDENCE_FIELD_RENUMBER, confidence: 0.7, source_date: "2026-05-09")
 /** Blocks renumbered or repurposed field tags that would break wire compatibility. */
-pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
+pub fn no_field_number_renumbering(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
@@ -252,7 +252,7 @@ pub fn no_field_number_renumbering(slice, ctx, _repo_at_base) {
 /**
  * Blocks field deletions that omit a matching reserved declaration for the freed number or name.
  */
-pub fn reserved_on_field_removal(slice, ctx, _repo_at_base) {
+pub fn reserved_on_field_removal(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})

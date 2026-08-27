@@ -53,7 +53,7 @@ const _EVIDENCE_SENSITIVE_LOGS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
 ]
 
-fn typescript_files(slice) {
+fn typescript_files(slice: any) {
   return slice.files.filter(
     { file ->
       file.path.ends_with(".ts")
@@ -64,11 +64,11 @@ fn typescript_files(slice) {
   )
 }
 
-fn tsconfig_files(slice) {
+fn tsconfig_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with("tsconfig.json") })
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, ".test.")
     || contains(path, ".spec.")
     || contains(path, "/test/")
@@ -76,20 +76,20 @@ fn is_test_path(path) {
     || contains(path, "__tests__")
 }
 
-fn is_cli_path(path) {
+fn is_cli_path(path: any) {
   return contains(path, "/cli/")
     || contains(path, "/bin/")
     || path.ends_with(".cli.ts")
     || path.ends_with(".cli.tsx")
 }
 
-fn production_ts_files(slice) {
+fn production_ts_files(slice: any) {
   return typescript_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_cli_path(file.path) },
   )
 }
 
-fn scan_files(files, pattern) {
+fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
@@ -99,7 +99,7 @@ fn scan_files(files, pattern) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
@@ -109,7 +109,7 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn scan_files_without(files, include_pattern, exclude_pattern) {
+fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
   return scan_files_if(
     files,
     { text ->
@@ -119,26 +119,26 @@ fn scan_files_without(files, include_pattern, exclude_pattern) {
   )
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -151,7 +151,7 @@ fn warn_on_findings(rule, remediation, findings) {
 /**
  * Blocks Promise-returning calls that are started as bare statements without await, return, void, or catch.
  */
-pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
+pub fn no_floating_promises(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     typescript_files(slice),
     r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
@@ -167,7 +167,7 @@ pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_ANY, confidence: 0.8, source_date: "2026-04-26")
 /** Blocks explicit any unless an adjacent eslint disable comment explains why it is needed. */
-pub fn no_any_without_comment(slice, _ctx, _repo_at_base) {
+pub fn no_any_without_comment(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_without(
     typescript_files(slice),
     r"(:\s*any\b|<\s*any\s*>|\bas\s+any\b|Array\s*<\s*any\s*>)",
@@ -184,7 +184,7 @@ pub fn no_any_without_comment(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_STRICT_NULL, confidence: 0.86, source_date: "2026-04-26")
 /** Blocks tsconfig edits that disable strict mode or strict null checking. */
-pub fn strict_null_checks_required(slice, _ctx, _repo_at_base) {
+pub fn strict_null_checks_required(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(tsconfig_files(slice), "\"(strict|strictNullChecks)\"\\s*:\\s*false")
   return block_on_findings(
     "strict_null_checks_required",
@@ -197,7 +197,7 @@ pub fn strict_null_checks_required(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_CONSOLE, confidence: 0.78, source_date: "2026-04-26")
 /** Blocks console debugging calls in production TypeScript paths. */
-pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_console_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_ts_files(slice), r"\bconsole\.(log|debug|trace|info)\s*\(")
   return block_on_findings(
     "no_console_in_prod_path",
@@ -212,7 +212,7 @@ pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
 /**
  * Warns when switch statements lack a default, assertNever, or satisfies-never exhaustiveness guard.
  */
-pub fn exhaustive_switch(slice, _ctx, _repo_at_base) {
+pub fn exhaustive_switch(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_without(
     typescript_files(slice),
     r"switch\s*\([^)]+\)\s*\{",
@@ -229,7 +229,7 @@ pub fn exhaustive_switch(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TS_COMMENTS, confidence: 0.84, source_date: "2026-04-26")
 /** Blocks TypeScript suppression comments that omit a meaningful description. */
-pub fn ts_comment_suppressions_have_description(slice, _ctx, _repo_at_base) {
+pub fn ts_comment_suppressions_have_description(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     typescript_files(slice),
     r"(?m)@ts-ignore\b|@ts-nocheck\b|@ts-expect-error\s*(?::\s*[^\n]{0,9})?$",
@@ -245,7 +245,7 @@ pub fn ts_comment_suppressions_have_description(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NON_NULL, confidence: 0.76, source_date: "2026-04-26")
 /** Warns on non-null assertions in production TypeScript paths. */
-pub fn no_non_null_assertion_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_non_null_assertion_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_ts_files(slice), r"[A-Za-z_$][A-Za-z0-9_$]*!\.")
   return warn_on_findings(
     "no_non_null_assertion_in_prod_path",
@@ -258,7 +258,7 @@ pub fn no_non_null_assertion_in_prod_path(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TYPE_IMPORTS, confidence: 0.74, source_date: "2026-04-26")
 /** Warns on inline-only type imports that may leave runtime side-effect imports. */
-pub fn no_inline_type_only_imports(slice, _ctx, _repo_at_base) {
+pub fn no_inline_type_only_imports(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     typescript_files(slice),
     r"import\s*\{\s*type\s+[A-Za-z_$][^}]*\}\s*from",
@@ -274,7 +274,7 @@ pub fn no_inline_type_only_imports(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.66, source_date: "2026-04-26")
 /** Blocks external data being trusted as domain types without runtime validation. */
-pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
+pub fn runtime_validate_external_data(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed TypeScript treats untrusted external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, or message events as a specific domain type without runtime validation, schema parsing, or explicit narrowing."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
@@ -292,7 +292,7 @@ pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-04-26")
 /** Blocks hardcoded credentials, tokens, and private keys in TypeScript source. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed TypeScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
@@ -310,7 +310,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
-pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
+pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed TypeScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})

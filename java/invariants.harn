@@ -48,11 +48,11 @@ const _EVIDENCE_SECRETS = [
   "https://docs.github.com/code-security/secret-scanning/about-secret-scanning",
 ]
 
-fn java_files(slice) {
+fn java_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".java") })
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, "/test/")
     || contains(path, "/tests/")
     || contains(path, "/src/test/")
@@ -61,11 +61,11 @@ fn is_test_path(path) {
     || path.ends_with("IT.java")
 }
 
-fn production_java_files(slice) {
+fn production_java_files(slice: any) {
   return java_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn scan_files(files, pattern) {
+fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
@@ -75,7 +75,7 @@ fn scan_files(files, pattern) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
@@ -85,26 +85,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -115,7 +115,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RAW_TYPES, confidence: 0.78, source_date: "2026-05-08")
 /** Blocks raw common generic collection and Optional declarations in production Java. */
-pub fn no_raw_collection_types(slice, _ctx, _repo_at_base) {
+pub fn no_raw_collection_types(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_java_files(slice),
     r"\b(List|Map|Set|Collection|Iterator|Iterable|Optional)\s+[A-Za-z_][A-Za-z0-9_]*\b",
@@ -131,7 +131,7 @@ pub fn no_raw_collection_types(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NULLNESS, confidence: 0.64, source_date: "2026-05-08")
 /** Warns when public reference-returning methods lack local or package nullness annotations. */
-pub fn null_safety_annotations(slice, _ctx, _repo_at_base) {
+pub fn null_safety_annotations(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_java_files(slice),
     { text ->
@@ -160,7 +160,7 @@ pub fn null_safety_annotations(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RECORDS, confidence: 0.6, source_date: "2026-05-08")
 /** Warns when simple final-field value carriers are added as classes instead of records. */
-pub fn immutable_value_objects(slice, _ctx, _repo_at_base) {
+pub fn immutable_value_objects(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_java_files(slice),
     { text ->
@@ -187,7 +187,7 @@ pub fn immutable_value_objects(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EMPTY_CATCH, confidence: 0.9, source_date: "2026-05-08")
 /** Blocks empty catch blocks in production Java. */
-pub fn no_swallowed_exceptions(slice, _ctx, _repo_at_base) {
+pub fn no_swallowed_exceptions(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_java_files(slice), r"catch\s*\([^)]*\)\s*\{\s*\}")
   return block_on_findings(
     "no_swallowed_exceptions",
@@ -200,7 +200,7 @@ pub fn no_swallowed_exceptions(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_STREAMS, confidence: 0.56, source_date: "2026-05-08")
 /** Warns on index-based loops over collection size/get pairs. */
-pub fn prefer_stream_over_loop(slice, _ctx, _repo_at_base) {
+pub fn prefer_stream_over_loop(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_java_files(slice),
     r"for\s*\(\s*int\s+[A-Za-z_][A-Za-z0-9_]*\s*=\s*0\s*;\s*[A-Za-z_][A-Za-z0-9_]*\s*<\s*[A-Za-z_][A-Za-z0-9_]*\.size\(\)\s*;\s*[A-Za-z_][A-Za-z0-9_]*\+\+\s*\)\s*\{[^}]*\.get\(\s*[A-Za-z_][A-Za-z0-9_]*\s*\)",
@@ -216,7 +216,7 @@ pub fn prefer_stream_over_loop(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EXCEPTION_LOGGING, confidence: 0.84, source_date: "2026-05-08")
 /** Blocks catch-and-printStackTrace exception handling in production Java. */
-pub fn no_print_stack_trace(slice, _ctx, _repo_at_base) {
+pub fn no_print_stack_trace(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_java_files(slice), r"\.printStackTrace\s*\(")
   return block_on_findings(
     "no_print_stack_trace",
@@ -229,7 +229,7 @@ pub fn no_print_stack_trace(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PRODUCTION_LOGGING, confidence: 0.78, source_date: "2026-05-08")
 /** Warns on direct stdout/stderr writes in production Java. */
-pub fn no_system_out_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_system_out_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_java_files(slice),
     r"\bSystem\.(out|err)\.(print|println|printf)\s*\(",
@@ -245,7 +245,7 @@ pub fn no_system_out_in_prod(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_OPTIONAL, confidence: 0.82, source_date: "2026-05-08")
 /** Blocks returning null from Optional-returning methods. */
-pub fn optional_returns_are_not_null(slice, _ctx, _repo_at_base) {
+pub fn optional_returns_are_not_null(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_java_files(slice),
     r"Optional\s*<[^>]+>\s+[A-Za-z_][A-Za-z0-9_]*\s*\([^)]*\)\s*\{[^}]*return\s+null\s*;",
@@ -261,7 +261,7 @@ pub fn optional_returns_are_not_null(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_raw_collection_types, policy: advisory)
 @archivist(evidence: _EVIDENCE_SQL, confidence: 0.66, source_date: "2026-05-08")
 /** Blocks JDBC SQL built from untrusted string concatenation without bind parameters. */
-pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
+pub fn jdbc_queries_use_parameters(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Java builds SQL for JDBC, JPA native queries, or Spring JDBC by concatenating or formatting user-controlled values into the query text instead of using PreparedStatement parameters, named parameters, or a query builder that binds values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
@@ -279,7 +279,7 @@ pub fn jdbc_queries_use_parameters(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_raw_collection_types, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in Java source. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Java embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})

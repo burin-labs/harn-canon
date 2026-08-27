@@ -52,28 +52,28 @@ const _EVIDENCE_SOURCE_SECRETS = [
   "https://cwe.mitre.org/data/definitions/798.html",
 ]
 
-fn python_files(slice) {
+fn python_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".py") })
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return regex_match(r"(^|/)(tests?|test_[^/]*|[^/]*_test)\.py$", path, "") != nil
     || regex_match(r"(^|/)tests?/", path, "")
       != nil
 }
 
-fn is_cli_path(path) {
+fn is_cli_path(path: any) {
   return path.ends_with("__main__.py")
     || regex_match(r"(^|/)(cli|scripts?)/", path, "") != nil
     || regex_match(r"(^|/)(cli|main)\.py$", path, "")
       != nil
 }
 
-fn production_python_files(slice) {
+fn production_python_files(slice: any) {
   return python_files(slice).filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -83,26 +83,26 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -113,7 +113,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_BARE_EXCEPT, confidence: 0.92, source_date: "2026-04-30")
 /** Blocks bare except clauses that catch BaseException. */
-pub fn no_bare_except(slice, _ctx, _repo_at_base) {
+pub fn no_bare_except(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(python_files(slice), r"(?m)^\s*except\s*:", "m")
   return block_on_findings(
     "no_bare_except",
@@ -126,7 +126,7 @@ pub fn no_bare_except(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TYPE_HINTS, confidence: 0.7, source_date: "2026-04-30")
 /** Warns on public top-level functions without parameter or return annotations. */
-pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
+pub fn type_hints_on_pub_fn(slice: any, _ctx: any, _repo_at_base: any) {
   let findings = []
   for file in python_files(slice) {
     for line in file.text.lines() {
@@ -149,7 +149,7 @@ pub fn type_hints_on_pub_fn(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PRINT_LOGGING, confidence: 0.74, source_date: "2026-04-30")
 /** Warns on print calls in non-test, non-CLI Python paths. */
-pub fn no_print_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_print_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_python_files(slice), r"(^|[^._A-Za-z0-9])print\s*\(", "s")
   return warn_on_findings(
     "no_print_in_prod_path",
@@ -162,7 +162,7 @@ pub fn no_print_in_prod_path(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MUTABLE_DEFAULTS, confidence: 0.86, source_date: "2026-04-30")
 /** Blocks mutable literal or constructor defaults in function signatures. */
-pub fn no_mutable_default_arg(slice, _ctx, _repo_at_base) {
+pub fn no_mutable_default_arg(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     python_files(slice),
     r"(?s)\b(async\s+)?def\s+\w+\s*\([^)]*=\s*(\[\]|\{\}|set\s*\(|dict\s*\(|list\s*\()[^)]*\)\s*:",
@@ -179,7 +179,7 @@ pub fn no_mutable_default_arg(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_FILE_HANDLES, confidence: 0.72, source_date: "2026-04-30")
 /** Warns when builtin open() appears outside a with statement. */
-pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
+pub fn context_mgr_for_files(slice: any, _ctx: any, _repo_at_base: any) {
   let findings = []
   for file in python_files(slice) {
     for line in file.text.lines() {
@@ -201,7 +201,7 @@ pub fn context_mgr_for_files(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EVAL_EXEC, confidence: 0.82, source_date: "2026-04-30")
 /** Blocks direct eval() or exec() calls in Python source. */
-pub fn no_eval_exec(slice, _ctx, _repo_at_base) {
+pub fn no_eval_exec(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(python_files(slice), r"(?m)(^|[^._A-Za-z0-9])(eval|exec)\s*\(", "m")
   return block_on_findings(
     "no_eval_exec",
@@ -214,7 +214,7 @@ pub fn no_eval_exec(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SUBPROCESS_SHELL, confidence: 0.8, source_date: "2026-04-30")
 /** Blocks subprocess calls that opt into shell=True. */
-pub fn no_subprocess_shell_true(slice, _ctx, _repo_at_base) {
+pub fn no_subprocess_shell_true(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     python_files(slice),
     r"(?s)\bsubprocess\.(run|Popen|call|check_call|check_output)\s*\([^)]*shell\s*=\s*True",
@@ -231,7 +231,7 @@ pub fn no_subprocess_shell_true(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ASSERTS, confidence: 0.68, source_date: "2026-04-30")
 /** Warns on assert statements in non-test Python paths. */
-pub fn no_assert_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_assert_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_python_files(slice), r"(?m)^\s*assert\s+", "m")
   return warn_on_findings(
     "no_assert_in_prod_path",
@@ -244,7 +244,7 @@ pub fn no_assert_in_prod_path(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_bare_except, policy: advisory)
 @archivist(evidence: _EVIDENCE_SQL_PARAMETERS, confidence: 0.66, source_date: "2026-04-30")
 /** Blocks SQL assembled with user-controlled string interpolation. */
-pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
+pub fn sql_queries_use_parameters(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Python code builds a SQL query by interpolating, formatting, concatenating, or f-stringing user-controlled values into the SQL text instead of binding parameters/placeholders."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
@@ -262,7 +262,7 @@ pub fn sql_queries_use_parameters(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_bare_except, policy: advisory)
 @archivist(evidence: _EVIDENCE_SOURCE_SECRETS, confidence: 0.64, source_date: "2026-04-30")
 /** Blocks hardcoded credentials and high-risk secrets in Python source. */
-pub fn secrets_not_hardcoded_in_source(slice, ctx, _repo_at_base) {
+pub fn secrets_not_hardcoded_in_source(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Python source hardcodes credentials, API tokens, private keys, database passwords, signing secrets, or production service credentials instead of loading them from a secret manager or environment."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})

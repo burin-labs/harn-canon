@@ -62,50 +62,50 @@ const _EVIDENCE_UNSERIALIZE = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html",
 ]
 
-fn is_php_path(path) {
+fn is_php_path(path: any) {
   return path.ends_with(".php") || path.ends_with(".phtml")
 }
 
-fn is_class_php_path(path) {
+fn is_class_php_path(path: any) {
   return path.ends_with(".php")
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return regex_match(r"(^|/)([Tt]ests?|spec)/", path, "") != nil
     || path.ends_with("Test.php")
     || path.ends_with("TestCase.php")
     || path.ends_with("_test.php")
 }
 
-fn is_script_path(path) {
+fn is_script_path(path: any) {
   return regex_match(r"(^|/)(bin|scripts?)/", path, "") != nil
 }
 
-fn is_vendored_path(path) {
+fn is_vendored_path(path: any) {
   return regex_match(r"(^|/)(vendor|node_modules|build|dist)/", path, "") != nil
 }
 
-fn php_files(slice) {
+fn php_files(slice: any) {
   return slice.files.filter({ file -> is_php_path(file.path) && !is_vendored_path(file.path) })
 }
 
-fn class_php_files(slice) {
+fn class_php_files(slice: any) {
   return slice.files.filter(
     { file -> is_class_php_path(file.path) && !is_vendored_path(file.path) },
   )
 }
 
-fn production_php_files(slice) {
+fn production_php_files(slice: any) {
   return php_files(slice).filter({ file -> !is_test_path(file.path) && !is_script_path(file.path) })
 }
 
-fn production_class_php_files(slice) {
+fn production_class_php_files(slice: any) {
   return class_php_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_script_path(file.path) },
   )
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -115,7 +115,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
@@ -125,7 +125,7 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn scan_files_without(files, include_pattern, exclude_pattern) {
+fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
   return scan_files_if(
     files,
     { file ->
@@ -136,26 +136,26 @@ fn scan_files_without(files, include_pattern, exclude_pattern) {
   )
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -166,7 +166,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_STRICT_TYPES, confidence: 0.82, source_date: "2026-05-10")
 /** Blocks production .php class files that open with <?php but lack declare(strict_types=1). */
-pub fn declare_strict_types_enforced(slice, _ctx, _repo_at_base) {
+pub fn declare_strict_types_enforced(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_without(
     production_class_php_files(slice),
     r"(?s)\A\s*(?:\xef\xbb\xbf)?<\?php\b",
@@ -183,7 +183,7 @@ pub fn declare_strict_types_enforced(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SHORT_OPEN_TAGS, confidence: 0.9, source_date: "2026-05-10")
 /** Blocks PHP short open tags `<?` that depend on the short_open_tag ini directive. */
-pub fn no_short_open_tags(slice, _ctx, _repo_at_base) {
+pub fn no_short_open_tags(slice: any, _ctx: any, _repo_at_base: any) {
   let findings = []
   for file in php_files(slice) {
     for line in file.text.lines() {
@@ -206,7 +206,7 @@ pub fn no_short_open_tags(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DEPRECATED_MYSQL, confidence: 0.95, source_date: "2026-05-10")
 /** Blocks calls to functions in the removed ext/mysql extension. */
-pub fn no_deprecated_mysql_ext(slice, _ctx, _repo_at_base) {
+pub fn no_deprecated_mysql_ext(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(php_files(slice), r"(^|[^_A-Za-z0-9>])mysql_[a-z_]+\s*\(", "m")
   return block_on_findings(
     "no_deprecated_mysql_ext",
@@ -219,7 +219,7 @@ pub fn no_deprecated_mysql_ext(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_CREATE_FUNCTION, confidence: 0.93, source_date: "2026-05-10")
 /** Blocks calls to create_function(), which was removed in PHP 8.0 and is an eval-style sink. */
-pub fn no_create_function(slice, _ctx, _repo_at_base) {
+pub fn no_create_function(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(php_files(slice), r"(^|[^_A-Za-z0-9>])create_function\s*\(", "m")
   return block_on_findings(
     "no_create_function",
@@ -232,7 +232,7 @@ pub fn no_create_function(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EVAL, confidence: 0.85, source_date: "2026-05-10")
 /** Blocks direct eval() calls in PHP source. */
-pub fn no_eval(slice, _ctx, _repo_at_base) {
+pub fn no_eval(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(php_files(slice), r"(^|[^_A-Za-z0-9>])eval\s*\(", "m")
   return block_on_findings(
     "no_eval",
@@ -245,7 +245,7 @@ pub fn no_eval(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EXTRACT_REQUEST, confidence: 0.92, source_date: "2026-05-10")
 /** Blocks extract() over superglobals, which re-creates the register_globals injection footgun. */
-pub fn no_extract_from_request(slice, _ctx, _repo_at_base) {
+pub fn no_extract_from_request(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     php_files(slice),
     r"(^|[^_A-Za-z0-9>])extract\s*\(\s*\$_(?:GET|POST|REQUEST|COOKIE|FILES|SERVER|ENV)\b",
@@ -262,7 +262,7 @@ pub fn no_extract_from_request(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TYPED_PROPERTIES, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on class property declarations that omit a type (PHP 7.4+ supports typed properties). */
-pub fn typed_properties(slice, _ctx, _repo_at_base) {
+pub fn typed_properties(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     class_php_files(slice),
     r"(?m)^\s*(?:var|public|protected|private)(?:\s+static)?\s+\$[A-Za-z_]",
@@ -279,7 +279,7 @@ pub fn typed_properties(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DEBUG_FUNCTIONS, confidence: 0.72, source_date: "2026-05-10")
 /** Warns when production PHP source calls var_dump/print_r/var_export-style debug functions. */
-pub fn no_debug_dump_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_debug_dump_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_php_files(slice),
     r"(^|[^_A-Za-z0-9>])(var_dump|print_r|var_export|debug_zval_dump|debug_print_backtrace)\s*\(",
@@ -296,7 +296,7 @@ pub fn no_debug_dump_in_prod(slice, _ctx, _repo_at_base) {
 @semantic(fallback: declare_strict_types_enforced, policy: advisory)
 @archivist(evidence: _EVIDENCE_PARAMETERIZED, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks SQL built by interpolating user-controlled values into the query text. */
-pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
+pub fn prepared_statements_only(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP code builds a SQL query by concatenating, interpolating, or sprintf-ing user-controlled values into the SQL text instead of using PDO or mysqli prepared statements with bound parameters. Allow constant identifiers, whitelisted column or table names assembled from a fixed map, and ORM/query-builder calls that ultimately bind parameters."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
@@ -314,7 +314,7 @@ pub fn prepared_statements_only(slice, ctx, _repo_at_base) {
 @semantic(fallback: declare_strict_types_enforced, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks hardcoded credentials and high-risk secrets in PHP source. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials as string literals or define()/const declarations instead of reading them from getenv, $_ENV, a secret manager, or a parsed configuration file outside the repo."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
@@ -332,7 +332,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @semantic(fallback: declare_strict_types_enforced, policy: advisory)
 @archivist(evidence: _EVIDENCE_UNSERIALIZE, confidence: 0.7, source_date: "2026-05-10")
 /** Blocks unserialize() calls on data that may originate from untrusted input. */
-pub fn unserialize_input_is_trusted(slice, ctx, _repo_at_base) {
+pub fn unserialize_input_is_trusted(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP code passes potentially user-controlled data (request bodies, cookies, query parameters, file contents from upload paths, cache entries that store request data, message-queue payloads from external systems) into unserialize() without setting the allowed_classes option to false or to a small explicit allowlist. Allow unserialize() over data that is provably internal (sealed cache values, signed payloads verified before unserialize, fixtures)."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
