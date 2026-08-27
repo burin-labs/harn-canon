@@ -53,11 +53,11 @@ const _EVIDENCE_FFI_SAFETY = [
   "https://rust-lang.github.io/rust-clippy/beta/#missing_safety_doc",
 ]
 
-fn is_rust_path(path) {
+fn is_rust_path(path: any) {
   return path.ends_with(".rs")
 }
 
-fn is_prod_rust_path(path) {
+fn is_prod_rust_path(path: any) {
   return is_rust_path(path)
     && !path.contains("tests/")
     && !path.contains("/tests/")
@@ -67,7 +67,7 @@ fn is_prod_rust_path(path) {
     && !path.contains("/examples/")
 }
 
-fn is_rust_project_path(path) {
+fn is_rust_project_path(path: any) {
   return is_rust_path(path)
     || path.ends_with("Cargo.toml")
     || path.ends_with("Cargo.lock")
@@ -75,19 +75,19 @@ fn is_rust_project_path(path) {
     || path.contains(".github/workflows/")
 }
 
-fn rust_files(slice) {
+fn rust_files(slice: any) {
   return slice.files.filter({ file -> is_rust_path(file.path) })
 }
 
-fn prod_rust_files(slice) {
+fn prod_rust_files(slice: any) {
   return slice.files.filter({ file -> is_prod_rust_path(file.path) })
 }
 
-fn rust_project_files(slice) {
+fn rust_project_files(slice: any) {
   return slice.files.filter({ file -> is_rust_project_path(file.path) })
 }
 
-fn scan_files(files, pattern) {
+fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
@@ -97,11 +97,11 @@ fn scan_files(files, pattern) {
   return findings
 }
 
-fn scan_prod(slice, pattern) {
+fn scan_prod(slice: any, pattern: any) {
   return scan_files(prod_rust_files(slice), pattern)
 }
 
-fn scan_without_prod(slice, include_pattern, exclude_pattern) {
+fn scan_without_prod(slice: any, include_pattern: any, exclude_pattern: any) {
   let findings = []
   for file in prod_rust_files(slice) {
     if regex_match(include_pattern, file.text, "s") != nil
@@ -113,26 +113,26 @@ fn scan_without_prod(slice, include_pattern, exclude_pattern) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -143,7 +143,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_UNWRAP, confidence: 0.82, source_date: "2026-04-26")
 /** Blocks bare unwrap calls in production Rust paths. */
-pub fn no_unwrap_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_unwrap_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(slice, r"\.(unwrap|unwrap_err)\s*\(")
   return block_on_findings(
     "no_unwrap_in_prod",
@@ -156,7 +156,7 @@ pub fn no_unwrap_in_prod(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MUST_USE, confidence: 0.7, source_date: "2026-04-26")
 /** Warns on public Result/Option-returning functions without a custom must_use message. */
-pub fn must_use_message_on_pub_result_option(slice, _ctx, _repo_at_base) {
+pub fn must_use_message_on_pub_result_option(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_without_prod(
     slice,
     r"pub\s+(async\s+)?fn\s+\w+[^{;]*->\s*(Result|Option)\s*[<\(]",
@@ -173,7 +173,7 @@ pub fn must_use_message_on_pub_result_option(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_UNSAFE_COMMENT, confidence: 0.78, source_date: "2026-04-26")
 /** Blocks unsafe blocks or impls without a preceding SAFETY comment. */
-pub fn unsafe_requires_safety_comment(slice, _ctx, _repo_at_base) {
+pub fn unsafe_requires_safety_comment(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_without_prod(
     slice,
     r"\bunsafe\s*(\{|impl\b)",
@@ -190,7 +190,7 @@ pub fn unsafe_requires_safety_comment(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ASYNC_BLOCKING, confidence: 0.74, source_date: "2026-04-26")
 /** Blocks common blocking std calls inside async functions. */
-pub fn no_blocking_io_in_async(slice, _ctx, _repo_at_base) {
+pub fn no_blocking_io_in_async(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(
     slice,
     r"async\s+fn\s+\w+[^{]*\{[^}]*\b(std::fs::|std::thread::sleep|std::process::Command|std::net::Tcp(Stream|Listener))",
@@ -206,7 +206,7 @@ pub fn no_blocking_io_in_async(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DBG, confidence: 0.9, source_date: "2026-04-26")
 /** Warns when dbg! is committed to production Rust paths. */
-pub fn no_dbg_macro_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_dbg_macro_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(slice, r"\bdbg!\s*\(")
   return warn_on_findings(
     "no_dbg_macro_in_prod",
@@ -219,7 +219,7 @@ pub fn no_dbg_macro_in_prod(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TODO, confidence: 0.88, source_date: "2026-04-26")
 /** Blocks unfinished-code macros in production Rust paths. */
-pub fn no_todo_or_unimplemented_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_todo_or_unimplemented_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(slice, r"\b(todo|unimplemented)!\s*\(")
   return block_on_findings(
     "no_todo_or_unimplemented_in_prod",
@@ -232,7 +232,7 @@ pub fn no_todo_or_unimplemented_in_prod(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_WILDCARD_IMPORTS, confidence: 0.68, source_date: "2026-04-26")
 /** Warns on module-level wildcard imports outside tests and examples. */
-pub fn no_wildcard_imports_in_prod(slice, _ctx, _repo_at_base) {
+pub fn no_wildcard_imports_in_prod(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(slice, r"(?m)^\s*use\s+[^;]*::\*\s*;")
   return warn_on_findings(
     "no_wildcard_imports_in_prod",
@@ -245,7 +245,7 @@ pub fn no_wildcard_imports_in_prod(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PANIC_RESULT, confidence: 0.66, source_date: "2026-04-26")
 /** Warns when Result-returning functions contain direct panics. */
-pub fn no_panic_in_result_fn(slice, _ctx, _repo_at_base) {
+pub fn no_panic_in_result_fn(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_prod(
     slice,
     r"fn\s+\w+[^{;]*->\s*Result\s*[<\(][^{]*\{[^}]*\b(panic!|assert!|assert_eq!|assert_ne!)\s*\(",
@@ -261,7 +261,7 @@ pub fn no_panic_in_result_fn(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_unwrap_in_prod, policy: advisory)
 @archivist(evidence: _EVIDENCE_CARGO_ADVISORIES, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks dependency changes that lack advisory or cargo-deny/audit evidence. */
-pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
+pub fn cargo_advisories_checked(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Rust dependency metadata changed, such as Cargo.toml, Cargo.lock, deny.toml, or Rust CI, and the slice provides no evidence that cargo-deny, cargo-audit, RustSec, OSV, Dependabot, or equivalent advisory checks were considered. Allow pure source changes and dependency changes that add or preserve a clear advisory-check path."
   const judgement = ctx.semantic_judge({rubric: rubric, files: rust_project_files(slice)})
@@ -279,7 +279,7 @@ pub fn cargo_advisories_checked(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_unwrap_in_prod, policy: advisory)
 @archivist(evidence: _EVIDENCE_FFI_SAFETY, confidence: 0.6, source_date: "2026-04-26")
 /** Blocks unsafe public FFI boundaries that omit safety contracts. */
-pub fn ffi_boundary_safety_contract(slice, ctx, _repo_at_base) {
+pub fn ffi_boundary_safety_contract(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed Rust file adds or modifies a public FFI boundary, extern block, no_mangle/export_name symbol, or public unsafe wrapper and the nearby docs/comments do not state caller safety obligations, ownership/nullability/lifetime requirements, or why the foreign signature is sound."
   const judgement = ctx.semantic_judge({rubric: rubric, files: rust_files(slice)})

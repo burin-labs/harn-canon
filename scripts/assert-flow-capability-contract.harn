@@ -34,27 +34,30 @@ fn check_envelope_projection_schema() -> Schema<CheckEnvelopeProjection> {
       code: schema_field(schema_string()),
     },
   )
-  return schema_object(
-    {
-      schemaVersion: schema_field(schema_int()),
-      ok: schema_field(schema_bool()),
-      data: schema_field(
-        schema_object(
-          {
-            files: schema_field(
-              schema_list(
-                schema_object(
-                  {
-                    path: schema_field(schema_string()),
-                    diagnostics: schema_field(schema_list(diagnostic)),
-                  },
+  return schema_refine(
+    schema_of(CheckEnvelopeProjection),
+    schema_object(
+      {
+        schemaVersion: schema_field(schema_int()),
+        ok: schema_field(schema_bool()),
+        data: schema_field(
+          schema_object(
+            {
+              files: schema_field(
+                schema_list(
+                  schema_object(
+                    {
+                      path: schema_field(schema_string()),
+                      diagnostics: schema_field(schema_list(diagnostic)),
+                    },
+                  ),
                 ),
               ),
-            ),
-          },
+            },
+          ),
         ),
-      ),
-    },
+      },
+    ),
   )
 }
 
@@ -68,9 +71,9 @@ fn flow_source(declarations: list<string>, parameter: string) -> string {
         "@archivist(evidence: [\"https://example.com/a\", \"https://example.org/b\"], confidence: 0.9, source_date: \"2026-08-01\")",
         "fn _inspect(",
         "  " + parameter + ",",
-        "  _slice,",
-        "  _ctx,",
-        "  _repo,",
+        "  _slice: any,",
+        "  _ctx: any,",
+        "  _repo: any,",
         ") -> bool { return true }",
         "",
       ],

@@ -64,7 +64,7 @@ const _EVIDENCE_NAMESPACE = [
   "https://cran.r-project.org/doc/manuals/r-release/R-exts.html",
 ]
 
-fn is_r_source_path(path) {
+fn is_r_source_path(path: any) {
   return path.ends_with(".R")
     || path.ends_with(".r")
     || path.ends_with(".Rmd")
@@ -73,7 +73,7 @@ fn is_r_source_path(path) {
     || path.ends_with(".Rnw")
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return path.contains("/tests/")
     || path.contains("/testthat/")
     || path.contains("/test/")
@@ -83,34 +83,34 @@ fn is_test_path(path) {
     || path.contains("/dev/")
 }
 
-fn is_package_source_path(path) {
+fn is_package_source_path(path: any) {
   return (path.contains("/R/") || path.starts_with("R/"))
     && !is_test_path(path)
 }
 
-fn is_analysis_script_path(path) {
+fn is_analysis_script_path(path: any) {
   return is_r_source_path(path)
     && !is_package_source_path(path)
     && !is_test_path(path)
 }
 
-fn r_files(slice) {
+fn r_files(slice: any) {
   return slice.files.filter({ file -> is_r_source_path(file.path) })
 }
 
-fn production_r_files(slice) {
+fn production_r_files(slice: any) {
   return r_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn package_source_files(slice) {
+fn package_source_files(slice: any) {
   return r_files(slice).filter({ file -> is_package_source_path(file.path) })
 }
 
-fn analysis_script_files(slice) {
+fn analysis_script_files(slice: any) {
   return r_files(slice).filter({ file -> is_analysis_script_path(file.path) })
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -120,26 +120,26 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -150,7 +150,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ATTACH, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks calls to attach() that splice a database into the search path. */
-pub fn no_attach(slice, _ctx, _repo_at_base) {
+pub fn no_attach(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_r_files(slice),
     r"(?m)(^|[^A-Za-z0-9_.$@])attach\s*\(",
@@ -167,7 +167,7 @@ pub fn no_attach(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SETWD, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks setwd() calls that hardcode the working directory in committed source. */
-pub fn no_setwd_in_scripts(slice, _ctx, _repo_at_base) {
+pub fn no_setwd_in_scripts(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_r_files(slice), r"(?m)(^|[^A-Za-z0-9_.$@])setwd\s*\(", "m")
   return block_on_findings(
     "no_setwd_in_scripts",
@@ -180,7 +180,7 @@ pub fn no_setwd_in_scripts(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RM_LIST_LS, confidence: 0.8, source_date: "2026-05-10")
 /** Blocks rm(list = ls()) idioms that wipe the calling environment. */
-pub fn no_rm_list_ls(slice, _ctx, _repo_at_base) {
+pub fn no_rm_list_ls(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_r_files(slice), r"\brm\s*\(\s*list\s*=\s*ls\s*\(", "s")
   return block_on_findings(
     "no_rm_list_ls",
@@ -193,7 +193,7 @@ pub fn no_rm_list_ls(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_LOGICAL_CONSTANTS, confidence: 0.55, source_date: "2026-05-10")
 /** Warns on T or F used as logical literals; both are reassignable identifiers. */
-pub fn use_logical_constants(slice, _ctx, _repo_at_base) {
+pub fn use_logical_constants(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_r_files(slice),
     r"(?m)(?:[=,(]|<-|<<-|==|!=|&&|\|\||&|\|)\s*[TF](?:\s*[,)\s;&|]|$)",
@@ -210,7 +210,7 @@ pub fn use_logical_constants(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RIGHT_ASSIGN, confidence: 0.66, source_date: "2026-05-10")
 /** Warns on right-assign operators -> and ->>; reading order obscures the assignment target. */
-pub fn no_right_assign(slice, _ctx, _repo_at_base) {
+pub fn no_right_assign(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_r_files(slice), r"(?m)(^|[^<\-])->>?\s*[A-Za-z_.]", "m")
   return warn_on_findings(
     "no_right_assign",
@@ -225,7 +225,7 @@ pub fn no_right_assign(slice, _ctx, _repo_at_base) {
 /**
  * Warns on 1:length(x), 1:nrow(x), 1:ncol(x) idioms that iterate c(1, 0) when the input is empty.
  */
-pub fn seq_along_over_one_to_length(slice, _ctx, _repo_at_base) {
+pub fn seq_along_over_one_to_length(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_r_files(slice),
     r"\b1\s*:\s*(?:length|nrow|ncol|NROW|NCOL)\s*\(",
@@ -242,7 +242,7 @@ pub fn seq_along_over_one_to_length(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_INSTALL_PACKAGES, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks install.packages() and update.packages() calls in committed source. */
-pub fn no_install_or_update_packages(slice, _ctx, _repo_at_base) {
+pub fn no_install_or_update_packages(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_r_files(slice),
     r"(?m)(^|[^A-Za-z0-9_.$@])(?:install|update)\.packages\s*\(",
@@ -259,7 +259,7 @@ pub fn no_install_or_update_packages(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EVAL_PARSE, confidence: 0.74, source_date: "2026-05-10")
 /** Blocks eval(parse(text = ...)) which evaluates arbitrary text as R code. */
-pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
+pub fn no_eval_parse_text(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_r_files(slice),
     r"\beval\s*\(\s*parse\s*\(\s*text\s*=",
@@ -278,7 +278,7 @@ pub fn no_eval_parse_text(slice, _ctx, _repo_at_base) {
 /**
  * Warns on for loops over vectors or rows that perform a simple element-wise computation a vectorized op would express directly.
  */
-pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
+pub fn vectorize_over_loops(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Warn only when a changed R for loop iterates over a vector, list, or row indices and computes a result that maps cleanly onto a built-in vectorized operation (arithmetic on whole vectors, ifelse, pmin/pmax, rowSums/colSums, sweep, apply/lapply/vapply/sapply/map_*) without inter-iteration state. Allow loops that mutate external resources, accumulate dependent state across iterations, recurse, or break/next on a non-trivial condition."
   const judgement = ctx.semantic_judge({rubric: rubric, files: r_files(slice)})
@@ -296,7 +296,7 @@ pub fn vectorize_over_loops(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_attach, policy: advisory)
 @archivist(evidence: _EVIDENCE_RANDOM_SEED, confidence: 0.62, source_date: "2026-05-10")
 /** Warns when an analysis script invokes randomness without an explicit set.seed() upstream. */
-pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
+pub fn reproducible_random_seed(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Warn only when a changed R analysis script (.R, .Rmd, or .qmd outside R/ package source and outside test directories) calls a stochastic function such as sample, runif, rnorm, rbinom, rpois, rgamma, rbeta, rexp, rweibull, rt, rchisq, rmultinom, or simulate, AND the same script does not call set.seed() with a literal integer earlier in the file. Allow files where set.seed() is called before the first stochastic call, files that only define functions to be called by other code, and package R/ source where setting the seed would clobber the caller's RNG state."
   const judgement = ctx.semantic_judge({rubric: rubric, files: analysis_script_files(slice)})
@@ -316,7 +316,7 @@ pub fn reproducible_random_seed(slice, ctx, _repo_at_base) {
 /**
  * Warns when package R/ source loads dependencies via library()/require() or uses unqualified non-base symbols without an importFrom roxygen tag.
  */
-pub fn package_namespace_discipline(slice, ctx, _repo_at_base) {
+pub fn package_namespace_discipline(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Warn only when a changed file under a package's R/ directory either (a) calls library(), require(), requireNamespace() purely for side-effect attachment, or (b) uses a symbol from a non-base, non-recommended package without either a pkg:: prefix or an @importFrom roxygen tag elsewhere in the file. Allow conditional requireNamespace(..., quietly = TRUE) checks that gate optional behavior, allow base/recommended packages (base, stats, utils, graphics, grDevices, methods, tools), and allow files that only contain comments, roxygen, or data definitions."
   const judgement = ctx.semantic_judge({rubric: rubric, files: package_source_files(slice)})

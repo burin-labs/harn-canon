@@ -53,7 +53,7 @@ const _EVIDENCE_SENSITIVE_LOGS = [
   "https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html",
 ]
 
-fn javascript_files(slice) {
+fn javascript_files(slice: any) {
   return slice.files.filter(
     { file ->
       file.path.ends_with(".js")
@@ -64,7 +64,7 @@ fn javascript_files(slice) {
   )
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, ".test.")
     || contains(path, ".spec.")
     || path.starts_with("test/")
@@ -74,7 +74,7 @@ fn is_test_path(path) {
     || contains(path, "__tests__")
 }
 
-fn is_cli_path(path) {
+fn is_cli_path(path: any) {
   return path.starts_with("cli/")
     || path.starts_with("bin/")
     || contains(path, "/cli/")
@@ -84,13 +84,13 @@ fn is_cli_path(path) {
     || path.ends_with(".cli.cjs")
 }
 
-fn production_javascript_files(slice) {
+fn production_javascript_files(slice: any) {
   return javascript_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_cli_path(file.path) },
   )
 }
 
-fn scan_files(files, pattern) {
+fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
@@ -100,26 +100,26 @@ fn scan_files(files, pattern) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -132,7 +132,7 @@ fn warn_on_findings(rule, remediation, findings) {
 /**
  * Blocks obvious Promise-returning calls that are started as bare statements without await, return, void, or catch.
  */
-pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
+pub fn no_floating_promises(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     javascript_files(slice),
     r"(?m)^\s*((fetch|[A-Za-z_$][A-Za-z0-9_$]*Async|[A-Za-z_$][A-Za-z0-9_$]*\.[A-Za-z_$][A-Za-z0-9_$]*Async|Promise\.[A-Za-z_$][A-Za-z0-9_$]*)\s*\([^;\n]*\)|new\s+Promise\s*\([^;\n]*\))\s*;",
@@ -148,7 +148,7 @@ pub fn no_floating_promises(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EVAL, confidence: 0.86, source_date: "2026-05-08")
 /** Blocks direct eval calls in JavaScript source. */
-pub fn no_eval(slice, _ctx, _repo_at_base) {
+pub fn no_eval(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     javascript_files(slice),
     r"(?m)(^|[^._A-Za-z0-9])(eval|globalThis\.eval|window\.eval|global\.eval)\s*\(",
@@ -164,7 +164,7 @@ pub fn no_eval(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_IMPLIED_EVAL, confidence: 0.82, source_date: "2026-05-08")
 /** Blocks string arguments to timer APIs that evaluate code. */
-pub fn no_implied_eval(slice, _ctx, _repo_at_base) {
+pub fn no_implied_eval(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     javascript_files(slice),
     r"(?m)\b(window\.)?(setTimeout|setInterval|execScript)\s*\(\s*['\x22]",
@@ -180,7 +180,7 @@ pub fn no_implied_eval(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_STRICT_EQUALITY, confidence: 0.8, source_date: "2026-05-08")
 /** Blocks loose equality and inequality operators. */
-pub fn strict_equality(slice, _ctx, _repo_at_base) {
+pub fn strict_equality(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(javascript_files(slice), r"(?m)(^|[^=!])([!=]=)([^=]|$)")
   return block_on_findings(
     "strict_equality",
@@ -193,7 +193,7 @@ pub fn strict_equality(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_VAR, confidence: 0.9, source_date: "2026-05-08")
 /** Blocks var declarations in favor of block-scoped declarations. */
-pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
+pub fn no_var_keyword(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])var\s+[A-Za-z_$]")
   return block_on_findings(
     "no_var_keyword",
@@ -206,7 +206,7 @@ pub fn no_var_keyword(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_CONSOLE, confidence: 0.76, source_date: "2026-05-08")
 /** Blocks console debugging calls in production JavaScript paths. */
-pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_console_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_javascript_files(slice),
     r"\bconsole\.(log|debug|trace|info)\s*\(",
@@ -222,7 +222,7 @@ pub fn no_console_in_prod_path(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_WITH, confidence: 0.9, source_date: "2026-05-08")
 /** Blocks with statements, which are unavailable in strict mode and obscure name resolution. */
-pub fn no_with_statement(slice, _ctx, _repo_at_base) {
+pub fn no_with_statement(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(javascript_files(slice), r"(?m)(^|[^\w$])with\s*\(")
   return block_on_findings(
     "no_with_statement",
@@ -235,7 +235,7 @@ pub fn no_with_statement(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_IMPLICIT_GLOBALS, confidence: 0.72, source_date: "2026-05-08")
 /** Warns on top-level var declarations or function declarations in browser scripts. */
-pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
+pub fn no_implicit_globals(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     javascript_files(slice),
     r"(?m)^(var\s+[A-Za-z_$]|function\s+[A-Za-z_$][A-Za-z0-9_$]*\s*\()",
@@ -251,7 +251,7 @@ pub fn no_implicit_globals(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_RUNTIME_VALIDATION, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks external data being trusted as domain data without runtime validation. */
-pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
+pub fn runtime_validate_external_data(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed JavaScript trusts external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, postMessage, or URL params without runtime validation, schema parsing, allow-listing, or explicit narrowing."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
@@ -269,7 +269,7 @@ pub fn runtime_validate_external_data(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.69, source_date: "2026-05-08")
 /** Blocks hardcoded credentials, tokens, and private keys in JavaScript source. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed JavaScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})
@@ -287,7 +287,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_floating_promises, policy: advisory)
 @archivist(evidence: _EVIDENCE_SENSITIVE_LOGS, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks logging of secrets, credentials, tokens, or sensitive user data. */
-pub fn no_sensitive_data_in_logs(slice, ctx, _repo_at_base) {
+pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed JavaScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
   const judgement = ctx.semantic_judge({rubric: rubric, files: javascript_files(slice)})

@@ -60,36 +60,36 @@ const _EVIDENCE_UNIQUE_DECLARATIONS = [
   "https://go.dev/ref/spec#Method_declarations",
 ]
 
-fn is_go_path(path) {
+fn is_go_path(path: any) {
   return path.ends_with(".go")
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return path.ends_with("_test.go")
     || path.contains("/test/")
     || path.contains("/tests/")
     || path.contains("/testdata/")
 }
 
-fn is_generated_go(file) {
+fn is_generated_go(file: any) {
   return regex_match(r"(?m)^// Code generated .* DO NOT EDIT\.$", file.text, "m") != nil
 }
 
-fn go_files(slice) {
+fn go_files(slice: any) {
   return slice.files.filter({ file -> is_go_path(file.path) && !is_generated_go(file) })
 }
 
-fn production_go_files(slice) {
+fn production_go_files(slice: any) {
   return go_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn library_go_files(slice) {
+fn library_go_files(slice: any) {
   return production_go_files(slice).filter(
     { file -> regex_match(r"(?m)^\s*package\s+main\s*$", file.text, "m") == nil },
   )
 }
 
-fn go_project_files(slice) {
+fn go_project_files(slice: any) {
   return slice.files.filter(
     { file ->
       is_go_path(file.path)
@@ -102,7 +102,7 @@ fn go_project_files(slice) {
   )
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -112,7 +112,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
@@ -122,7 +122,7 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn go_package_dir(path) {
+fn go_package_dir(path: any) {
   const normalized = (path ?? "").replace("\\", "/")
   const parts = normalized.split("/")
   if len(parts) <= 1 {
@@ -131,7 +131,7 @@ fn go_package_dir(path) {
   return join(parts[0:len(parts) - 1], "/")
 }
 
-fn go_receiver_type(receiver) {
+fn go_receiver_type(receiver: any) {
   const normalized = regex_replace(r"\s+", " ", receiver.replace("*", " ").trim()) ?? receiver
   const parts = normalized.split(" ").filter({ part -> part != "" })
   if parts.none() {
@@ -140,7 +140,7 @@ fn go_receiver_type(receiver) {
   return parts[len(parts) - 1] ?? ""
 }
 
-fn go_declaration_key(path, line) {
+fn go_declaration_key(path: any, line: any) {
   const trimmed = (line ?? "").trim()
   if !trimmed.starts_with("func ") {
     return ""
@@ -164,7 +164,7 @@ fn go_declaration_key(path, line) {
   return "${package_dir}|func|${name}"
 }
 
-fn go_duplicate_declaration_findings(files) {
+fn go_duplicate_declaration_findings(files: any) {
   let seen = {}
   let findings = []
   for file in files {
@@ -183,26 +183,26 @@ fn go_duplicate_declaration_findings(files) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -213,7 +213,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_IGNORED_ERRORS, confidence: 0.7, source_date: "2026-05-08")
 /** Blocks obvious discarded error results in production Go files. */
-pub fn no_ignored_errors(slice, _ctx, _repo_at_base) {
+pub fn no_ignored_errors(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     r"(?m)(^\s*_\s*=\s*[A-Za-z_][A-Za-z0-9_\.]*\s*\([^;\n]*\)\s*$|^[^/\n]*,\s*_\s*(:=|=)\s*[A-Za-z_][A-Za-z0-9_\.]*\s*\([^;\n]*\))",
@@ -230,7 +230,7 @@ pub fn no_ignored_errors(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_CONTEXT_FIRST, confidence: 0.72, source_date: "2026-05-08")
 /** Warns when exported functions accept context.Context after another argument. */
-pub fn context_first_arg(slice, _ctx, _repo_at_base) {
+pub fn context_first_arg(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     r"(?m)^func\s+(?:\([^)]+\)\s*)?[A-Z][A-Za-z0-9_]*\s*\(\s*[^)\n]+,\s*([A-Za-z_][A-Za-z0-9_]*\s+)?context\.Context\b",
@@ -247,7 +247,7 @@ pub fn context_first_arg(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PANIC_LIBRARY, confidence: 0.78, source_date: "2026-05-08")
 /** Blocks direct panic calls in non-main, non-test Go files. */
-pub fn no_panic_in_library(slice, _ctx, _repo_at_base) {
+pub fn no_panic_in_library(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(library_go_files(slice), r"\bpanic\s*\(", "s")
   return block_on_findings(
     "no_panic_in_library",
@@ -260,7 +260,7 @@ pub fn no_panic_in_library(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_CONTEXT_STRUCT, confidence: 0.74, source_date: "2026-05-08")
 /** Warns when structs store context.Context instead of taking it per call. */
-pub fn no_context_in_struct(slice, _ctx, _repo_at_base) {
+pub fn no_context_in_struct(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     r"type\s+\w+\s+struct\s*\{[^}]*\bcontext\.Context\b",
@@ -277,7 +277,7 @@ pub fn no_context_in_struct(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_EMPTY_INTERFACE, confidence: 0.66, source_date: "2026-05-08")
 /** Warns on interface{} or any in exported function and method signatures. */
-pub fn no_empty_interface_in_api(slice, _ctx, _repo_at_base) {
+pub fn no_empty_interface_in_api(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     r"(?m)^func\s+(?:\([^)]+\)\s*)?[A-Z][A-Za-z0-9_]*\s*\([^)]*\b(interface\s*\{\s*\}|any)\b",
@@ -294,7 +294,7 @@ pub fn no_empty_interface_in_api(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ERROR_WRAP, confidence: 0.7, source_date: "2026-05-08")
 /** Warns when fmt.Errorf formats err with %v instead of wrapping with %w. */
-pub fn wrap_errors_with_percent_w(slice, _ctx, _repo_at_base) {
+pub fn wrap_errors_with_percent_w(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     r"fmt\.Errorf\s*\([^)]*%v[^)]*,\s*err\s*\)",
@@ -311,7 +311,7 @@ pub fn wrap_errors_with_percent_w(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ERROR_STRINGS, confidence: 0.68, source_date: "2026-05-08")
 /** Warns on capitalized error strings in errors.New or fmt.Errorf. */
-pub fn error_strings_not_capitalized(slice, _ctx, _repo_at_base) {
+pub fn error_strings_not_capitalized(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_go_files(slice),
     "(errors\\.New|fmt\\.Errorf)\\s*\\(\\s*\\\"[A-Z][A-Za-z]",
@@ -328,7 +328,7 @@ pub fn error_strings_not_capitalized(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_UNIQUE_DECLARATIONS, confidence: 0.7, source_date: "2026-06-28")
 /** Blocks duplicate package-level functions or receiver methods in production Go files. */
-pub fn no_duplicate_declarations(slice, _ctx, _repo_at_base) {
+pub fn no_duplicate_declarations(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = go_duplicate_declaration_findings(production_go_files(slice))
   return block_on_findings(
     "no_duplicate_declarations",
@@ -341,7 +341,7 @@ pub fn no_duplicate_declarations(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_HTTP_BODY_CLOSE, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks obvious http response reads without a nearby Body.Close. */
-pub fn http_response_body_closed(slice, _ctx, _repo_at_base) {
+pub fn http_response_body_closed(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_go_files(slice),
     { file ->
@@ -362,7 +362,7 @@ pub fn http_response_body_closed(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MATH_RAND_KEYS, confidence: 0.76, source_date: "2026-05-08")
 /** Blocks math/rand use in files that appear to generate keys, tokens, or secrets. */
-pub fn no_math_rand_for_keys(slice, _ctx, _repo_at_base) {
+pub fn no_math_rand_for_keys(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_go_files(slice),
     { file ->
@@ -382,7 +382,7 @@ pub fn no_math_rand_for_keys(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_ignored_errors, policy: advisory)
 @archivist(evidence: _EVIDENCE_GOROUTINE_LEAKS, confidence: 0.62, source_date: "2026-05-08")
 /** Blocks long-lived goroutines that lack cancellation or shutdown evidence. */
-pub fn goroutine_leak_guard(slice, ctx, _repo_at_base) {
+pub fn goroutine_leak_guard(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Go code starts a goroutine that can wait, loop, receive from a channel, tick, sleep, or perform repeated work, and the changed code lacks a credible shutdown path such as ctx.Done(), a closed channel, errgroup context, WaitGroup ownership with cancellation, or documented bounded lifetime. Allow short fire-and-forget goroutines whose work is clearly bounded."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_go_files(slice)})
@@ -400,7 +400,7 @@ pub fn goroutine_leak_guard(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_ignored_errors, policy: advisory)
 @archivist(evidence: _EVIDENCE_DEP_SECURITY, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks Go dependency changes that omit vulnerability-check evidence. */
-pub fn go_dependency_vulns_checked(slice, ctx, _repo_at_base) {
+pub fn go_dependency_vulns_checked(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Go dependency metadata changed, such as go.mod, go.sum, dependency update automation, or Go CI, and the slice provides no evidence that govulncheck, Dependabot, OSV, a module proxy vulnerability check, or equivalent dependency vulnerability review was considered. Allow pure source changes and dependency changes that add or preserve a clear vulnerability-check path."
   const judgement = ctx.semantic_judge({rubric: rubric, files: go_project_files(slice)})

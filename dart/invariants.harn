@@ -53,11 +53,11 @@ const _EVIDENCE_EFFECTIVE_DART_DOCS = [
   "https://dart.dev/tools/linter-rules/public_member_api_docs",
 ]
 
-fn dart_files(slice) {
+fn dart_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".dart") })
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, "/test/")
     || contains(path, "/tests/")
     || contains(path, "/integration_test/")
@@ -65,7 +65,7 @@ fn is_test_path(path) {
     || path.ends_with("_test.dart")
 }
 
-fn is_generated_path(path) {
+fn is_generated_path(path: any) {
   return contains(path, "/.dart_tool/")
     || contains(path, "/build/")
     || contains(path, "/generated/")
@@ -82,11 +82,11 @@ fn is_generated_path(path) {
     || path.ends_with(".pbserver.dart")
 }
 
-fn is_example_path(path) {
+fn is_example_path(path: any) {
   return contains(path, "/example/") || contains(path, "/examples/")
 }
 
-fn production_dart_files(slice) {
+fn production_dart_files(slice: any) {
   return dart_files(slice).filter(
     { file ->
       !is_test_path(file.path)
@@ -96,13 +96,13 @@ fn production_dart_files(slice) {
   )
 }
 
-fn lib_dart_files(slice) {
+fn lib_dart_files(slice: any) {
   return production_dart_files(slice).filter(
     { file -> contains(file.path, "/lib/") || file.path.starts_with("lib/") },
   )
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -112,7 +112,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
@@ -122,26 +122,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -152,7 +152,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NULL_SAFETY, confidence: 0.92, source_date: "2026-05-10")
 /** Blocks pre-null-safety language version markers in production Dart sources. */
-pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
+pub fn no_null_safety_opt_out(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_dart_files(slice),
     r"(?m)^\s*//\s*@dart\s*=\s*2\.([0-9]|1[01])([^0-9]|$)",
@@ -169,7 +169,7 @@ pub fn no_null_safety_opt_out(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NULL_ASSERTION, confidence: 0.78, source_date: "2026-05-10")
 /** Blocks the postfix null assertion operator in production Dart sources. */
-pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
+pub fn no_force_null_assertion(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_dart_files(slice),
     r"[A-Za-z_0-9\)\]]![\s\.\[\)\]\}\,;]",
@@ -186,7 +186,7 @@ pub fn no_force_null_assertion(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DYNAMIC, confidence: 0.7, source_date: "2026-05-10")
 /** Warns when production Dart functions use dynamic in their signature. */
-pub fn no_dynamic_in_signatures(slice, _ctx, _repo_at_base) {
+pub fn no_dynamic_in_signatures(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_dart_files(slice),
     r"(?m)(^|[\(,])\s*\bdynamic\b\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[\(,\)\{=;]",
@@ -203,7 +203,7 @@ pub fn no_dynamic_in_signatures(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PRINT, confidence: 0.85, source_date: "2026-05-10")
 /** Warns on ad hoc console output in production Dart sources. */
-pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
+pub fn no_print_in_production(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_dart_files(slice), r"\b(print|debugPrint)\s*\(", "s")
   return warn_on_findings(
     "no_print_in_production",
@@ -216,7 +216,7 @@ pub fn no_print_in_production(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MUTABILITY, confidence: 0.7, source_date: "2026-05-10")
 /** Warns on top-level mutable variables in production Dart sources. */
-pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
+pub fn no_top_level_mutable_state(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_dart_files(slice),
     r"(?m)^(?:late\s+)?var\s+[a-zA-Z_][a-zA-Z0-9_]*\s*[=;]",
@@ -233,7 +233,7 @@ pub fn no_top_level_mutable_state(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_LINT_IGNORES, confidence: 0.66, source_date: "2026-05-10")
 /** Warns on file-wide analyzer suppressions that bundle multiple rules or whole categories. */
-pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
+pub fn no_broad_lint_ignores(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_dart_files(slice),
     { file ->
@@ -254,7 +254,7 @@ pub fn no_broad_lint_ignores(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_CONST_WIDGETS, confidence: 0.66, source_date: "2026-05-10")
 /** Warns when a Flutter Widget subclass file declares no const constructor at class body indent. */
-pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
+pub fn prefer_const_constructor_for_widgets(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_dart_files(slice),
     { file ->
@@ -278,7 +278,7 @@ pub fn prefer_const_constructor_for_widgets(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_RELATIVE_LIB_IMPORTS, confidence: 0.82, source_date: "2026-05-10")
 /** Warns on parent-relative imports inside lib/ Dart sources. */
-pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
+pub fn no_relative_lib_imports(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(lib_dart_files(slice), r"\.\.[/]", "m")
   return warn_on_findings(
     "no_relative_lib_imports",
@@ -291,7 +291,7 @@ pub fn no_relative_lib_imports(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_null_safety_opt_out, policy: advisory)
 @archivist(evidence: _EVIDENCE_IMMUTABLE_WIDGET, confidence: 0.66, source_date: "2026-05-10")
 /** Blocks Flutter Widget subclasses that hold mutable instance state. */
-pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
+pub fn widget_state_is_immutable(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
@@ -309,7 +309,7 @@ pub fn widget_state_is_immutable(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_null_safety_opt_out, policy: advisory)
 @archivist(evidence: _EVIDENCE_UNAWAITED_FUTURES, confidence: 0.62, source_date: "2026-05-10")
 /** Blocks discarded Futures inside async bodies without intentional fire-and-forget. */
-pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
+pub fn unawaited_futures_are_intentional(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
@@ -327,7 +327,7 @@ pub fn unawaited_futures_are_intentional(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_null_safety_opt_out, policy: advisory)
 @archivist(evidence: _EVIDENCE_EFFECTIVE_DART_DOCS, confidence: 0.6, source_date: "2026-05-10")
 /** Blocks new public Dart APIs in lib/ that lack /// doc comments. */
-pub fn effective_dart_documents_public_apis(slice, ctx, _repo_at_base) {
+pub fn effective_dart_documents_public_apis(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lib_dart_files(slice)})

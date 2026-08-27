@@ -50,7 +50,7 @@ fn canonical_fixture() -> dict {
 }
 
 @test
-pipeline test_markdown_contract_extracts_exact_structural_rows(task) {
+pipeline test_markdown_contract_extracts_exact_structural_rows(task: any) {
   const markdown = join(
     [
       "The text mentions hidden_rule but does not document it.",
@@ -84,7 +84,7 @@ pipeline test_markdown_contract_extracts_exact_structural_rows(task) {
 }
 
 @test
-pipeline test_canonical_manifest_and_fixture_decode(harness: Harness, task) {
+pipeline test_canonical_manifest_and_fixture_decode(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -107,7 +107,7 @@ pipeline test_canonical_manifest_and_fixture_decode(harness: Harness, task) {
 }
 
 @test
-pipeline test_manifest_rejects_unknown_root_and_nested_keys(harness: Harness, task) {
+pipeline test_manifest_rejects_unknown_root_and_nested_keys(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -131,7 +131,7 @@ pipeline test_manifest_rejects_unknown_root_and_nested_keys(harness: Harness, ta
 }
 
 @test
-pipeline test_manifest_rejects_wrong_nested_types(harness: Harness, task) {
+pipeline test_manifest_rejects_wrong_nested_types(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -145,7 +145,7 @@ pipeline test_manifest_rejects_wrong_nested_types(harness: Harness, task) {
 }
 
 @test
-pipeline test_manifest_accepts_file_name_only_pack(harness: Harness, task) {
+pipeline test_manifest_accepts_file_name_only_pack(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -171,7 +171,7 @@ pipeline test_manifest_accepts_file_name_only_pack(harness: Harness, task) {
 }
 
 @test
-pipeline test_fixture_rejects_invalid_expected_verdict(harness: Harness, task) {
+pipeline test_fixture_rejects_invalid_expected_verdict(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -185,7 +185,7 @@ pipeline test_fixture_rejects_invalid_expected_verdict(harness: Harness, task) {
 }
 
 @test
-pipeline test_fixture_rejects_unknown_keys_at_owned_boundaries(harness: Harness, task) {
+pipeline test_fixture_rejects_unknown_keys_at_owned_boundaries(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -218,7 +218,7 @@ pipeline test_fixture_rejects_unknown_keys_at_owned_boundaries(harness: Harness,
 }
 
 @test
-pipeline test_fixture_rejects_wrong_file_field_type(harness: Harness, task) {
+pipeline test_fixture_rejects_wrong_file_field_type(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -232,7 +232,7 @@ pipeline test_fixture_rejects_wrong_file_field_type(harness: Harness, task) {
 }
 
 @test
-pipeline test_executor_reports_malformed_fixture_as_setup_failure(harness: Harness, task) {
+pipeline test_executor_reports_malformed_fixture_as_setup_failure(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -272,7 +272,7 @@ pipeline test_executor_reports_malformed_fixture_as_setup_failure(harness: Harne
 }
 
 @test
-pipeline test_executor_reports_malformed_invariants_as_setup_failure(harness: Harness, task) {
+pipeline test_executor_reports_malformed_invariants_as_setup_failure(harness: Harness, task: any) {
   with_temp_dir(
     harness.fs,
     { root ->
@@ -299,7 +299,7 @@ pipeline test_executor_reports_malformed_invariants_as_setup_failure(harness: Ha
 }
 
 @test
-pipeline test_fixture_semantics_reject_non_normalized_paths(task) {
+pipeline test_fixture_semantics_reject_non_normalized_paths(task: any) {
   const fixture = {
     predicate: "safe_rule",
     cases: [
@@ -324,7 +324,7 @@ pipeline test_fixture_semantics_reject_non_normalized_paths(task) {
 }
 
 @test
-pipeline test_fixture_semantics_reject_duplicate_cases(task) {
+pipeline test_fixture_semantics_reject_duplicate_cases(task: any) {
   const fixture = {
     predicate: "safe_rule",
     cases: [

@@ -71,11 +71,11 @@ const _EVIDENCE_ACP_SIDE_EFFECTS = [
   "https://platform.openai.com/docs/guides/agent-builder-safety",
 ]
 
-fn harn_files(slice) {
+fn harn_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".harn") })
 }
 
-fn scan(slice, pattern) {
+fn scan(slice: any, pattern: any) {
   let findings = []
   for file in harn_files(slice) {
     if regex_match(pattern, file.text, "s") != nil {
@@ -85,7 +85,7 @@ fn scan(slice, pattern) {
   return findings
 }
 
-fn scan_if(slice, predicate) {
+fn scan_if(slice: any, predicate: any) {
   let findings = []
   for file in harn_files(slice) {
     if predicate(file.text) {
@@ -95,7 +95,7 @@ fn scan_if(slice, predicate) {
   return findings
 }
 
-fn scan_without(slice, include_pattern, exclude_pattern) {
+fn scan_without(slice: any, include_pattern: any, exclude_pattern: any) {
   return scan_if(
     slice,
     { text ->
@@ -105,19 +105,19 @@ fn scan_without(slice, include_pattern, exclude_pattern) {
   )
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_match(slice, rule, pattern, remediation) {
+fn block_on_match(slice: any, rule: any, pattern: any, remediation: any) {
   const findings = scan(slice, pattern)
   if findings.none() {
     return allow(rule)
@@ -125,7 +125,7 @@ fn block_on_match(slice, rule, pattern, remediation) {
   return block(rule, remediation, findings)
 }
 
-fn warn_on_match(slice, rule, pattern, remediation) {
+fn warn_on_match(slice: any, rule: any, pattern: any, remediation: any) {
   const findings = scan(slice, pattern)
   if findings.none() {
     return allow(rule)
@@ -133,14 +133,14 @@ fn warn_on_match(slice, rule, pattern, remediation) {
   return warn(rule, remediation, findings)
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -151,7 +151,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SCHEMA_RETRIES, confidence: 0.86, source_date: "2026-04-26")
 /** Blocks schema-mode llm_call calls that omit a schema retry budget. */
-pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
+pub fn llm_call_schema_sets_schema_retries(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_if(
     slice,
     { text ->
@@ -173,7 +173,7 @@ pub fn llm_call_schema_sets_schema_retries(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_PARALLEL_IO, confidence: 0.82, source_date: "2026-04-26")
 /** Warns when external IO is fanned out without max_concurrent. */
-pub fn parallel_io_sets_max_concurrent(slice, _ctx, _repo_at_base) {
+pub fn parallel_io_sets_max_concurrent(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_without(
     slice,
     r"parallel\s+(each|settle)\s+[^{]*\{[^}]*\b(llm_call|http_get|http_post|host_tool_call|mcp_tool_call)\s*\(",
@@ -190,7 +190,7 @@ pub fn parallel_io_sets_max_concurrent(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SOURCE_STRINGS, confidence: 0.93, source_date: "2026-04-26")
 /** Blocks heredoc syntax in Harn source files. */
-pub fn no_source_heredocs(slice, _ctx, _repo_at_base) {
+pub fn no_source_heredocs(slice: any, _ctx: any, _repo_at_base: any) {
   return block_on_match(
     slice,
     "no_source_heredocs",
@@ -203,7 +203,7 @@ pub fn no_source_heredocs(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TRANSCRIPTS, confidence: 0.88, source_date: "2026-04-26")
 /** Blocks removed transcript option keys on LLM and agent calls. */
-pub fn no_legacy_transcript_options(slice, _ctx, _repo_at_base) {
+pub fn no_legacy_transcript_options(slice: any, _ctx: any, _repo_at_base: any) {
   return block_on_match(
     slice,
     "no_legacy_transcript_options",
@@ -216,7 +216,7 @@ pub fn no_legacy_transcript_options(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_SCHEMA_OBJECTS, confidence: 0.78, source_date: "2026-04-26")
 /** Warns when closed-looking object schemas allow unknown fields. */
-pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
+pub fn schema_objects_reject_unknown_properties(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_if(
     slice,
     { text ->
@@ -237,7 +237,7 @@ pub fn schema_objects_reject_unknown_properties(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DYNAMIC_BOUNDARIES, confidence: 0.74, source_date: "2026-04-26")
 /** Warns when dynamic boundaries accept any instead of unknown. */
-pub fn dynamic_boundaries_use_unknown(slice, _ctx, _repo_at_base) {
+pub fn dynamic_boundaries_use_unknown(slice: any, _ctx: any, _repo_at_base: any) {
   return warn_on_match(
     slice,
     "dynamic_boundaries_use_unknown",
@@ -250,7 +250,7 @@ pub fn dynamic_boundaries_use_unknown(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MOCK_TIME, confidence: 0.8, source_date: "2026-04-26")
 /** Warns when tests use time-sensitive operations without mock_time. */
-pub fn tests_mock_time_for_sleep(slice, _ctx, _repo_at_base) {
+pub fn tests_mock_time_for_sleep(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_without(
     slice,
     r"@test\s+pipeline\s+\w+\s*\([^)]*\)\s*\{[^}]*\b(sleep_ms|sleep|deadline)\b",
@@ -267,7 +267,7 @@ pub fn tests_mock_time_for_sleep(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ITERATION, confidence: 0.7, source_date: "2026-04-26")
 /** Warns on range(len(xs)) loops where direct iteration is clearer. */
-pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
+pub fn prefer_enumerate_over_index_loops(slice: any, _ctx: any, _repo_at_base: any) {
   return warn_on_match(
     slice,
     "prefer_enumerate_over_index_loops",
@@ -280,7 +280,7 @@ pub fn prefer_enumerate_over_index_loops(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_CHANNEL_IDEMPOTENCY, confidence: 0.72, source_date: "2026-05-19")
 /** Warns when durable channel emits omit a stable idempotency id. */
-pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
+pub fn emit_channel_sets_stable_id(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_if(
     slice,
     { text ->
@@ -299,7 +299,7 @@ pub fn emit_channel_sets_stable_id(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_OAUTH_DYNAMIC_REGISTRATION, confidence: 0.78, source_date: "2026-05-19")
 /** Blocks obvious non-loopback HTTP redirect URIs in OAuth dynamic registration metadata. */
-pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
+pub fn oauth_redirect_uris_are_https_or_loopback(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_if(
     slice,
     { text ->
@@ -320,7 +320,7 @@ pub fn oauth_redirect_uris_are_https_or_loopback(slice, _ctx, _repo_at_base) {
 @semantic(fallback: llm_call_schema_sets_schema_retries, policy: advisory)
 @archivist(evidence: _EVIDENCE_PROMPT_SECRETS, confidence: 0.67, source_date: "2026-04-26")
 /** Blocks prompts that embed secrets or sensitive customer data. */
-pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
+pub fn llm_prompts_do_not_embed_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a Harn LLM prompt, system prompt, or tool instruction embeds credentials, tokens, private keys, production URLs with secrets, or sensitive customer data instead of retrieving them at runtime."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
@@ -338,7 +338,7 @@ pub fn llm_prompts_do_not_embed_secrets(slice, ctx, _repo_at_base) {
 @semantic(fallback: llm_call_schema_sets_schema_retries, policy: advisory)
 @archivist(evidence: _EVIDENCE_OAUTH_REDACTION, confidence: 0.68, source_date: "2026-05-19")
 /** Blocks OAuth client secrets and tokens from audit, transcript, log, or span payloads. */
-pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
+pub fn oauth_audit_payloads_redact_tokens(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Harn code writes OAuth client_secret, access_token, refresh_token, device_code, or authorization code values into logs, audit events, transcripts, span attributes, errors, or channel payloads instead of redacting or recording presence/count metadata."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})
@@ -356,7 +356,7 @@ pub fn oauth_audit_payloads_redact_tokens(slice, ctx, _repo_at_base) {
 @semantic(fallback: llm_call_schema_sets_schema_retries, policy: advisory)
 @archivist(evidence: _EVIDENCE_ACP_SIDE_EFFECTS, confidence: 0.64, source_date: "2026-04-26")
 /** Blocks ACP tool metadata that understates real side effects. */
-pub fn acp_tool_side_effects_are_honest(slice, ctx, _repo_at_base) {
+pub fn acp_tool_side_effects_are_honest(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when an @acp_tool annotation understates a tool's side effects, for example declaring read-only metadata around file writes, network mutation, shell execution, billing, deployment, or irreversible external changes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: harn_files(slice)})

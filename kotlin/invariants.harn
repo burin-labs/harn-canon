@@ -36,11 +36,11 @@ const _EVIDENCE_DETEKT_STYLE = [
   "https://detekt.dev/docs/introduction/suppressing-rules/",
 ]
 
-fn kotlin_files(slice) {
+fn kotlin_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".kt") || file.path.ends_with(".kts") })
 }
 
-fn is_test_path(path) {
+fn is_test_path(path: any) {
   return contains(path, "/test/")
     || contains(path, "/tests/")
     || contains(path, "/androidTest/")
@@ -53,19 +53,19 @@ fn is_test_path(path) {
     || path.ends_with("Spec.kt")
 }
 
-fn is_generated_path(path) {
+fn is_generated_path(path: any) {
   return contains(path, "/build/")
     || contains(path, "/generated/")
     || contains(path, "/.gradle/")
     || path.ends_with(".generated.kt")
 }
 
-fn is_build_script_path(path) {
+fn is_build_script_path(path: any) {
   return path.ends_with("build.gradle.kts")
     || path.ends_with("settings.gradle.kts")
 }
 
-fn production_kotlin_files(slice) {
+fn production_kotlin_files(slice: any) {
   return kotlin_files(slice).filter(
     { file ->
       !is_test_path(file.path)
@@ -75,7 +75,7 @@ fn production_kotlin_files(slice) {
   )
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -85,7 +85,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
@@ -95,26 +95,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -125,7 +125,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NULL_SAFETY, confidence: 0.86, source_date: "2026-05-08")
 /** Blocks non-null assertions in production Kotlin source. */
-pub fn no_bang_bang(slice, _ctx, _repo_at_base) {
+pub fn no_bang_bang(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(production_kotlin_files(slice), r"!!", "s")
   return block_on_findings(
     "no_bang_bang",
@@ -138,7 +138,7 @@ pub fn no_bang_bang(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_MUTABILITY, confidence: 0.7, source_date: "2026-05-08")
 /** Warns on mutable local or member variables in production Kotlin source. */
-pub fn immutable_by_default(slice, _ctx, _repo_at_base) {
+pub fn immutable_by_default(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_kotlin_files(slice),
     r"(?m)^\s*(private\s+|internal\s+|protected\s+|public\s+|override\s+|lateinit\s+)*var\s+\w+\s*[:=]",
@@ -155,7 +155,7 @@ pub fn immutable_by_default(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_COROUTINES, confidence: 0.82, source_date: "2026-05-08")
 /** Blocks runBlocking outside tests, scripts, and main entry points. */
-pub fn no_run_blocking_in_prod_path(slice, _ctx, _repo_at_base) {
+pub fn no_run_blocking_in_prod_path(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_kotlin_files(slice).filter(
       { file -> !file.path.ends_with(".kts") && !file.path.ends_with("Main.kt") },
@@ -174,7 +174,7 @@ pub fn no_run_blocking_in_prod_path(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_COROUTINES, confidence: 0.78, source_date: "2026-05-08")
 /** Blocks GlobalScope coroutine launches in production Kotlin source. */
-pub fn no_global_scope_launch(slice, _ctx, _repo_at_base) {
+pub fn no_global_scope_launch(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_kotlin_files(slice),
     r"\bGlobalScope\s*\.\s*(launch|async)\s*\{",
@@ -191,7 +191,7 @@ pub fn no_global_scope_launch(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_COROUTINES, confidence: 0.74, source_date: "2026-05-08")
 /** Warns when suspending code blocks threads directly. */
-pub fn no_thread_sleep_in_suspend(slice, _ctx, _repo_at_base) {
+pub fn no_thread_sleep_in_suspend(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_kotlin_files(slice),
     r"(?s)\bsuspend\s+fun\b[^{]*\{[^}]*\bThread\s*\.\s*sleep\s*\(",
@@ -208,7 +208,7 @@ pub fn no_thread_sleep_in_suspend(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_ANDROID_COROUTINES, confidence: 0.68, source_date: "2026-05-08")
 /** Warns when blocking IO appears inside coroutine bodies without an IO dispatcher hint. */
-pub fn blocking_io_uses_io_dispatcher(slice, _ctx, _repo_at_base) {
+pub fn blocking_io_uses_io_dispatcher(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_kotlin_files(slice),
     { file ->
@@ -232,7 +232,7 @@ pub fn blocking_io_uses_io_dispatcher(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_VISIBILITY, confidence: 0.7, source_date: "2026-05-08")
 /** Warns on implicit public top-level declarations in production Kotlin source. */
-pub fn explicit_visibility_for_top_level_api(slice, _ctx, _repo_at_base) {
+pub fn explicit_visibility_for_top_level_api(slice: any, _ctx: any, _repo_at_base: any) {
   let findings = []
   for file in production_kotlin_files(slice) {
     for line in file.text.lines() {
@@ -254,7 +254,7 @@ pub fn explicit_visibility_for_top_level_api(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DATA_CLASSES, confidence: 0.67, source_date: "2026-05-08")
 /** Warns when value-looking classes hand-roll equality instead of using data class. */
-pub fn data_class_for_value(slice, _ctx, _repo_at_base) {
+pub fn data_class_for_value(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(
     production_kotlin_files(slice),
     { file ->
@@ -277,7 +277,7 @@ pub fn data_class_for_value(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_DETEKT_STYLE, confidence: 0.66, source_date: "2026-05-08")
 /** Warns when broad detekt suppressions disable an entire rule category. */
-pub fn no_broad_detekt_suppressions(slice, _ctx, _repo_at_base) {
+pub fn no_broad_detekt_suppressions(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(
     production_kotlin_files(slice),
     "@Suppress\\s*\\(\\s*\"(detekt:)?(style|complexity|potential-bugs|performance)\"\\s*\\)",
@@ -294,7 +294,7 @@ pub fn no_broad_detekt_suppressions(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_bang_bang, policy: advisory)
 @archivist(evidence: _EVIDENCE_NULL_SAFETY, confidence: 0.64, source_date: "2026-05-08")
 /** Blocks public Kotlin APIs that expose Java platform types without a nullability contract. */
-pub fn no_platform_types_in_public_api(slice, ctx, _repo_at_base) {
+pub fn no_platform_types_in_public_api(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Kotlin exposes a public or protected API whose parameter, return, property, or generic type comes from Java or Android interop and has unspecified nullability, and the code does not wrap it, annotate it, or convert it to an explicit nullable/non-null Kotlin type at the boundary."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})
@@ -312,7 +312,7 @@ pub fn no_platform_types_in_public_api(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_bang_bang, policy: advisory)
 @archivist(evidence: _EVIDENCE_ANDROID_COROUTINES, confidence: 0.62, source_date: "2026-05-08")
 /** Blocks new async APIs that should be suspend-first. */
-pub fn suspend_for_async(slice, ctx, _repo_at_base) {
+pub fn suspend_for_async(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Kotlin introduces a new production asynchronous API using callbacks, Future, CompletableFuture, Thread, Executor, or blocking wait patterns where a suspend function or Flow would provide the same caller-facing contract more safely, and no Java interop adapter requirement is shown."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})
@@ -330,7 +330,7 @@ pub fn suspend_for_async(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_bang_bang, policy: advisory)
 @archivist(evidence: _EVIDENCE_ANDROID_COROUTINES, confidence: 0.6, source_date: "2026-05-08")
 /** Blocks main-thread blocking work in Android or UI-adjacent Kotlin code. */
-pub fn no_main_thread_blocking_work(slice, ctx, _repo_at_base) {
+pub fn no_main_thread_blocking_work(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Kotlin that is Android UI, ViewModel, Compose, lifecycle, or main-dispatcher code performs blocking network, disk, database, sleep, lock, or wait work on the main thread without withContext(Dispatchers.IO), runInterruptible, or a documented non-blocking API."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})

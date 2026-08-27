@@ -40,17 +40,17 @@ const _EVIDENCE_KEY_ORDER = [
 
 const _BOM = "﻿"
 
-fn is_strict_json_path(path) {
+fn is_strict_json_path(path: any) {
   return path.ends_with(".json")
     && regex_match(r"(^|/)((tsconfig|jsconfig)[^/]*\.json$|\.(vscode|devcontainer)/)", path, "")
       == nil
 }
 
-fn strict_json_files(slice) {
+fn strict_json_files(slice: any) {
   return slice.files.filter({ file -> is_strict_json_path(file.path) })
 }
 
-fn all_json_files(slice) {
+fn all_json_files(slice: any) {
   return slice.files.filter(
     { file ->
       file.path.ends_with(".json")
@@ -60,7 +60,7 @@ fn all_json_files(slice) {
   )
 }
 
-fn scan_files(files, pattern, flags) {
+fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
@@ -70,7 +70,7 @@ fn scan_files(files, pattern, flags) {
   return findings
 }
 
-fn scan_files_if(files, predicate) {
+fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
@@ -80,26 +80,26 @@ fn scan_files_if(files, predicate) {
   return findings
 }
 
-fn allow(rule) {
+fn allow(rule: any) {
   return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
 }
 
-fn warn(rule, remediation, findings) {
+fn warn(rule: any, remediation: any, findings: any) {
   return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block(rule, remediation, findings) {
+fn block(rule: any, remediation: any, findings: any) {
   return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
 }
 
-fn block_on_findings(rule, remediation, findings) {
+fn block_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
   return block(rule, remediation, findings)
 }
 
-fn warn_on_findings(rule, remediation, findings) {
+fn warn_on_findings(rule: any, remediation: any, findings: any) {
   if findings.none() {
     return allow(rule)
   }
@@ -110,7 +110,7 @@ fn warn_on_findings(rule, remediation, findings) {
 @deterministic
 @archivist(evidence: _EVIDENCE_TRAILING_COMMAS, confidence: 0.82, source_date: "2026-05-09")
 /** Blocks trailing commas in strict .json files; .jsonc and .json5 are exempt. */
-pub fn no_trailing_commas(slice, _ctx, _repo_at_base) {
+pub fn no_trailing_commas(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(strict_json_files(slice), r",\s*[\}\]]", "s")
   return block_on_findings(
     "no_trailing_commas",
@@ -123,7 +123,7 @@ pub fn no_trailing_commas(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NO_COMMENTS, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks JSONC-style comment markers in strict .json files; .jsonc and .json5 are exempt. */
-pub fn no_comments_in_json(slice, _ctx, _repo_at_base) {
+pub fn no_comments_in_json(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(strict_json_files(slice), r"(?m)((^\s*)|([\}\],]\s*))(//|/\*)", "m")
   return block_on_findings(
     "no_comments_in_json",
@@ -138,7 +138,7 @@ pub fn no_comments_in_json(slice, _ctx, _repo_at_base) {
 /**
  * Blocks single-quoted strings in strict .json files; JSON strings must use double quotation marks.
  */
-pub fn strings_use_double_quotes(slice, _ctx, _repo_at_base) {
+pub fn strings_use_double_quotes(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(strict_json_files(slice), r"(?m)(?:^|[\{\[,:])\s*'[^'\n]*'", "m")
   return block_on_findings(
     "strings_use_double_quotes",
@@ -151,7 +151,7 @@ pub fn strings_use_double_quotes(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_BOM, confidence: 0.9, source_date: "2026-05-09")
 /** Warns when a JSON file begins with a UTF-8 byte order mark. */
-pub fn no_bom_prefix(slice, _ctx, _repo_at_base) {
+pub fn no_bom_prefix(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files_if(all_json_files(slice), { text -> text.starts_with(_BOM) })
   return warn_on_findings(
     "no_bom_prefix",
@@ -164,7 +164,7 @@ pub fn no_bom_prefix(slice, _ctx, _repo_at_base) {
 @deterministic
 @archivist(evidence: _EVIDENCE_NAN_INFINITY, confidence: 0.78, source_date: "2026-05-09")
 /** Blocks NaN, Infinity, and -Infinity literals, which the JSON grammar does not define. */
-pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
+pub fn no_nan_or_infinity_literals(slice: any, _ctx: any, _repo_at_base: any) {
   const findings = scan_files(all_json_files(slice), r"(?m)[:\[,]\s*-?\s*(NaN|Infinity)\b", "m")
   return block_on_findings(
     "no_nan_or_infinity_literals",
@@ -177,7 +177,7 @@ pub fn no_nan_or_infinity_literals(slice, _ctx, _repo_at_base) {
 @semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_SECRETS, confidence: 0.68, source_date: "2026-05-09")
 /** Blocks credentials, tokens, and private keys committed in JSON values. */
-pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
+pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed JSON commits a credential, API key, OAuth token, signed JWT, private key, signing secret, password, or production connection string in a JSON value, instead of referencing a secret manager, environment variable, or templated placeholder."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
@@ -195,7 +195,7 @@ pub fn no_hardcoded_secrets(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_SCHEMA, confidence: 0.66, source_date: "2026-05-09")
 /** Blocks JSON files that declare a $schema reference but introduce values that violate it. */
-pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
+pub fn respects_declared_schema(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed JSON file declares a top-level \"$schema\" URL and the change introduces a value the referenced JSON Schema would clearly reject — wrong type, missing required property, additional property in a closed schema, or an enum or range violation that the schema documents."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
@@ -213,7 +213,7 @@ pub fn respects_declared_schema(slice, ctx, _repo_at_base) {
 @semantic(fallback: no_trailing_commas, policy: advisory)
 @archivist(evidence: _EVIDENCE_KEY_ORDER, confidence: 0.6, source_date: "2026-05-09")
 /** Warns when config-shaped JSON edits gratuitously reorder unrelated keys. */
-pub fn stable_key_ordering(slice, ctx, _repo_at_base) {
+pub fn stable_key_ordering(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Warn only when a changed config-shaped JSON file (package.json, tsconfig.json, manifest, lockfile, or settings file) reorders keys the change otherwise leaves untouched, producing diff noise without a value or structural change. Allow ordering changes that are forced by a value edit, alphabetization the project explicitly enforces, or initial file creation."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
