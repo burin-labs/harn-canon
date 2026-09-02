@@ -47,6 +47,9 @@ and evidence-backed.
 - Rebase on `origin/main` before opening a PR.
 - Keep PRs focused. One language or stack per behavior change remains the
   default shape for predicate work.
+- Title pull requests `[Area] Sentence case summary`, where the area is the
+  pack directory or `core` for validator, manifest, and CI work. See
+  [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <!-- BEGIN HARN SHARED AGENT CONTRACT: managed by harn-bump-fleet -->
 
