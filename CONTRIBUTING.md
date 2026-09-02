@@ -28,6 +28,23 @@ If you can't meet the evidence bar, file an issue instead and we'll discuss whet
 - Predicate function names use `snake_case` and describe the rule, not the fix: `no_floating_promises`, not `require_await`.
 - Remediation text must be plain English, ≤200 chars, and actionable.
 
+## Pull request titles
+
+Use `[Area] Sentence case summary`. The area is the pack or subsystem you
+touched, in square brackets. Use the pack directory name for predicate work,
+and `core` for the validator scripts, the manifest, or CI. The summary starts
+with a capital letter, stays in sentence case, and does not end with a period.
+
+```
+[python] Block a broad except that only passes
+[terraform] Raise confidence on the public bucket predicate
+[core] Fail validation when a pack README is missing a predicate row
+[docs] Explain how semantic fallbacks are recorded
+```
+
+Say what the change does, not which file it edits. `[rust] Add predicate` and
+`[rust] Update invariants.harn` both tell a reviewer nothing.
+
 ## Trust model
 
 **Predicate packs in this repo are trusted code that runs on consumer machines.**
