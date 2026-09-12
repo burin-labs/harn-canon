@@ -260,7 +260,7 @@ pipeline test_executor_reports_malformed_fixture_as_setup_failure(harness: Harne
         path_join(fixtures_root, "malformed_rule.json"),
         {predicate: "malformed_rule", cases: [], extra: true},
       )
-      const report = __run_pack_at({fs: harness.fs, runtime: harness.runtime}, root, "test-pack")
+      const report = __run_pack_at(pick(harness, ["fs", "runtime"]), root, "test-pack")
       assert_eq(report.executed, 0)
       assert_eq(report.failures.count, 1)
       assert_eq(report.failures[0]?.kind, "setup")
@@ -283,7 +283,7 @@ pipeline test_executor_reports_malformed_invariants_as_setup_failure(harness: Ha
         invariants_path,
         "@invariant\npub fn missing_contract() -> bool { true }\n",
       )
-      const report = __run_pack_at({fs: harness.fs, runtime: harness.runtime}, root, "test-pack")
+      const report = __run_pack_at(pick(harness, ["fs", "runtime"]), root, "test-pack")
       assert_eq(report.executed, 0)
       assert_eq(report.failures.count, 1)
       assert_eq(report.failures[0]?.kind, "setup")

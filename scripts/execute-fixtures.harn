@@ -161,7 +161,7 @@ fn main(harness: Harness) {
   }
   let reports: list<FixturePackReport> = []
   for pack in packs {
-    reports = reports + [run_pack({fs: harness.fs, runtime: harness.runtime}, pack)]
+    reports = reports + [run_pack(pick(harness, ["fs", "runtime"]), pack)]
   }
   let failures: list<FixtureRunFailure> = []
   let executed = 0
