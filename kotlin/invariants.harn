@@ -79,7 +79,7 @@ fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -89,7 +89,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -239,7 +239,7 @@ pub fn explicit_visibility_for_top_level_api(slice: any, _ctx: any, _repo_at_bas
       if regex_match(r"^\s*(data\s+)?(class|interface|object|fun|val|var)\s+[A-Z_a-z]", line, "")
         != nil
         && regex_match(r"^\s*(private|internal|public)\b", line, "") == nil {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }

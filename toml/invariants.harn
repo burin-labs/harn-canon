@@ -46,7 +46,7 @@ fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -93,11 +93,11 @@ pub fn no_duplicate_table_headers(slice: any, _ctx: any, _repo_at_base: any) {
         if seen.any({ item -> item == header }) {
           duplicate = true
         }
-        seen = seen.push(header)
+        seen.push(header)
       }
     }
     if duplicate {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return block_on_findings(

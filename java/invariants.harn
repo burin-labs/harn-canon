@@ -69,7 +69,7 @@ fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -79,7 +79,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
