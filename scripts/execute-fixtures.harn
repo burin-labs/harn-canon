@@ -151,7 +151,7 @@ fn main(harness: Harness) {
     }
   }
   if len(unknown) > 0 {
-    harness.stdio.println("unknown pack(s): " + join(unknown.sort(), ", "))
+    harness.stdio.println("unknown pack(s): " + join(unknown.sorted(), ", "))
     harness.runtime.exit(2)
   }
   const packs = if len(requested) > 0 {

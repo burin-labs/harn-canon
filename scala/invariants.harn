@@ -105,7 +105,7 @@ fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -224,7 +224,7 @@ pub fn no_get_on_option_or_try(slice: any, _ctx: any, _repo_at_base: any) {
     for line in file.text.lines() {
       if regex_match(r"\.get\b", line, "") != nil
         && regex_match(r"\.get\s*\(", line, "") == nil {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }

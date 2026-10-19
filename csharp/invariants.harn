@@ -115,7 +115,7 @@ fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -125,7 +125,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -199,7 +199,7 @@ pub fn async_method_naming(slice: any, _ctx: any, _repo_at_base: any) {
       )
         != nil
         && regex_match(r"\b[A-Za-z_][A-Za-z0-9_]*Async\s*\(", line, "") == nil {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -298,7 +298,7 @@ pub fn no_valuetask_reuse(slice: any, _ctx: any, _repo_at_base: any) {
       }
     }
     if value_task_local && reads > 1 {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return warn_on_findings(

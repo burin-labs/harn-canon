@@ -197,7 +197,7 @@ pub fn duplicate_values(values: list<string>) -> list<string> {
     counts[value] = (counts[value] ?? 0) + 1
   }
   let out: list<string> = []
-  for key in keys(counts).sort() {
+  for key in keys(counts).sorted() {
     if (counts[key] ?? 0) > 1 {
       out = out + [key]
     }
@@ -216,7 +216,7 @@ pub fn set_difference(left: list<string>, right: list<string>) -> list<string> {
       out = out + [value]
     }
   }
-  return out.sort()
+  return out.sorted()
 }
 
 pub fn set_intersects(left: list<string>, right: list<string>) -> bool {
@@ -256,7 +256,7 @@ pub fn markdown_list_link_targets(lines: list<string>) -> list<string> {
     if label_and_target.count != 2 {
       continue
     }
-    const target_and_suffix = label_and_target[1].split(")")
+    const target_and_suffix = (label_and_target[1] ?? "").split(")")
     if target_and_suffix.count < 2 {
       continue
     }
@@ -371,7 +371,7 @@ pub fn parse_invariants(
         urls = urls + [url]
       }
     }
-    evidence_defs[name] = urls.sort()
+    evidence_defs[name] = urls.sorted()
   }
   return {entries: entries, evidence_defs: evidence_defs, errors: out_errors}
 }

@@ -69,7 +69,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -161,7 +161,7 @@ pub fn remote_state_backend_configured(slice: any, _ctx: any, _repo_at_base: any
       && regex_match(r"required_providers\s*\{", file.text, "s")
         != nil
       && regex_match("(?m)^\\s*backend\\s+\"[^\"]+\"\\s*\\{", file.text, "m") == nil {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return warn_on_findings(

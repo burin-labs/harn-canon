@@ -79,7 +79,7 @@ fn scan(slice: any, pattern: any) {
   let findings = []
   for file in harn_files(slice) {
     if regex_match(pattern, file.text, "s") != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -89,7 +89,7 @@ fn scan_if(slice: any, predicate: any) {
   let findings = []
   for file in harn_files(slice) {
     if predicate(file.text) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings

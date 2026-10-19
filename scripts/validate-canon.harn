@@ -69,7 +69,7 @@ fn validate_routing_selector_values(
   errors: list<string>,
 ) -> list<string> {
   let out = errors
-  if values != values.sort() {
+  if values != values.sorted() {
     out = out + ["canon-packs.json: " + pack_id + " " + field + " must be sorted"]
   }
   const duplicates = duplicate_values(values)
@@ -122,7 +122,7 @@ fn validate_eval_critical_routes(
   errors: list<string>,
 ) -> list<string> {
   let out = errors
-  for pack_id in keys(EVAL_CRITICAL_PACK_ROUTES).sort() {
+  for pack_id in keys(EVAL_CRITICAL_PACK_ROUTES).sorted() {
     const pack = packs_by_id[pack_id]
     if pack == nil {
       out = out + ["canon-packs.json: missing eval-critical pack " + pack_id]
@@ -183,7 +183,7 @@ fn validate_manifest(
     }
     out = validate_routing_selectors(pack, out)
   }
-  if pack_ids != pack_ids.sort() {
+  if pack_ids != pack_ids.sorted() {
     out = out + ["canon-packs.json: packs must be sorted by id"]
   }
   return validate_eval_critical_routes(packs_by_id, out)
@@ -321,7 +321,7 @@ fn validate_pack_readme_coverage(
     out = out
       + [
         basename(pack_dir) + "/README.md: missing predicate coverage for "
-          + join(missing.sort(), ", "),
+          + join(missing.sorted(), ", "),
       ]
   }
   const unexpected = set_difference(documented, predicate_names)
@@ -464,7 +464,7 @@ fn validate_fixtures(
       fixture_files = fixture_files + [path_join(fixtures_dir, entry)]
     }
   }
-  fixture_files = fixture_files.sort()
+  fixture_files.sort()
   const fixture_names = fixture_files.map({ path -> basename(path).replace(".json", "") }).to_list()
   const missing = set_difference(predicate_names, fixture_names)
   const extra = set_difference(fixture_names, predicate_names)
@@ -488,7 +488,7 @@ fn pack_dirs(fs: HarnessFs) -> list<string> {
       out = out + [entry]
     }
   }
-  return out.sort()
+  return out.sorted()
 }
 
 fn main(harness: Harness) {

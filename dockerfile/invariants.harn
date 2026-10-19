@@ -65,7 +65,7 @@ fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "m") != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -77,18 +77,18 @@ fn run_instruction_blocks(text: any) {
   for line in text.lines() {
     if regex_match(r"(?i)^\s*RUN\b", line, "") != nil {
       if current != "" {
-        blocks = blocks.push(current)
+        blocks.push(current)
       }
       current = line
     } else if current != "" && current.ends_with("\\") {
       current = current + "\n" + line
     } else if current != "" {
-      blocks = blocks.push(current)
+      blocks.push(current)
       current = ""
     }
   }
   if current != "" {
-    blocks = blocks.push(current)
+    blocks.push(current)
   }
   return blocks
 }
@@ -97,7 +97,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file.text) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -149,7 +149,7 @@ pub fn no_latest_or_unpinned_base_image(slice: any, _ctx: any, _repo_at_base: an
         && !contains(line, "@")
         && regex_match(r"(?i)\bscratch\b", line, "") == nil
       if latest || unpinned {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -169,7 +169,7 @@ pub fn apt_get_no_install_recommends(slice: any, _ctx: any, _repo_at_base: any) 
   for file in dockerfile_files(slice) {
     for block in run_instruction_blocks(file.text) {
       if contains(block, "apt-get install") && !contains(block, "--no-install-recommends") {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -189,7 +189,7 @@ pub fn apt_get_clean_lists(slice: any, _ctx: any, _repo_at_base: any) {
   for file in dockerfile_files(slice) {
     for block in run_instruction_blocks(file.text) {
       if contains(block, "apt-get install") && !contains(block, "rm -rf /var/lib/apt/lists") {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -215,7 +215,7 @@ pub fn prefer_copy_over_add(slice: any, _ctx: any, _repo_at_base: any) {
         && !contains(line, "https://")
         && !contains(line, "git@")
         && !contains(line, "git://") {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -289,7 +289,7 @@ pub fn use_exec_form_for_cmd_entrypoint(slice: any, _ctx: any, _repo_at_base: an
       if regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\S", line, "") != nil
         && regex_match(r"(?i)^\s*(CMD|ENTRYPOINT)\s+\[", line, "")
           == nil {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }

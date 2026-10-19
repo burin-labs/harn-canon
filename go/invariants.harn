@@ -106,7 +106,7 @@ fn scan_files(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -116,7 +116,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -173,7 +173,7 @@ fn go_duplicate_declaration_findings(files: any) {
       if key != "" {
         const first_path = seen[key]
         if first_path != nil {
-          findings = findings.push({path: file.path, declaration: key, first_path: first_path})
+          findings.push({path: file.path, declaration: key, first_path: first_path})
         } else {
           seen = seen + {[key]: file.path}
         }

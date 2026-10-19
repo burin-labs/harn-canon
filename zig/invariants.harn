@@ -137,7 +137,7 @@ fn scan_files(files: any, pattern: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, "s") != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -147,7 +147,7 @@ fn scan_files_with_flags(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
     if regex_match(pattern, file.text, flags) != nil {
-      findings = findings.push({path: file.path, pattern: pattern})
+      findings.push({path: file.path, pattern: pattern})
     }
   }
   return findings
@@ -157,7 +157,7 @@ fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
     if predicate(file) {
-      findings = findings.push({path: file.path})
+      findings.push({path: file.path})
     }
   }
   return findings
@@ -226,7 +226,7 @@ pub fn unsafe_cast_has_justification(slice: any, _ctx: any, _repo_at_base: any) 
       if regex_match(r"@(truncate|ptrCast|alignCast|bitCast|intCast)\s*\(", line, "") != nil
         && regex_match(r"//", line, "")
           == nil {
-        findings = findings.push({path: file.path})
+        findings.push({path: file.path})
       }
     }
   }
@@ -551,7 +551,7 @@ fn _producer_bindings(ast: HarnessAst, file_text: any) {
     const name = node.captures?.name?.text
     const callee = node.captures?.callee?.text
     if name != nil && callee != nil && _is_producer_callee(callee) {
-      bindings = bindings.push({variable: name, callee: callee})
+      bindings.push({variable: name, callee: callee})
     }
   }
   return bindings
@@ -582,7 +582,7 @@ fn _ungrounded_assertions(ast: HarnessAst, file_text: any, bindings: any, observ
       // needed to word-boundary-match the bound variable name in the call text.
       if regex_match(r"\b" + binding.variable + r"\b", call_text, "") != nil
         && !_symbol_observed(binding.callee, observed) {
-        hits = hits.push({assertion: call_text, symbol: binding.callee, variable: binding.variable})
+        hits.push({assertion: call_text, symbol: binding.callee, variable: binding.variable})
       }
     }
   }
@@ -617,7 +617,7 @@ pub fn assertion_on_ungrounded_output(
       continue
     }
     for hit in _ungrounded_assertions(harness, file.text, bindings, observed) {
-      findings = findings.push({path: file.path, symbol: hit.symbol, assertion: hit.assertion})
+      findings.push({path: file.path, symbol: hit.symbol, assertion: hit.assertion})
     }
   }
   return block_on_findings(
