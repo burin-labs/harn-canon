@@ -106,7 +106,7 @@ fn check_flow_source(
   ensure(envelope.schemaVersion == 1, "unsupported harn check schema version")
   ensure(envelope.data.files.count == 1, "harn check must report exactly one source file")
   return {
-    exit_code: result.exit_code,
+    exit_code: result.exit_code ?? -1,
     ok: envelope.ok,
     path: envelope.data.files[0]?.path ?? "",
     diagnostics: envelope.data.files.flat_map({ file -> file.diagnostics }).to_list(),

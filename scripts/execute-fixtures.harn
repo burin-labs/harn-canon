@@ -49,7 +49,7 @@ fn run_case(
       record = candidate
     }
   }
-  const actual = fixture_verdict(record ?? {})
+  const actual = fixture_verdict(record)
   const expect = case.expect
   if actual == expect {
     return {kind: "pass"}
