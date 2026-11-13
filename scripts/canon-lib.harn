@@ -436,7 +436,12 @@ pub fn today_from_env_or_args(env: HarnessEnv, today_arg: unknown = nil) -> Cano
   return parsed
 }
 
-pub fn fixture_verdict(record: dict) -> string {
+pub type FixtureVerdictRecord = {
+  result: {verdict: {kind: string?}?}?,
+  raw_result: {verdict: string?}?,
+}
+
+pub fn fixture_verdict(record: FixtureVerdictRecord?) -> string {
   const kind = to_string(record?.result?.verdict?.kind ?? record?.raw_result?.verdict ?? "")
   const normalized = kind.lower()
   if normalized == "allow" {
