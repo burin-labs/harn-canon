@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_without,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_FROZEN_STRING_LITERAL = [
   "https://docs.ruby-lang.org/en/3.4/syntax/comments_rdoc.html",
   "https://docs.rubocop.org/rubocop/latest/cops_style.html#stylefrozenstringliteralcomment",
@@ -87,63 +95,6 @@ fn production_ruby_files(slice: any) {
   return ruby_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_script_path(file.path) },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
-  return scan_files_if(
-    files,
-    { file ->
-      regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(exclude_pattern, file.text, "s")
-          == nil
-    },
-  )
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -282,14 +233,11 @@ pub fn rubocop_style_compliance(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Ruby code or .rubocop.yml clearly violates an enabled RuboCop rule, disables broad departments or cops without a narrow reason, or adds style drift that RuboCop would report under the repository configuration."
   const judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
-  if judgement.verdict == "Block" {
-    return block(
-      "rubocop_style_compliance",
-      "Keep Ruby style aligned with the repository RuboCop configuration or justify a narrow disable.",
-      judgement.findings,
-    )
-  }
-  return allow("rubocop_style_compliance")
+  return judged(
+    "rubocop_style_compliance",
+    "Keep Ruby style aligned with the repository RuboCop configuration or justify a narrow disable.",
+    judgement,
+  )
 }
 
 @invariant
@@ -300,14 +248,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Ruby source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment."
   const judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
+    judgement,
+  )
 }
 
 @invariant
@@ -318,12 +263,9 @@ pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Ruby source logs, reports, or raises messages containing secrets, credentials, authorization headers, session identifiers, tokens, passwords, or sensitive personal data without redaction."
   const judgement = ctx.semantic_judge({rubric: rubric, files: ruby_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_sensitive_data_in_logs",
-      "Redact sensitive values from logs and errors; use stable identifiers instead.",
-      judgement.findings,
-    )
-  }
-  return allow("no_sensitive_data_in_logs")
+  return judged(
+    "no_sensitive_data_in_logs",
+    "Redact sensitive values from logs and errors; use stable identifiers instead.",
+    judgement,
+  )
 }

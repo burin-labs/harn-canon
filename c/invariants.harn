@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_GETS = [
   "https://man7.org/linux/man-pages/man3/gets.3.html",
   "https://man7.org/linux/man-pages/man3/fgets.3p.html",
@@ -129,52 +137,6 @@ fn c_project_files(slice: any) {
         || file.path.contains(".github/workflows/")
     },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -334,14 +296,11 @@ pub fn allocation_return_checked(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed C code calls malloc, calloc, realloc, aligned_alloc, strdup, strndup, or asprintf and dereferences, indexes, copies into, or passes the resulting pointer to a function that requires a non-null argument before any check that the result is non-NULL or before forwarding the NULL upward as an error. Allow allocations followed by a NULL check, an assignment-and-return-on-NULL helper, a wrapper that aborts on OOM, a goto cleanup pattern, or a checked allocator that the project documents."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_c_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "allocation_return_checked",
-      "Check the allocator return for NULL before use, or route through a wrapper that aborts or returns an error on OOM.",
-      judgement.findings,
-    )
-  }
-  return allow("allocation_return_checked")
+  return judged(
+    "allocation_return_checked",
+    "Check the allocator return for NULL before use, or route through a wrapper that aborts or returns an error on OOM.",
+    judgement,
+  )
 }
 
 @invariant
@@ -354,14 +313,11 @@ pub fn static_analyzer_clean(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed C source materially adds or rewrites pointer arithmetic, manual memory management, file or socket I/O, parsing, concurrency primitives, or unsafe casts, and the slice plus repo configuration shows no evidence of clang-analyzer, scan-build, clang-tidy, cppcheck, an Address/Undefined/Memory/Thread sanitizer build mode, or an equivalent static-analysis or dynamic-analysis pipeline being applied to the changed code. Allow trivial refactors, comment-only edits, and changes to projects that already wire one of these tools into CI or developer tooling."
   const judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "static_analyzer_clean",
-      "Run clang-analyzer/scan-build, clang-tidy, cppcheck, or a sanitizer build over the change, or wire one into CI before shipping.",
-      judgement.findings,
-    )
-  }
-  return allow("static_analyzer_clean")
+  return judged(
+    "static_analyzer_clean",
+    "Run clang-analyzer/scan-build, clang-tidy, cppcheck, or a sanitizer build over the change, or wire one into CI before shipping.",
+    judgement,
+  )
 }
 
 @invariant
@@ -374,12 +330,9 @@ pub fn c_dependency_security_checked(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when C build or dependency metadata changed, such as CMakeLists.txt, *.cmake, Makefile, *.mk, conanfile.txt, conanfile.py, vcpkg.json, meson.build, or C-targeted CI workflows, and the slice provides no evidence that vulnerability review was considered: NVD/CVE lookup, OSV, Dependabot, vendored-source pinning with documented update cadence, or a tool such as cargo-audit-style scanning for native deps. Allow pure source changes, formatting-only changes, and dependency changes that add or preserve a clear vulnerability-check path."
   const judgement = ctx.semantic_judge({rubric: rubric, files: c_project_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "c_dependency_security_checked",
-      "Document or wire up a CVE/OSV/Dependabot-style vulnerability check for native C dependencies before merging.",
-      judgement.findings,
-    )
-  }
-  return allow("c_dependency_security_checked")
+  return judged(
+    "c_dependency_security_checked",
+    "Document or wire up a CVE/OSV/Dependabot-style vulnerability check for native C dependencies before merging.",
+    judgement,
+  )
 }

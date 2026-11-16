@@ -1,3 +1,12 @@
+import {
+  allow,
+  block_on_findings,
+  judged,
+  scan_files_if,
+  warn,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_FENCE_LANGUAGE = [
   "https://github.github.com/gfm/#fenced-code-blocks",
   "https://spec.commonmark.org/0.31.2/#fenced-code-blocks",
@@ -64,42 +73,6 @@ fn production_markdown_files(slice: any) {
   return markdown_files(slice).filter(
     { file -> !is_vendored_path(file.path) && !is_fixture_path(file.path) },
   )
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 fn has_heading_level_skip(file: any) {
@@ -220,14 +193,11 @@ pub fn no_broken_internal_links(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Markdown introduces or modifies a relative path link, image reference, or fragment anchor whose target cannot be resolved against the slice plus repo_at_base. Anchor checks must compare the fragment to the rendered heading slugs in the destination Markdown file. Allow external URLs, mailto links, and links whose target is created in the same slice."
   const judgement = ctx.semantic_judge({rubric: rubric, files: markdown_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_broken_internal_links",
-      "Point the link at an existing path or heading anchor, or add the target file in the same change.",
-      judgement.findings,
-    )
-  }
-  return allow("no_broken_internal_links")
+  return judged(
+    "no_broken_internal_links",
+    "Point the link at an existing path or heading anchor, or add the target file in the same change.",
+    judgement,
+  )
 }
 
 @invariant

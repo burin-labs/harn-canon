@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_SYNTAX_VERSION = [
   "https://protobuf.dev/programming-guides/proto3/#simple",
   "https://protobuf.dev/programming-guides/proto2/#simple",
@@ -55,52 +63,6 @@ fn is_vendored_path(path: any) {
 
 fn first_party_proto_files(slice: any) {
   return proto_files(slice).filter({ file -> !is_vendored_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -236,14 +198,11 @@ pub fn no_field_number_renumbering(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed .proto files alter the field number of an existing field, reuse a previously-used field number for a different field, or change the wire-incompatible type of an existing field number (for example int32 to string, or singular to map). Allow strictly additive changes that introduce new fields with fresh numbers, or pure renames that keep the original number and type."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_field_number_renumbering",
-      "Keep existing field numbers stable; reserve old numbers and add new fields with fresh numbers instead.",
-      judgement.findings,
-    )
-  }
-  return allow("no_field_number_renumbering")
+  return judged(
+    "no_field_number_renumbering",
+    "Keep existing field numbers stable; reserve old numbers and add new fields with fresh numbers instead.",
+    judgement,
+  )
 }
 
 @invariant
@@ -256,12 +215,9 @@ pub fn reserved_on_field_removal(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed .proto files remove a field from an existing message without adding a reserved entry that covers the removed field number and the removed field name. Allow removals that add the matching reserved declaration, removals from messages that have never been deployed, and additive changes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: first_party_proto_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "reserved_on_field_removal",
-      "When deleting a field, add reserved <number>; and reserved \"<name>\"; so future fields cannot accidentally reuse the slot.",
-      judgement.findings,
-    )
-  }
-  return allow("reserved_on_field_removal")
+  return judged(
+    "reserved_on_field_removal",
+    "When deleting a field, add reserved <number>; and reserved \"<name>\"; so future fields cannot accidentally reuse the slot.",
+    judgement,
+  )
 }

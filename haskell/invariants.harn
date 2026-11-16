@@ -1,3 +1,5 @@
+import { block_on_findings, judged, scan_files, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_PARTIAL_FUNCTIONS = [
   "https://hackage.haskell.org/package/base/docs/Prelude.html",
   "https://wiki.haskell.org/Avoiding_partial_functions",
@@ -88,42 +90,6 @@ fn production_haskell_files(slice: any) {
 
 fn pub_api_haskell_files(slice: any) {
   return production_haskell_files(slice).filter({ file -> !is_internal_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -259,14 +225,11 @@ pub fn total_function_semantic_check(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Haskell production code introduces a function whose pattern matches are non-exhaustive — for example, list patterns missing the empty case, Maybe patterns missing Nothing, sum-type patterns missing constructors, lambda-case clauses missing variants, or `head`/`fromJust`-style partial helpers — and the function lacks a Haddock comment, MonadFail context, or other clear documentation that the partiality is intentional. Allow exhaustive matches, GADT/refinement-driven coverage, intentionally partial Internal helpers, and matches whose missing branches are statically impossible."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_haskell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "total_function_semantic_check",
-      "Cover every constructor, return Maybe/Either, or document the partial contract on a function isolated to an Internal module.",
-      judgement.findings,
-    )
-  }
-  return allow("total_function_semantic_check")
+  return judged(
+    "total_function_semantic_check",
+    "Cover every constructor, return Maybe/Either, or document the partial contract on a function isolated to an Internal module.",
+    judgement,
+  )
 }
 
 @invariant
@@ -279,14 +242,11 @@ pub fn no_orphan_instances(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed Haskell module declares a typeclass instance and the slice shows that neither the class nor the head type constructor is defined in this module or its package. Allow newtype-wrapper instances declared alongside the wrapper, and instances that the module clearly owns. The judge may rely on imports and module headers as evidence."
   const judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_orphan_instances",
-      "Declare the instance in the module that owns the class or the type, or wrap the type in a newtype and put the instance on the wrapper.",
-      judgement.findings,
-    )
-  }
-  return allow("no_orphan_instances")
+  return judged(
+    "no_orphan_instances",
+    "Declare the instance in the module that owns the class or the type, or wrap the type in a newtype and put the instance on the wrapper.",
+    judgement,
+  )
 }
 
 @invariant
@@ -297,12 +257,9 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Haskell source embeds API tokens, signing keys, database passwords, production connection strings, private keys, or other long-lived credentials as string literals instead of reading them from environment variables, a secret manager, or a runtime config. Allow obviously fake test fixtures, public identifiers, and example documentation literals."
   const judgement = ctx.semantic_judge({rubric: rubric, files: haskell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to environment variables or a secret manager and rotate any credentials that were exposed in source.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to environment variables or a secret manager and rotate any credentials that were exposed in source.",
+    judgement,
+  )
 }

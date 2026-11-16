@@ -1,4 +1,13 @@
 import { ast_search } from "std/ast"
+import {
+  allow,
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn,
+  warn_on_findings,
+} from "../lib/predicates"
 
 const _EVIDENCE_ERROR_SWALLOW = [
   "https://ziglang.org/documentation/master/#Errors",
@@ -133,16 +142,6 @@ fn build_zon_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with("build.zig.zon") })
 }
 
-fn scan_files(files: any, pattern: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, "s") != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
 fn scan_files_with_flags(files: any, pattern: any, flags: any) {
   let findings = []
   for file in files {
@@ -151,42 +150,6 @@ fn scan_files_with_flags(files: any, pattern: any, flags: any) {
     }
   }
   return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -635,14 +598,11 @@ pub fn allocator_lifetime_hygiene(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Zig code calls a heap-allocating allocator API (allocator.alloc, allocator.create, allocator.dupe, allocator.dupeZ, ArrayList.init, ArrayListUnmanaged.init, HashMap.init, std.heap.ArenaAllocator.init, etc.) and the result is neither paired with a matching defer/errdefer that frees or deinits it nor explicitly returned, stored in a struct field with a documented deinit, or transferred via a clearly-named ownership-passing helper. Allow allocations whose ownership transfer is obvious from the function signature or a // owned-by comment, and allow arena-scoped allocations whose arena is itself deinit'd."
   const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "allocator_lifetime_hygiene",
-      "Pair each heap allocation with a matching `defer` or `errdefer` that frees or deinits, or document the ownership transfer to the caller.",
-      judgement.findings,
-    )
-  }
-  return allow("allocator_lifetime_hygiene")
+  return judged(
+    "allocator_lifetime_hygiene",
+    "Pair each heap allocation with a matching `defer` or `errdefer` that frees or deinits, or document the ownership transfer to the caller.",
+    judgement,
+  )
 }
 
 @invariant
@@ -653,14 +613,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Zig source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal string instead of reading it from a secret manager, scoped environment variable, build-time secret input, or restricted-permission credential file."
   const judgement = ctx.semantic_judge({rubric: rubric, files: zig_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to a secret manager or scoped environment variable read at runtime, and rotate any value that was ever committed.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to a secret manager or scoped environment variable read at runtime, and rotate any value that was ever committed.",
+    judgement,
+  )
 }
 
 @invariant

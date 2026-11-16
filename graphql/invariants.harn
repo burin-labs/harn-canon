@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_NAMING = [
   "https://www.apollographql.com/docs/technotes/TN0002-schema-naming-conventions/",
   "https://the-guild.dev/graphql/eslint/rules/naming-convention",
@@ -73,52 +81,6 @@ fn server_config_files(slice: any) {
         || file.path.ends_with(".java")
     },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -220,14 +182,11 @@ pub fn no_breaking_schema_change(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed GraphQL schema files remove a public type, field, enum value, union member, interface implementation, or directive; rename one in place; narrow a return type; widen an input type; mark a previously optional argument as non-null; or change an argument's type, and the change does not retain a backwards-compatible alias, default, or wrapper."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_schema_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_breaking_schema_change",
-      "Keep the prior surface area as a deprecated alias or stage the change behind a new field, then remove later.",
-      judgement.findings,
-    )
-  }
-  return allow("no_breaking_schema_change")
+  return judged(
+    "no_breaking_schema_change",
+    "Keep the prior surface area as a deprecated alias or stage the change behind a new field, then remove later.",
+    judgement,
+  )
 }
 
 @invariant
@@ -238,14 +197,11 @@ pub fn deprecation_over_removal(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed GraphQL schema files delete a public field, enum value, type, union member, or argument that was not marked @deprecated with a reason in the same file before the deletion, and the slice does not show the @deprecated annotation being removed alongside the deletion as part of a documented sunset window."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_schema_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "deprecation_over_removal",
-      "Mark the element @deprecated with a reason and removal date first, then drop it after callers have migrated.",
-      judgement.findings,
-    )
-  }
-  return allow("deprecation_over_removal")
+  return judged(
+    "deprecation_over_removal",
+    "Mark the element @deprecated with a reason and removal date first, then drop it after callers have migrated.",
+    judgement,
+  )
 }
 
 @invariant
@@ -256,12 +212,9 @@ pub fn query_depth_limit_enforced(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed code wires up a public GraphQL HTTP endpoint or router using Apollo Server, Apollo Router, GraphQL Yoga, Mercurius, Strawberry, Ariadne, gqlgen, graphql-ruby, or a similar server, and the changed configuration does not set a max query depth, max query complexity, max alias count, max token count, or persisted-query allowlist."
   const judgement = ctx.semantic_judge({rubric: rubric, files: server_config_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "query_depth_limit_enforced",
-      "Configure a query depth, complexity, or persisted-operation limit on the GraphQL server to bound execution cost.",
-      judgement.findings,
-    )
-  }
-  return allow("query_depth_limit_enforced")
+  return judged(
+    "query_depth_limit_enforced",
+    "Configure a query depth, complexity, or persisted-operation limit on the GraphQL server to bound execution cost.",
+    judgement,
+  )
 }

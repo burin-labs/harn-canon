@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_RAW_NEW_DELETE = [
   "https://isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#r11-avoid-calling-new-and-delete-explicitly",
   "https://clang.llvm.org/extra/clang-tidy/checks/cppcoreguidelines/owning-memory.html",
@@ -144,52 +152,6 @@ fn cpp_header_files(slice: any) {
   )
 }
 
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
-}
-
 @invariant
 @deterministic
 @archivist(evidence: _EVIDENCE_RAW_NEW_DELETE, confidence: 0.82, source_date: "2026-05-10")
@@ -317,14 +279,11 @@ pub fn rule_of_five_consistency(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed C++ class definition declares one or more of the destructor, copy constructor, copy assignment operator, move constructor, or move assignment operator without explicitly declaring or =default/=delete the remaining special members. Allow classes that follow the Rule of Zero (no special members declared), classes whose remaining special members are inherited unchanged from a base that already declares them, and classes whose declaration carries a comment that documents why a specific member is intentionally implicit."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "rule_of_five_consistency",
-      "Declare or =default/=delete every special member when you declare any of them; partial sets invite slicing and double-frees.",
-      judgement.findings,
-    )
-  }
-  return allow("rule_of_five_consistency")
+  return judged(
+    "rule_of_five_consistency",
+    "Declare or =default/=delete every special member when you declare any of them; partial sets invite slicing and double-frees.",
+    judgement,
+  )
 }
 
 @invariant
@@ -335,14 +294,11 @@ pub fn members_initialized(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed C++ class adds or modifies a non-static data member of a non-class fundamental, pointer, enum, or array type that has neither an in-class default initializer nor initialization in every constructor's member initializer list, leaving the field with indeterminate value when an instance is constructed. Allow class-typed members whose own default constructor performs the required initialization, fields explicitly tagged for indeterminate state via a documented placement-new pattern, fields initialized by every base or delegating constructor in the change set, and union members which cannot carry an in-class initializer."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "members_initialized",
-      "Give the member an in-class default initializer (`Type field{};`) or initialize it in every constructor's member initializer list.",
-      judgement.findings,
-    )
-  }
-  return allow("members_initialized")
+  return judged(
+    "members_initialized",
+    "Give the member an in-class default initializer (`Type field{};`) or initialize it in every constructor's member initializer list.",
+    judgement,
+  )
 }
 
 @invariant
@@ -355,12 +311,10 @@ pub fn const_correctness_on_pub_api(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed C++ public or protected non-static member function does not write to any non-mutable data member of *this and does not call any non-const member function on *this, yet its declaration omits the trailing const qualifier. Allow virtual overrides whose base class signature is non-const, methods that lock a non-mutable mutex or update non-mutable cache state, methods that return *this or a non-const reference to a member to outside callers, and call operators on stateful function objects whose contract is documented as non-const."
   const judgement = ctx.semantic_judge({rubric: rubric, files: cpp_production_files(slice)})
-  if judgement.verdict == "Block" {
-    return warn(
-      "const_correctness_on_pub_api",
-      "Add the trailing const qualifier when the method is observably read-only on *this; mark members `mutable` only when they are truly logical-const.",
-      judgement.findings,
-    )
-  }
-  return allow("const_correctness_on_pub_api")
+  return judged(
+    "const_correctness_on_pub_api",
+    "Add the trailing const qualifier when the method is observably read-only on *this; mark members `mutable` only when they are truly logical-const.",
+    judgement,
+    "Warn",
+  )
 }

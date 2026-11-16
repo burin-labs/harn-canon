@@ -35,6 +35,10 @@ When this repo is installed as a Harn package, `harn.toml` exposes the same
 read that contribution and still treat `canon-packs.json` as the single source
 of pack routing truth.
 
+The packs import shared verdict and source-scanning helpers from
+`lib/predicates.harn`. Language rules, evidence and remediation stay in each
+pack; the shared module ships in the package with them.
+
 Predicate files use Harn attributes to carry evidence:
 
 ```harn

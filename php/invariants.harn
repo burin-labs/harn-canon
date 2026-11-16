@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_without,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_STRICT_TYPES = [
   "https://www.php.net/manual/en/language.types.declarations.php#language.types.declarations.strict",
   "https://wiki.php.net/rfc/scalar_type_hints_v5",
@@ -103,63 +111,6 @@ fn production_class_php_files(slice: any) {
   return class_php_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_script_path(file.path) },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
-  return scan_files_if(
-    files,
-    { file ->
-      regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(exclude_pattern, file.text, "s")
-          == nil
-    },
-  )
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -300,14 +251,11 @@ pub fn prepared_statements_only(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP code builds a SQL query by concatenating, interpolating, or sprintf-ing user-controlled values into the SQL text instead of using PDO or mysqli prepared statements with bound parameters. Allow constant identifiers, whitelisted column or table names assembled from a fixed map, and ORM/query-builder calls that ultimately bind parameters."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "prepared_statements_only",
-      "Bind values with PDO::prepare or mysqli::prepare and execute with parameters; never concatenate untrusted input into SQL.",
-      judgement.findings,
-    )
-  }
-  return allow("prepared_statements_only")
+  return judged(
+    "prepared_statements_only",
+    "Bind values with PDO::prepare or mysqli::prepare and execute with parameters; never concatenate untrusted input into SQL.",
+    judgement,
+  )
 }
 
 @invariant
@@ -318,14 +266,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials as string literals or define()/const declarations instead of reading them from getenv, $_ENV, a secret manager, or a parsed configuration file outside the repo."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Load secrets from getenv/$_ENV or a secret manager; rotate any value that touched source control.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Load secrets from getenv/$_ENV or a secret manager; rotate any value that touched source control.",
+    judgement,
+  )
 }
 
 @invariant
@@ -336,12 +281,9 @@ pub fn unserialize_input_is_trusted(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed PHP code passes potentially user-controlled data (request bodies, cookies, query parameters, file contents from upload paths, cache entries that store request data, message-queue payloads from external systems) into unserialize() without setting the allowed_classes option to false or to a small explicit allowlist. Allow unserialize() over data that is provably internal (sealed cache values, signed payloads verified before unserialize, fixtures)."
   const judgement = ctx.semantic_judge({rubric: rubric, files: php_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "unserialize_input_is_trusted",
-      "Switch to json_decode for cross-trust-boundary data, or pass allowed_classes => false (or a tight allowlist) to unserialize.",
-      judgement.findings,
-    )
-  }
-  return allow("unserialize_input_is_trusted")
+  return judged(
+    "unserialize_input_is_trusted",
+    "Switch to json_decode for cross-trust-boundary data, or pass allowed_classes => false (or a tight allowlist) to unserialize.",
+    judgement,
+  )
 }

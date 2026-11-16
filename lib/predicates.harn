@@ -1,0 +1,89 @@
+/** Shared finding and verdict construction for the canon predicate packs. */
+pub type SourceFile = {path: string, text: string}
+
+pub type PredicateVerdict = {
+  verdict: "Allow" | "Warn" | "Block",
+  rule: string,
+  findings: list,
+  remediation: string,
+}
+
+pub fn allow(rule: string) -> PredicateVerdict {
+  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
+}
+
+pub fn warn(rule: string, remediation: string, findings: list) -> PredicateVerdict {
+  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
+}
+
+pub fn block(rule: string, remediation: string, findings: list) -> PredicateVerdict {
+  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
+}
+
+pub fn block_on_findings(rule: string, remediation: string, findings: list) -> PredicateVerdict {
+  return findings.none() ? allow(rule) : block(rule, remediation, findings)
+}
+
+pub fn warn_on_findings(rule: string, remediation: string, findings: list) -> PredicateVerdict {
+  return findings.none() ? allow(rule) : warn(rule, remediation, findings)
+}
+
+pub type SemanticJudgement = {verdict: string, findings: list}
+
+/** Only a Block answer raises a finding; a rule may project it as an advisory Warn. */
+pub fn judged(
+  rule: string,
+  remediation: string,
+  judgement: SemanticJudgement,
+  disposition: "Block" | "Warn" = "Block",
+) -> PredicateVerdict {
+  if judgement.verdict != "Block" {
+    return allow(rule)
+  }
+  return disposition == "Warn" ? warn(rule, remediation, judgement.findings) : block(
+    rule,
+    remediation,
+    judgement.findings,
+  )
+}
+
+pub fn scan_files(
+  files: list<SourceFile>,
+  pattern: string,
+  flags: string = "s",
+) -> list<{path: string, pattern: string}> {
+  let findings = []
+  for file in files {
+    if regex_match(pattern, file.text, flags) != nil {
+      findings.push({path: file.path, pattern: pattern})
+    }
+  }
+  return findings
+}
+
+pub fn scan_files_if(
+  files: list<SourceFile>,
+  predicate: fn(SourceFile) -> bool,
+) -> list<{path: string}> {
+  let findings = []
+  for file in files {
+    if predicate(file) {
+      findings.push({path: file.path})
+    }
+  }
+  return findings
+}
+
+pub fn scan_files_without(
+  files: list<SourceFile>,
+  include_pattern: string,
+  exclude_pattern: string,
+) -> list<{path: string}> {
+  return scan_files_if(
+    files,
+    { file ->
+      regex_match(include_pattern, file.text, "s") != nil
+        && regex_match(exclude_pattern, file.text, "s") == nil
+    },
+  )
+}

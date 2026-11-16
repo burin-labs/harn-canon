@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_DOCTYPE_XXE = [
   "https://cheatsheetseries.owasp.org/cheatsheets/XML_External_Entity_Prevention_Cheat_Sheet.html",
   "https://cwe.mitre.org/data/definitions/611.html",
@@ -71,52 +79,6 @@ fn xsd_files(slice: any) {
 
 fn xslt_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".xsl") || file.path.ends_with(".xslt") })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -240,14 +202,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed XML embeds a credential, API key, bearer token, signing secret, password, private key, or production connection string instead of referencing a managed secret source or environment variable."
   const judgement = ctx.semantic_judge({rubric: rubric, files: xml_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+    judgement,
+  )
 }
 
 @invariant
@@ -260,12 +219,9 @@ pub fn xsd_constrains_user_input(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed XSD intentionally weakens input validation on attacker-reachable fields, for example using xs:any or xs:anyType in place of a real type, omitting maxLength on free-form strings nested under unbounded sequences, or removing pattern/enumeration facets that previously constrained an externally posted value."
   const judgement = ctx.semantic_judge({rubric: rubric, files: xsd_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "xsd_constrains_user_input",
-      "Restore type constraints on externally reachable fields before relaxing the schema.",
-      judgement.findings,
-    )
-  }
-  return allow("xsd_constrains_user_input")
+  return judged(
+    "xsd_constrains_user_input",
+    "Restore type constraints on externally reachable fields before relaxing the schema.",
+    judgement,
+  )
 }

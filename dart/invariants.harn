@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_NULL_SAFETY = [
   "https://dart.dev/null-safety",
   "https://dart.dev/language/versioning",
@@ -100,52 +108,6 @@ fn lib_dart_files(slice: any) {
   return production_dart_files(slice).filter(
     { file -> contains(file.path, "/lib/") || file.path.starts_with("lib/") },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -295,14 +257,11 @@ pub fn widget_state_is_immutable(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Dart introduces or modifies a class extending StatelessWidget, InheritedWidget, InheritedNotifier, or another widget that the framework requires to be immutable, and that class declares a non-final, non-static, non-const instance field, late mutable field, or setter that lets external code mutate the widget after construction. State mutation belongs in a separate State<StatefulWidget> object, an InheritedNotifier listenable, or another framework-sanctioned mutable container."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "widget_state_is_immutable",
-      "Mark widget instance fields final or move mutable state into a State<StatefulWidget> or listenable.",
-      judgement.findings,
-    )
-  }
-  return allow("widget_state_is_immutable")
+  return judged(
+    "widget_state_is_immutable",
+    "Mark widget instance fields final or move mutable state into a State<StatefulWidget> or listenable.",
+    judgement,
+  )
 }
 
 @invariant
@@ -313,14 +272,11 @@ pub fn unawaited_futures_are_intentional(slice: any, ctx: any, _repo_at_base: an
   const rubric =
     "Block only when changed production Dart inside an async function, Future-returning method, or constructor body discards the result of a Future-returning expression without await, without wrapping it in unawaited(...), and without an attached .catchError or .then chain that explicitly handles errors. Top-level fire-and-forget at process startup, deliberate background tasks tagged with unawaited, and Stream subscriptions are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_dart_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "unawaited_futures_are_intentional",
-      "await the Future, mark the call with unawaited(...), or attach explicit error handling.",
-      judgement.findings,
-    )
-  }
-  return allow("unawaited_futures_are_intentional")
+  return judged(
+    "unawaited_futures_are_intentional",
+    "await the Future, mark the call with unawaited(...), or attach explicit error handling.",
+    judgement,
+  )
 }
 
 @invariant
@@ -331,12 +287,9 @@ pub fn effective_dart_documents_public_apis(slice: any, ctx: any, _repo_at_base:
   const rubric =
     "Block only when changed Dart inside a package's lib/ directory introduces a new public top-level declaration (class, mixin, extension, enum, typedef, function, getter, setter, or constant whose name does not start with underscore) and the declaration has no immediately preceding /// doc comment, satisfying the Effective Dart documentation guideline that public APIs carry a doc comment. Private members, overrides of already-documented members, and changes that only modify existing bodies are out of scope."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lib_dart_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "effective_dart_documents_public_apis",
-      "Add a /// doc comment describing what the new public API does; even one sentence beats none.",
-      judgement.findings,
-    )
-  }
-  return allow("effective_dart_documents_public_apis")
+  return judged(
+    "effective_dart_documents_public_apis",
+    "Add a /// doc comment describing what the new public API does; even one sentence beats none.",
+    judgement,
+  )
 }

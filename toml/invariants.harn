@@ -1,3 +1,12 @@
+import {
+  allow,
+  block_on_findings,
+  judged,
+  scan_files,
+  warn,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_DUPLICATE_TABLES = [
   "https://toml.io/en/v1.0.0#table",
   "https://toml.io/en/v1.0.0#keys",
@@ -40,42 +49,6 @@ const _EVIDENCE_PACKAGE_LICENSE = [
 
 fn toml_files(slice: any) {
   return slice.files.filter({ file -> file.path.ends_with(".toml") })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -175,14 +148,11 @@ pub fn secrets_not_hardcoded_in_toml(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when TOML configuration contains a hardcoded credential value such as an API token, database password, signing key, OAuth client secret, private key, or production service credential, instead of a placeholder, environment-variable reference, secret-manager reference, or test/example fixture clearly marked as fake."
   const judgement = ctx.semantic_judge({rubric: rubric, files: toml_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "secrets_not_hardcoded_in_toml",
-      "Reference the secret via env var, secret manager, or templated config instead of inlining the value.",
-      judgement.findings,
-    )
-  }
-  return allow("secrets_not_hardcoded_in_toml")
+  return judged(
+    "secrets_not_hardcoded_in_toml",
+    "Reference the secret via env var, secret manager, or templated config instead of inlining the value.",
+    judgement,
+  )
 }
 
 @invariant

@@ -1,3 +1,12 @@
+import {
+  allow,
+  block_on_findings,
+  judged,
+  scan_files,
+  warn,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_DEBUG_HELPERS = [
   "https://hexdocs.pm/credo/Credo.Check.Warning.IoInspect.html",
   "https://hexdocs.pm/elixir/IO.html",
@@ -76,42 +85,6 @@ fn production_elixir_files(slice: any) {
   return elixir_files(slice).filter(
     { file -> !is_test_path(file.path) && !is_generated_path(file.path) },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -252,14 +225,11 @@ pub fn tagged_error_tuples(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a public Elixir function (def, not defp) added or changed in this slice signals fallible outcomes by returning :error, an arbitrary atom, a string, or nil where the rest of the module's public API uses {:ok, value} and {:error, reason} tuples or a bang variant. Allow boolean predicates ending in ?, functions whose contract is documented as returning :ok or an atom enum, callbacks that must conform to a behaviour, and bang functions that intentionally raise."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_elixir_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "tagged_error_tuples",
-      "Return {:ok, value} or {:error, reason} for fallible operations, or expose a bang variant; keep the failure shape consistent across the module.",
-      judgement.findings,
-    )
-  }
-  return allow("tagged_error_tuples")
+  return judged(
+    "tagged_error_tuples",
+    "Return {:ok, value} or {:error, reason} for fallible operations, or expose a bang variant; keep the failure shape consistent across the module.",
+    judgement,
+  )
 }
 
 @invariant
@@ -270,14 +240,11 @@ pub fn genserver_callback_boundary(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Elixir code defines a GenServer callback (init/1, handle_call/3, handle_cast/2, handle_info/2, handle_continue/2, terminate/2, code_change/3) that returns a state value whose shape disagrees with the module's documented or @type-declared state, introduces a fresh ad hoc tuple or map shape that other callbacks in the same module would not pattern-match, or returns implementation-specific internal types as the reply that the caller is meant to consume directly. Allow callbacks whose state shape matches the declared type, callbacks that wrap reply values in well-known tuples, and modules that explicitly document a richer reply contract."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_elixir_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "genserver_callback_boundary",
-      "Keep GenServer callback state and replies aligned with the module's declared state type and stable public contract.",
-      judgement.findings,
-    )
-  }
-  return allow("genserver_callback_boundary")
+  return judged(
+    "genserver_callback_boundary",
+    "Keep GenServer callback state and replies aligned with the module's declared state type and stable public contract.",
+    judgement,
+  )
 }
 
 @invariant

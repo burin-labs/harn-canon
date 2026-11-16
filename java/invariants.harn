@@ -1,3 +1,5 @@
+import { block_on_findings, judged, scan_files, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_RAW_TYPES = [
   "https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.8",
   "https://docs.oracle.com/javase/tutorial/java/generics/rawTypes.html",
@@ -65,16 +67,6 @@ fn production_java_files(slice: any) {
   return java_files(slice).filter({ file -> !is_test_path(file.path) })
 }
 
-fn scan_files(files: any, pattern: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, "s") != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
 fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
@@ -83,32 +75,6 @@ fn scan_files_if(files: any, predicate: any) {
     }
   }
   return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -265,14 +231,11 @@ pub fn jdbc_queries_use_parameters(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Java builds SQL for JDBC, JPA native queries, or Spring JDBC by concatenating or formatting user-controlled values into the query text instead of using PreparedStatement parameters, named parameters, or a query builder that binds values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "jdbc_queries_use_parameters",
-      "Bind SQL values with PreparedStatement, named parameters, or a safe query builder.",
-      judgement.findings,
-    )
-  }
-  return allow("jdbc_queries_use_parameters")
+  return judged(
+    "jdbc_queries_use_parameters",
+    "Bind SQL values with PreparedStatement, named parameters, or a safe query builder.",
+    judgement,
+  )
 }
 
 @invariant
@@ -283,12 +246,9 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Java embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: java_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+    judgement,
+  )
 }

@@ -1,3 +1,5 @@
+import { block_on_findings, judged, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_TAGGING = [
   "https://docs.aws.amazon.com/whitepapers/latest/tagging-best-practices/tagging-best-practices.html",
   "https://learn.microsoft.com/en-us/azure/cloud-adoption-framework/ready/azure-best-practices/resource-tagging",
@@ -73,32 +75,6 @@ fn scan_files_if(files: any, predicate: any) {
     }
   }
   return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -256,14 +232,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Terraform embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a sensitive variable, AWS Secrets Manager, HashiCorp Vault, GCP Secret Manager, Azure Key Vault, or scoped environment lookup."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to a managed secret source and reference them via sensitive variables or data sources.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to a managed secret source and reference them via sensitive variables or data sources.",
+    judgement,
+  )
 }
 
 @invariant
@@ -276,12 +249,9 @@ pub fn iam_policies_avoid_wildcard_grants(slice: any, ctx: any, _repo_at_base: a
   const rubric =
     "Block only when changed Terraform IAM policy documents (aws_iam_policy_document, aws_iam_policy, aws_iam_role_policy, azurerm_role_definition, google_project_iam_*, google_organization_iam_*) allow Action = \"*\" or Resource = \"*\" or equivalent unrestricted wildcards in an Allow statement, with no narrowing Condition or service-scoped wildcard."
   const judgement = ctx.semantic_judge({rubric: rubric, files: tf_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "iam_policies_avoid_wildcard_grants",
-      "Scope IAM Action and Resource to specific service operations and ARNs, or add a narrow Condition.",
-      judgement.findings,
-    )
-  }
-  return allow("iam_policies_avoid_wildcard_grants")
+  return judged(
+    "iam_policies_avoid_wildcard_grants",
+    "Scope IAM Action and Resource to specific service operations and ARNs, or add a narrow Condition.",
+    judgement,
+  )
 }

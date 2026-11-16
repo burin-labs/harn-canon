@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_STRICT_MODE = [
   "https://www.gnu.org/software/bash/manual/bash.html#The-Set-Builtin",
   "https://google.github.io/styleguide/shellguide.html",
@@ -61,52 +69,6 @@ fn shell_files(slice: any) {
 
 fn executable_shell_files(slice: any) {
   return shell_files(slice).filter({ file -> has_shell_shebang(file) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -206,14 +168,11 @@ pub fn shellcheck_clean(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed shell scripts contain issues ShellCheck would flag at error or warning severity under its default configuration, such as unquoted word-split expansions, missing `set` strict-mode flags on executables, parsing `ls`, eval on interpolated input, or unsafe redirections. Allow scripts that pass ShellCheck or whose only issues are localized info/style notes."
   const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "shellcheck_clean",
-      "Run ShellCheck on the changed scripts and resolve the reported errors and warnings, or add narrowly scoped `# shellcheck disable=SCxxxx` directives with a justification.",
-      judgement.findings,
-    )
-  }
-  return allow("shellcheck_clean")
+  return judged(
+    "shellcheck_clean",
+    "Run ShellCheck on the changed scripts and resolve the reported errors and warnings, or add narrowly scoped `# shellcheck disable=SCxxxx` directives with a justification.",
+    judgement,
+  )
 }
 
 @invariant
@@ -224,14 +183,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed shell source embeds a credential, API token, private key, signing secret, database password, production connection string, or long-lived service credential as a literal value instead of reading it from a secret manager, scoped environment variable, or restricted-permission credential file."
   const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to a secret manager or scoped environment variable and rotate any value that was ever committed.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to a secret manager or scoped environment variable and rotate any value that was ever committed.",
+    judgement,
+  )
 }
 
 @invariant
@@ -242,12 +198,9 @@ pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed shell scripts echo, printf, log, or otherwise emit credentials, authorization headers, session tokens, passwords, signed URLs, or sensitive personal data without redaction. Allow benign diagnostic output and explicit dry-run prints that mask sensitive values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: shell_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_sensitive_data_in_logs",
-      "Redact secrets and sensitive identifiers before printing; log stable, non-sensitive identifiers instead.",
-      judgement.findings,
-    )
-  }
-  return allow("no_sensitive_data_in_logs")
+  return judged(
+    "no_sensitive_data_in_logs",
+    "Redact secrets and sensitive identifiers before printing; log stable, non-sensitive identifiers instead.",
+    judgement,
+  )
 }
