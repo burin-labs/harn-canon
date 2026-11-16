@@ -1,3 +1,5 @@
+import { block_on_findings, judged, scan_files, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_FLOATING_PROMISES = [
   "https://typescript-eslint.io/rules/no-floating-promises/",
   "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch",
@@ -89,16 +91,6 @@ fn production_ts_files(slice: any) {
   )
 }
 
-fn scan_files(files: any, pattern: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, "s") != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
 fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
@@ -117,32 +109,6 @@ fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
         && regex_match(exclude_pattern, text, "s") == nil
     },
   )
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -278,14 +244,11 @@ pub fn runtime_validate_external_data(slice: any, ctx: any, _repo_at_base: any) 
   const rubric =
     "Block only when changed TypeScript treats untrusted external data from JSON.parse, request bodies, process.env, fetch responses, localStorage, or message events as a specific domain type without runtime validation, schema parsing, or explicit narrowing."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "runtime_validate_external_data",
-      "Validate external data at runtime before trusting it as a TypeScript domain type.",
-      judgement.findings,
-    )
-  }
-  return allow("runtime_validate_external_data")
+  return judged(
+    "runtime_validate_external_data",
+    "Validate external data at runtime before trusting it as a TypeScript domain type.",
+    judgement,
+  )
 }
 
 @invariant
@@ -296,14 +259,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed TypeScript embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move credentials to a secret manager or scoped environment variable and rotate exposed values.",
+    judgement,
+  )
 }
 
 @invariant
@@ -314,12 +274,9 @@ pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed TypeScript logs secrets, credentials, session identifiers, access tokens, authorization headers, passwords, or sensitive personal data to console, logger, telemetry, or thrown error messages."
   const judgement = ctx.semantic_judge({rubric: rubric, files: typescript_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_sensitive_data_in_logs",
-      "Remove sensitive values from logs and use redaction or stable identifiers.",
-      judgement.findings,
-    )
-  }
-  return allow("no_sensitive_data_in_logs")
+  return judged(
+    "no_sensitive_data_in_logs",
+    "Remove sensitive values from logs and use redaction or stable identifiers.",
+    judgement,
+  )
 }

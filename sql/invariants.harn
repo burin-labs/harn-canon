@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_SELECT_STAR = [
   "https://www.postgresql.org/docs/current/sql-createview.html",
   "https://docs.gitlab.com/development/sql/",
@@ -73,52 +81,6 @@ fn production_sql_files(slice: any) {
 
 fn migration_sql_files(slice: any) {
   return production_sql_files(slice).filter({ file -> is_migration_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 fn any_match_lacks(matches: any, lack_pattern: any) {
@@ -250,14 +212,11 @@ pub fn parameterized_queries_only(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed SQL builds a query by concatenating, formatting, or interpolating user-controlled values into the SQL text instead of using bind parameters, prepared statements, or sp_executesql with typed parameters. Allow safe identifier whitelisting, format() with %I or %L, and template substitutions where the substituted token is a constant or trusted identifier."
   const judgement = ctx.semantic_judge({rubric: rubric, files: sql_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "parameterized_queries_only",
-      "Bind values with prepared statements, sp_executesql parameters, or format() %L; never concatenate untrusted input.",
-      judgement.findings,
-    )
-  }
-  return allow("parameterized_queries_only")
+  return judged(
+    "parameterized_queries_only",
+    "Bind values with prepared statements, sp_executesql parameters, or format() %L; never concatenate untrusted input.",
+    judgement,
+  )
 }
 
 @invariant
@@ -268,12 +227,9 @@ pub fn index_on_fk(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a SQL migration or schema change adds a FOREIGN KEY constraint or REFERENCES clause on a column that is not already the leading column of an index, primary key, or unique constraint, and the same change set does not add a CREATE INDEX covering it. Allow MySQL InnoDB inline FOREIGN KEY constraints that auto-create the supporting index, and allow columns already covered by an existing index."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_sql_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "index_on_fk",
-      "Add a CREATE INDEX on the referencing column when introducing a foreign key in engines that do not auto-index it.",
-      judgement.findings,
-    )
-  }
-  return allow("index_on_fk")
+  return judged(
+    "index_on_fk",
+    "Add a CREATE INDEX on the referencing column when introducing a foreign key in engines that do not auto-index it.",
+    judgement,
+  )
 }

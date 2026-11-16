@@ -1,3 +1,12 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  scan_files_without,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_NULLABLE = [
   "https://learn.microsoft.com/en-us/dotnet/csharp/nullable-references",
   "https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/nullable-reference-types",
@@ -109,63 +118,6 @@ fn library_csharp_files(slice: any) {
         && !is_ui_path(file.path)
     },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
-  return scan_files_if(
-    files,
-    { file ->
-      regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(exclude_pattern, file.text, "s")
-          == nil
-    },
-  )
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -333,14 +285,11 @@ pub fn sql_commands_use_parameters(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed C# builds SQL command text by concatenating, interpolating, or formatting user-controlled values into the SQL string instead of using parameters, stored procedures, or a query builder that binds values."
   const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "sql_commands_use_parameters",
-      "Use parameterized commands or a query builder that binds values instead of string-built SQL.",
-      judgement.findings,
-    )
-  }
-  return allow("sql_commands_use_parameters")
+  return judged(
+    "sql_commands_use_parameters",
+    "Use parameterized commands or a query builder that binds values instead of string-built SQL.",
+    judgement,
+  )
 }
 
 @invariant
@@ -351,14 +300,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed C# source, appsettings JSON, csproj metadata, or test host configuration embeds a credential, API key, token, private key, signing secret, password, or production connection string instead of reading it from configuration or a managed secret source."
   const judgement = ctx.semantic_judge({rubric: rubric, files: slice.files})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move credentials to a secret manager or scoped configuration source and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move credentials to a secret manager or scoped configuration source and rotate exposed values.",
+    judgement,
+  )
 }
 
 @invariant
@@ -369,12 +315,9 @@ pub fn no_sensitive_data_in_logs(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed C# logs or throws messages containing secrets, credentials, session identifiers, authorization headers, access tokens, passwords, payment data, or sensitive personal data through ILogger, Console, diagnostics, telemetry, or exception text."
   const judgement = ctx.semantic_judge({rubric: rubric, files: csharp_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_sensitive_data_in_logs",
-      "Remove sensitive values from logs and exception messages; log stable identifiers or redacted fields.",
-      judgement.findings,
-    )
-  }
-  return allow("no_sensitive_data_in_logs")
+  return judged(
+    "no_sensitive_data_in_logs",
+    "Remove sensitive values from logs and exception messages; log stable identifiers or redacted fields.",
+    judgement,
+  )
 }

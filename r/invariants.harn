@@ -1,3 +1,5 @@
+import { allow, block_on_findings, scan_files, warn, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_ATTACH = [
   "https://stat.ethz.ch/R-manual/R-devel/library/base/html/attach.html",
   "https://adv-r.hadley.nz/environments.html",
@@ -108,42 +110,6 @@ fn package_source_files(slice: any) {
 
 fn analysis_script_files(slice: any) {
   return r_files(slice).filter({ file -> is_analysis_script_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant

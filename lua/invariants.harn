@@ -1,3 +1,12 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  scan_files_without,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_GLOBAL_FUNCTION = [
   "https://www.lua.org/manual/5.4/manual.html#3.4.11",
   "https://www.lua.org/pil/6.2.html",
@@ -86,63 +95,6 @@ fn production_lua_files(slice: any) {
 
 fn module_lua_files(slice: any) {
   return production_lua_files(slice).filter({ file -> regex_match(r"\A#!", file.text, "s") == nil })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn scan_files_without(files: any, include_pattern: any, exclude_pattern: any) {
-  return scan_files_if(
-    files,
-    { file ->
-      regex_match(include_pattern, file.text, "s") != nil
-        && regex_match(exclude_pattern, file.text, "s")
-          == nil
-    },
-  )
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -273,14 +225,12 @@ pub fn tail_call_recursion(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Warn only when changed Lua source defines a function that calls itself recursively and the recursive call is not in tail position — that is, the result is consumed by an arithmetic, logical, indexing, or wrapping expression before being returned. A call is in tail position when it is the entire return expression (e.g., `return f(...)`). Allow when recursion depth is bounded by a small literal, when the recursive call is wrapped in pcall/xpcall for protected execution, or when the function is iterative."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
-  if judgement.verdict == "Block" {
-    return warn(
-      "tail_call_recursion",
-      "Move the recursive call into tail position (`return self_call(...)`) or rewrite as a loop to avoid stack growth.",
-      judgement.findings,
-    )
-  }
-  return allow("tail_call_recursion")
+  return judged(
+    "tail_call_recursion",
+    "Move the recursive call into tail position (`return self_call(...)`) or rewrite as a loop to avoid stack growth.",
+    judgement,
+    "Warn",
+  )
 }
 
 @invariant
@@ -293,14 +243,11 @@ pub fn metatable_boundary_documented(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Lua source assigns to a metatable field that crosses a behavior boundary — `__index`, `__newindex`, `__metatable`, `__call`, `__eq`, `__lt`, `__le`, `__add`, `__concat`, `__tostring`, or `__gc` — without an adjacent comment, docstring, or annotation that names the target type and explains the new behavior. Allow purely additive helper assignments inside a class-builder helper that already documents the pattern."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "metatable_boundary_documented",
-      "Document the metatable contract in a comment next to the assignment: which field, which type, and what the new behavior is.",
-      judgement.findings,
-    )
-  }
-  return allow("metatable_boundary_documented")
+  return judged(
+    "metatable_boundary_documented",
+    "Document the metatable contract in a comment next to the assignment: which field, which type, and what the new behavior is.",
+    judgement,
+  )
 }
 
 @invariant
@@ -311,12 +258,9 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Lua source embeds credentials, API tokens, private keys, signing secrets, database passwords, production connection strings, or long-lived service credentials instead of reading them from a secret manager or scoped environment variable."
   const judgement = ctx.semantic_judge({rubric: rubric, files: lua_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move secrets to a secret manager or scoped environment variable and rotate exposed values.",
+    judgement,
+  )
 }

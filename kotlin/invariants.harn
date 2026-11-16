@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_NULL_SAFETY = [
   "https://kotlinlang.org/docs/null-safety.html",
   "https://kotlinlang.org/spec/type-system.html",
@@ -73,52 +81,6 @@ fn production_kotlin_files(slice: any) {
         && !is_build_script_path(file.path)
     },
   )
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -298,14 +260,11 @@ pub fn no_platform_types_in_public_api(slice: any, ctx: any, _repo_at_base: any)
   const rubric =
     "Block only when changed production Kotlin exposes a public or protected API whose parameter, return, property, or generic type comes from Java or Android interop and has unspecified nullability, and the code does not wrap it, annotate it, or convert it to an explicit nullable/non-null Kotlin type at the boundary."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_platform_types_in_public_api",
-      "Normalize Java interop values to explicit nullable or non-null Kotlin types at public boundaries.",
-      judgement.findings,
-    )
-  }
-  return allow("no_platform_types_in_public_api")
+  return judged(
+    "no_platform_types_in_public_api",
+    "Normalize Java interop values to explicit nullable or non-null Kotlin types at public boundaries.",
+    judgement,
+  )
 }
 
 @invariant
@@ -316,14 +275,11 @@ pub fn suspend_for_async(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Kotlin introduces a new production asynchronous API using callbacks, Future, CompletableFuture, Thread, Executor, or blocking wait patterns where a suspend function or Flow would provide the same caller-facing contract more safely, and no Java interop adapter requirement is shown."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "suspend_for_async",
-      "Expose suspend or Flow for Kotlin async APIs; keep callbacks or futures at interop edges.",
-      judgement.findings,
-    )
-  }
-  return allow("suspend_for_async")
+  return judged(
+    "suspend_for_async",
+    "Expose suspend or Flow for Kotlin async APIs; keep callbacks or futures at interop edges.",
+    judgement,
+  )
 }
 
 @invariant
@@ -334,12 +290,9 @@ pub fn no_main_thread_blocking_work(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Kotlin that is Android UI, ViewModel, Compose, lifecycle, or main-dispatcher code performs blocking network, disk, database, sleep, lock, or wait work on the main thread without withContext(Dispatchers.IO), runInterruptible, or a documented non-blocking API."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_kotlin_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_main_thread_blocking_work",
-      "Move blocking work off the main thread with Dispatchers.IO or a non-blocking suspend API.",
-      judgement.findings,
-    )
-  }
-  return allow("no_main_thread_blocking_work")
+  return judged(
+    "no_main_thread_blocking_work",
+    "Move blocking work off the main thread with Dispatchers.IO or a non-blocking suspend API.",
+    judgement,
+  )
 }

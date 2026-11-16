@@ -1,3 +1,5 @@
+import { block_on_findings, judged, scan_files, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_PUBLIC_API_TYPES = [
   "https://docs.scala-lang.org/scala3/book/methods-most.html",
   "https://www.wartremover.org/doc/warts.html",
@@ -99,42 +101,6 @@ fn production_scala_files(slice: any) {
 
 fn library_scala_files(slice: any) {
   return production_scala_files(slice).filter({ file -> !is_main_entry_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -294,14 +260,11 @@ pub fn effect_typed_boundaries(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Scala mixes a typed effect (cats-effect IO/Resource, ZIO, Monix Task) with scala.concurrent.Future in a way that defeats cancellation, error channels, or resource scoping. Examples: calling .unsafeRunSync inside a Future or eager block to thread a value back to async code; turning an IO into a Future without IO.fromFuture/IO.fromFutureCancelable or the equivalent ZIO.fromFuture; awaiting a Future inside an IO body instead of suspending it. Allow code that crosses the boundary explicitly through documented adapter APIs."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "effect_typed_boundaries",
-      "Cross IO/ZIO and Future boundaries through fromFuture/fromFutureCancelable adapters; never unsafeRun inside another effect.",
-      judgement.findings,
-    )
-  }
-  return allow("effect_typed_boundaries")
+  return judged(
+    "effect_typed_boundaries",
+    "Cross IO/ZIO and Future boundaries through fromFuture/fromFutureCancelable adapters; never unsafeRun inside another effect.",
+    judgement,
+  )
 }
 
 @invariant
@@ -312,14 +275,11 @@ pub fn no_unsafe_run_in_library_code(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed Scala calls an effect runtime escape hatch (cats-effect unsafeRunSync/unsafeRunAsync/unsafeRunTimed, IORuntime.global.unsafe, ZIO Runtime.default.unsafe.run, Monix runSyncUnsafe) from a file that is not a Main, App, IOApp, ZIOAppDefault, test, or documented Dispatcher boundary. Allow these calls in process entry points and in test setup or teardown."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_unsafe_run_in_library_code",
-      "Move unsafeRun/runtime.unsafe calls to IOApp/ZIOAppDefault main, a Dispatcher, or test-only setup.",
-      judgement.findings,
-    )
-  }
-  return allow("no_unsafe_run_in_library_code")
+  return judged(
+    "no_unsafe_run_in_library_code",
+    "Move unsafeRun/runtime.unsafe calls to IOApp/ZIOAppDefault main, a Dispatcher, or test-only setup.",
+    judgement,
+  )
 }
 
 @invariant
@@ -330,12 +290,10 @@ pub fn pattern_matches_are_exhaustive(slice: any, ctx: any, _repo_at_base: any) 
   const rubric =
     "Block only when changed production Scala adds a match expression whose subject is not a sealed family, enum, ADT, or otherwise compiler-checked exhaustive type, and the match omits both a `case _ =>` fallback and any defensive Try/Either wrapping. Allow matches over sealed types, enums, tuples decomposed positionally, and explicit `case _ => ...` fallbacks."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_scala_files(slice)})
-  if judgement.verdict == "Block" {
-    return warn(
-      "pattern_matches_are_exhaustive",
-      "Add a `case _ =>` fallback or constrain the matched type to a sealed family the compiler can check.",
-      judgement.findings,
-    )
-  }
-  return allow("pattern_matches_are_exhaustive")
+  return judged(
+    "pattern_matches_are_exhaustive",
+    "Add a `case _ =>` fallback or constrain the matched type to a sealed family the compiler can check.",
+    judgement,
+    "Warn",
+  )
 }

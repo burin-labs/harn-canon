@@ -1,3 +1,12 @@
+import {
+  allow,
+  block_on_findings,
+  judged,
+  scan_files,
+  warn,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_TRAILING_COMMAS = [
   "https://www.rfc-editor.org/rfc/rfc8259#section-5",
   "https://www.json.org/json-en.html",
@@ -60,16 +69,6 @@ fn all_json_files(slice: any) {
   )
 }
 
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
 fn scan_files_if(files: any, predicate: any) {
   let findings = []
   for file in files {
@@ -78,32 +77,6 @@ fn scan_files_if(files: any, predicate: any) {
     }
   }
   return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -181,14 +154,11 @@ pub fn no_hardcoded_secrets(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed JSON commits a credential, API key, OAuth token, signed JWT, private key, signing secret, password, or production connection string in a JSON value, instead of referencing a secret manager, environment variable, or templated placeholder."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "no_hardcoded_secrets",
-      "Move the secret to a secret manager or templated environment reference and rotate the exposed value.",
-      judgement.findings,
-    )
-  }
-  return allow("no_hardcoded_secrets")
+  return judged(
+    "no_hardcoded_secrets",
+    "Move the secret to a secret manager or templated environment reference and rotate the exposed value.",
+    judgement,
+  )
 }
 
 @invariant
@@ -199,14 +169,11 @@ pub fn respects_declared_schema(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when a changed JSON file declares a top-level \"$schema\" URL and the change introduces a value the referenced JSON Schema would clearly reject — wrong type, missing required property, additional property in a closed schema, or an enum or range violation that the schema documents."
   const judgement = ctx.semantic_judge({rubric: rubric, files: all_json_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "respects_declared_schema",
-      "Adjust the JSON to satisfy the declared $schema, or update the schema reference if the divergence is intentional.",
-      judgement.findings,
-    )
-  }
-  return allow("respects_declared_schema")
+  return judged(
+    "respects_declared_schema",
+    "Adjust the JSON to satisfy the declared $schema, or update the schema reference if the divergence is intentional.",
+    judgement,
+  )
 }
 
 @invariant

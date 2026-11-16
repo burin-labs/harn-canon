@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_IGNORED_ERRORS = [
   "https://go.dev/doc/effective_go#blank",
   "https://go.dev/doc/tutorial/handle-errors",
@@ -102,26 +110,6 @@ fn go_project_files(slice: any) {
   )
 }
 
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
 fn go_package_dir(path: any) {
   const normalized = (path ?? "").replace("\\", "/")
   const parts = normalized.split("/")
@@ -181,32 +169,6 @@ fn go_duplicate_declaration_findings(files: any) {
     }
   }
   return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -386,14 +348,11 @@ pub fn goroutine_leak_guard(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed production Go code starts a goroutine that can wait, loop, receive from a channel, tick, sleep, or perform repeated work, and the changed code lacks a credible shutdown path such as ctx.Done(), a closed channel, errgroup context, WaitGroup ownership with cancellation, or documented bounded lifetime. Allow short fire-and-forget goroutines whose work is clearly bounded."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_go_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "goroutine_leak_guard",
-      "Give long-lived goroutines a cancellation or shutdown path such as ctx.Done(), close, or errgroup.",
-      judgement.findings,
-    )
-  }
-  return allow("goroutine_leak_guard")
+  return judged(
+    "goroutine_leak_guard",
+    "Give long-lived goroutines a cancellation or shutdown path such as ctx.Done(), close, or errgroup.",
+    judgement,
+  )
 }
 
 @invariant
@@ -404,12 +363,9 @@ pub fn go_dependency_vulns_checked(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Go dependency metadata changed, such as go.mod, go.sum, dependency update automation, or Go CI, and the slice provides no evidence that govulncheck, Dependabot, OSV, a module proxy vulnerability check, or equivalent dependency vulnerability review was considered. Allow pure source changes and dependency changes that add or preserve a clear vulnerability-check path."
   const judgement = ctx.semantic_judge({rubric: rubric, files: go_project_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "go_dependency_vulns_checked",
-      "Run or configure govulncheck, Dependabot, OSV, or equivalent vulnerability checks for Go dependency changes.",
-      judgement.findings,
-    )
-  }
-  return allow("go_dependency_vulns_checked")
+  return judged(
+    "go_dependency_vulns_checked",
+    "Run or configure govulncheck, Dependabot, OSV, or equivalent vulnerability checks for Go dependency changes.",
+    judgement,
+  )
 }

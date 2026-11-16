@@ -1,3 +1,11 @@
+import {
+  block_on_findings,
+  judged,
+  scan_files,
+  scan_files_if,
+  warn_on_findings,
+} from "../lib/predicates"
+
 const _EVIDENCE_IMPORTANT = [
   "https://developer.mozilla.org/en-US/docs/Web/CSS/important",
   "https://developer.mozilla.org/en-US/docs/Web/CSS/CSS_cascade/Specificity",
@@ -75,52 +83,6 @@ fn css_files(slice: any) {
 
 fn production_css_files(slice: any) {
   return css_files(slice).filter({ file -> !is_test_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn scan_files_if(files: any, predicate: any) {
-  let findings = []
-  for file in files {
-    if predicate(file) {
-      findings.push({path: file.path})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -224,14 +186,11 @@ pub fn accessible_focus_indicator(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when changed CSS suppresses the keyboard focus indicator (e.g. `outline: none`, `outline: 0`, `outline: 0px`, or sets outline width to 0) on focusable elements and the same slice does not provide a clearly visible replacement focus style for `:focus` or `:focus-visible` (such as a non-transparent box-shadow, border, background, or outline applied via the focus pseudo-classes). Allow suppressions that are paired with an obvious focus-visible replacement, that target non-interactive selectors, or that scope the suppression to `:focus:not(:focus-visible)` while leaving keyboard focus styled."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_css_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "accessible_focus_indicator",
-      "Keep a visible focus indicator (WCAG 2.4.7); pair any `outline: none` with a `:focus-visible` style that has ≥3:1 contrast against adjacent colors.",
-      judgement.findings,
-    )
-  }
-  return allow("accessible_focus_indicator")
+  return judged(
+    "accessible_focus_indicator",
+    "Keep a visible focus indicator (WCAG 2.4.7); pair any `outline: none` with a `:focus-visible` style that has ≥3:1 contrast against adjacent colors.",
+    judgement,
+  )
 }
 
 @invariant
@@ -242,12 +201,9 @@ pub fn respect_prefers_reduced_motion(slice: any, ctx: any, _repo_at_base: any) 
   const rubric =
     "Block only when changed CSS introduces a non-trivial animation or transition (an `animation`, `@keyframes`, or `transition` longer than ~150ms or that involves transform/translate/scale/rotate/opacity loops) and the slice does not include a `@media (prefers-reduced-motion: reduce)` block that disables, shortens, or removes the offending animation/transition. Allow purely instantaneous transitions, hover-only color tweens shorter than ~150ms, or changes that already gate motion behind the reduced-motion media query."
   const judgement = ctx.semantic_judge({rubric: rubric, files: production_css_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "respect_prefers_reduced_motion",
-      "Wrap or override the new animation/transition inside `@media (prefers-reduced-motion: reduce)` so users who opt out of motion are not subjected to it (WCAG 2.3.3).",
-      judgement.findings,
-    )
-  }
-  return allow("respect_prefers_reduced_motion")
+  return judged(
+    "respect_prefers_reduced_motion",
+    "Wrap or override the new animation/transition inside `@media (prefers-reduced-motion: reduce)` so users who opt out of motion are not subjected to it (WCAG 2.3.3).",
+    judgement,
+  )
 }

@@ -1,3 +1,5 @@
+import { block_on_findings, judged, scan_files, warn_on_findings } from "../lib/predicates"
+
 const _EVIDENCE_BARE_EXCEPT = [
   "https://docs.python.org/3.14/reference/compound_stmts.html#except-clause",
   "https://docs.astral.sh/ruff/rules/bare-except/",
@@ -71,42 +73,6 @@ fn is_cli_path(path: any) {
 
 fn production_python_files(slice: any) {
   return python_files(slice).filter({ file -> !is_test_path(file.path) && !is_cli_path(file.path) })
-}
-
-fn scan_files(files: any, pattern: any, flags: any) {
-  let findings = []
-  for file in files {
-    if regex_match(pattern, file.text, flags) != nil {
-      findings.push({path: file.path, pattern: pattern})
-    }
-  }
-  return findings
-}
-
-fn allow(rule: any) {
-  return {verdict: "Allow", rule: rule, findings: [], remediation: ""}
-}
-
-fn warn(rule: any, remediation: any, findings: any) {
-  return {verdict: "Warn", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block(rule: any, remediation: any, findings: any) {
-  return {verdict: "Block", rule: rule, findings: findings, remediation: remediation}
-}
-
-fn block_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return block(rule, remediation, findings)
-}
-
-fn warn_on_findings(rule: any, remediation: any, findings: any) {
-  if findings.none() {
-    return allow(rule)
-  }
-  return warn(rule, remediation, findings)
 }
 
 @invariant
@@ -248,14 +214,11 @@ pub fn sql_queries_use_parameters(slice: any, ctx: any, _repo_at_base: any) {
   const rubric =
     "Block only when Python code builds a SQL query by interpolating, formatting, concatenating, or f-stringing user-controlled values into the SQL text instead of binding parameters/placeholders."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "sql_queries_use_parameters",
-      "Use DB-API placeholders and bound parameters instead of string-built SQL.",
-      judgement.findings,
-    )
-  }
-  return allow("sql_queries_use_parameters")
+  return judged(
+    "sql_queries_use_parameters",
+    "Use DB-API placeholders and bound parameters instead of string-built SQL.",
+    judgement,
+  )
 }
 
 @invariant
@@ -266,12 +229,9 @@ pub fn secrets_not_hardcoded_in_source(slice: any, ctx: any, _repo_at_base: any)
   const rubric =
     "Block only when Python source hardcodes credentials, API tokens, private keys, database passwords, signing secrets, or production service credentials instead of loading them from a secret manager or environment."
   const judgement = ctx.semantic_judge({rubric: rubric, files: python_files(slice)})
-  if judgement.verdict == "Block" {
-    return block(
-      "secrets_not_hardcoded_in_source",
-      "Load secrets from a secret manager or scoped environment variable instead of source literals.",
-      judgement.findings,
-    )
-  }
-  return allow("secrets_not_hardcoded_in_source")
+  return judged(
+    "secrets_not_hardcoded_in_source",
+    "Load secrets from a secret manager or scoped environment variable instead of source literals.",
+    judgement,
+  )
 }
